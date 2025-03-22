@@ -37,7 +37,7 @@ void main() {
         appId: TestConstants.appId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
       );
-      final licenseData = licenseGenerator.licenseToBytes(license);
+      final licenseData = license.bytes;
 
       // Сохраняем лицензию в хранилище
       await storage.saveLicenseData(licenseData);
@@ -55,12 +55,12 @@ void main() {
     test('возвращает_null_при_повреждении_данных', () async {
       // Arrange - сохраняем невалидные данные
       await storage.saveLicenseData(
-        licenseGenerator.licenseToBytes(
-          licenseGenerator.generateLicense(
-            appId: TestConstants.appId,
-            expirationDate: DateTime.now().add(Duration(days: 30)),
-          ),
-        ),
+        licenseGenerator
+            .generateLicense(
+              appId: TestConstants.appId,
+              expirationDate: DateTime.now().add(Duration(days: 30)),
+            )
+            .bytes,
       );
       // Портим данные
       await storage.saveLicenseData(Uint8List.fromList('invalid json'.codeUnits));
@@ -97,7 +97,7 @@ void main() {
         appId: TestConstants.appId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
       );
-      final licenseData = licenseGenerator.licenseToBytes(license);
+      final licenseData = license.bytes;
 
       // Act
       final result = await sut.saveLicenseFromBytes(licenseData);
@@ -121,7 +121,7 @@ void main() {
         appId: TestConstants.appId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
       );
-      final licenseData = licenseGenerator.licenseToBytes(license);
+      final licenseData = license.bytes;
       await tempFile.writeAsBytes(licenseData);
 
       // Act

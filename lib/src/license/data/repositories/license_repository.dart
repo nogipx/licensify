@@ -29,12 +29,31 @@ class LicenseRepository implements ILicenseRepository {
         return null;
       }
 
-      // Декодируем JSON
-      final jsonString = utf8.decode(licenseData);
-      final Map<String, dynamic> licenseJson = jsonDecode(jsonString);
+      // Проверяем формат и декодируем данные
+      final licenseJson = LicenseFileFormat.decodeFromBytes(licenseData);
+      if (licenseJson == null) {
+        // Пробуем старый формат (для обратной совместимости)
+        try {
+          final jsonString = utf8.decode(licenseData);
+          final jsonData = jsonDecode(jsonString);
+          return _createLicenseFromJson(jsonData);
+        } catch (e) {
+          // Не удалось распарсить ни новый, ни старый формат
+          return null;
+        }
+      }
 
-      // Создаем модель данных и преобразуем в доменную сущность
-      final licenseModel = LicenseModel.fromJson(licenseJson);
+      // Создаем лицензию из декодированных данных
+      return _createLicenseFromJson(licenseJson);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Создает объект лицензии из JSON-данных
+  License? _createLicenseFromJson(Map<String, dynamic> json) {
+    try {
+      final licenseModel = LicenseModel.fromJson(json);
       return licenseModel.toDomain();
     } catch (e) {
       return null;
@@ -47,13 +66,12 @@ class LicenseRepository implements ILicenseRepository {
       // Преобразуем доменную сущность в модель данных
       final licenseModel = LicenseModel.fromDomain(license);
 
-      // Сериализуем в JSON
+      // Сериализуем в JSON и кодируем в бинарный формат
       final jsonData = licenseModel.toJson();
-      final jsonString = jsonEncode(jsonData);
+      final binaryData = LicenseFileFormat.encodeToBytes(jsonData);
 
       // Сохраняем данные
-      final data = utf8.encode(jsonString);
-      return await _storage.saveLicenseData(data);
+      return await _storage.saveLicenseData(binaryData);
     } catch (e) {
       return false;
     }
@@ -62,7 +80,23 @@ class LicenseRepository implements ILicenseRepository {
   @override
   Future<bool> saveLicenseFromBytes(Uint8List licenseData) async {
     try {
-      // Сохраняем бинарные данные напрямую
+      // Проверяем, соответствует ли формат ожидаемому
+      if (!LicenseFileFormat.isValidLicenseFile(licenseData)) {
+        // Пробуем декодировать как JSON (для обратной совместимости)
+        try {
+          final jsonString = utf8.decode(licenseData);
+          final jsonData = jsonDecode(jsonString);
+
+          // Перекодируем в новый формат
+          final encodedData = LicenseFileFormat.encodeToBytes(jsonData);
+          return await _storage.saveLicenseData(encodedData);
+        } catch (e) {
+          // Не удалось распарсить как JSON, сохраняем как есть
+          return await _storage.saveLicenseData(licenseData);
+        }
+      }
+
+      // Формат правильный, сохраняем как есть
       return await _storage.saveLicenseData(licenseData);
     } catch (e) {
       return false;

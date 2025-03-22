@@ -2,8 +2,9 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-import 'dart:convert';
 import 'dart:typed_data';
+
+import 'package:licensify/licensify.dart';
 
 /// Типы лицензий
 enum LicenseType { trial, standard, pro }
@@ -53,8 +54,8 @@ class License {
   /// Возвращает оставшееся количество дней
   int get remainingDays => expirationDate.difference(DateTime.now().toUtc()).inDays;
 
-  /// Преобразует лицензию в массив байтов
-  Uint8List get bytes => utf8.encode(jsonEncode(toJson()));
+  /// Преобразует лицензию в массив байтов с использованием форматированного заголовка
+  Uint8List get bytes => LicenseFileFormat.encodeToBytes(toJson());
 
   /// Преобразует лицензию в JSON
   Map<String, dynamic> toJson() => {

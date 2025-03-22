@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:test/test.dart';
 import 'package:licensify/licensify.dart';
 import '../../helpers/test_constants.dart';
@@ -113,7 +114,7 @@ void main() {
       expect(license.type, equals(LicenseType.trial));
     });
 
-    test('сериализует_лицензию_в_JSON_байты', () {
+    test('сериализует_лицензию_в_бинарный_формат_с_заголовком', () {
       // Arrange
       final sut = GenerateLicenseUseCase(privateKey: TestConstants.privateKey);
       final license = sut.generateLicense(
@@ -124,13 +125,21 @@ void main() {
       );
 
       // Act
-      final bytes = sut.licenseToBytes(license);
+      final bytes = license.bytes;
 
       // Assert
-      final jsonString = utf8.decode(bytes);
-      final jsonData = jsonDecode(jsonString);
+      // Проверяем магический заголовок
+      expect(utf8.decode(bytes.sublist(0, 4)), equals(LicenseFileFormat.magicHeader));
 
-      expect(jsonData['id'], equals(license.id));
+      // Проверяем версию формата
+      final versionData = ByteData.view(bytes.buffer, bytes.offsetInBytes + 4, 4);
+      final version = versionData.getUint32(0, Endian.little);
+      expect(version, equals(LicenseFileFormat.formatVersion));
+
+      // Декодируем данные лицензии
+      final jsonData = LicenseFileFormat.decodeFromBytes(bytes);
+      expect(jsonData, isNotNull);
+      expect(jsonData!['id'], equals(license.id));
       expect(jsonData['appId'], equals(license.appId));
       expect(jsonData['signature'], equals(license.signature));
       expect(jsonData['type'], equals(license.type.name));

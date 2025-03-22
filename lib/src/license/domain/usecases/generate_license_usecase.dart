@@ -57,25 +57,4 @@ class GenerateLicenseUseCase {
       metadata: metadata,
     );
   }
-
-  /// Преобразует лицензию в бинарные данные
-  Uint8List licenseToBytes(License license) {
-    // Преобразуем в JSON
-    final Map<String, dynamic> jsonData = {
-      'id': license.id,
-      'appId': license.appId,
-      'expirationDate': license.expirationDate.toIso8601String(),
-      'createdAt': license.createdAt.toIso8601String(),
-      'signature': license.signature,
-      'type': license.type.name,
-      'features': license.features,
-      'metadata': license.metadata,
-    };
-
-    // Сериализуем в строку JSON
-    final jsonString = jsonEncode(jsonData);
-
-    // Преобразуем в бинарные данные
-    return utf8.encode(jsonString);
-  }
 }
