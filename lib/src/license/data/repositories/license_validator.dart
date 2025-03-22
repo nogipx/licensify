@@ -23,9 +23,13 @@ class LicenseValidator implements ILicenseValidator {
       // Получаем округленную дату истечения лицензии
       final roundedExpirationDate = license.expirationDate.roundToMinutes();
 
-      // Формируем данные для проверки подписи
+      // Cериализуем features и metadata для проверки подписи
+      final featuresJson = jsonEncode(license.features);
+      final metadataJson = license.metadata != null ? jsonEncode(license.metadata) : '';
+
+      // Формируем данные для проверки подписи (включая все поля)
       final dataToVerify =
-          '${license.id}:${license.appId}:${roundedExpirationDate.toIso8601String()}:${license.type.name}';
+          '${license.id}:${license.appId}:${roundedExpirationDate.toIso8601String()}:${license.type.name}:$featuresJson:$metadataJson';
 
       // Подготавливаем публичный ключ
       final publicKey = CryptoUtils.rsaPublicKeyFromPem(_publicKey);

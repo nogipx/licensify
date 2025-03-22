@@ -34,8 +34,13 @@ class GenerateLicenseUseCase {
     // Преобразуем дату истечения в UTC и округляем до минут
     final utcExpirationDate = expirationDate.roundToMinutes();
 
-    // Формируем данные для подписи
-    final dataToSign = '$id:$appId:${utcExpirationDate.toIso8601String()}:${type.name}';
+    // Cериализуем features и metadata для подписи
+    final featuresJson = jsonEncode(features);
+    final metadataJson = metadata != null ? jsonEncode(metadata) : '';
+
+    // Формируем данные для подписи (включая все поля)
+    final dataToSign =
+        '$id:$appId:${utcExpirationDate.toIso8601String()}:${type.name}:$featuresJson:$metadataJson';
 
     // Создаем RSA подпись с приватным ключом
     final privateKey = CryptoUtils.rsaPrivateKeyFromPem(_privateKey);

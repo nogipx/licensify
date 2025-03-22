@@ -199,5 +199,130 @@ void main() {
       // Assert
       expect(result, isTrue);
     });
+
+    test('отклоняет_лицензию_при_любом_изменении_полей', () {
+      // Arrange
+      final sut = LicenseValidator(publicKey: TestConstants.testPublicKey);
+
+      // Создаем валидную лицензию с тестовыми данными
+      final validLicense = GenerateLicenseUseCase(
+        privateKey: TestConstants.testPrivateKey,
+      ).generateLicense(
+        appId: TestConstants.testAppId,
+        expirationDate: DateTime.now().add(Duration(days: 30)),
+        type: LicenseType.pro,
+        features: {'maxUsers': 10, 'premium': true},
+        metadata: {'owner': 'Test Corp', 'email': 'test@example.com'},
+      );
+
+      // Проверяем, что исходная лицензия валидна
+      expect(sut.validateSignature(validLicense), isTrue);
+
+      // Тестируем изменение id
+      final tamperedId = License(
+        id: 'tampered-id',
+        appId: validLicense.appId,
+        expirationDate: validLicense.expirationDate,
+        createdAt: validLicense.createdAt,
+        signature: validLicense.signature,
+        type: validLicense.type,
+        features: validLicense.features,
+        metadata: validLicense.metadata,
+      );
+      expect(
+        sut.validateSignature(tamperedId),
+        isFalse,
+        reason: 'Изменение ID должно делать подпись невалидной',
+      );
+
+      // Тестируем изменение appId
+      final tamperedAppId = License(
+        id: validLicense.id,
+        appId: 'com.hacked.app',
+        expirationDate: validLicense.expirationDate,
+        createdAt: validLicense.createdAt,
+        signature: validLicense.signature,
+        type: validLicense.type,
+        features: validLicense.features,
+        metadata: validLicense.metadata,
+      );
+      expect(
+        sut.validateSignature(tamperedAppId),
+        isFalse,
+        reason: 'Изменение appId должно делать подпись невалидной',
+      );
+
+      // Тестируем изменение типа лицензии
+      final tamperedType = License(
+        id: validLicense.id,
+        appId: validLicense.appId,
+        expirationDate: validLicense.expirationDate,
+        createdAt: validLicense.createdAt,
+        signature: validLicense.signature,
+        type: LicenseType.trial, // Изменен тип с pro на trial
+        features: validLicense.features,
+        metadata: validLicense.metadata,
+      );
+      expect(
+        sut.validateSignature(tamperedType),
+        isFalse,
+        reason: 'Изменение типа лицензии должно делать подпись невалидной',
+      );
+
+      // Тестируем изменение срока действия
+      final tamperedExpiration = License(
+        id: validLicense.id,
+        appId: validLicense.appId,
+        expirationDate: validLicense.expirationDate.add(Duration(days: 365)), // Добавили год
+        createdAt: validLicense.createdAt,
+        signature: validLicense.signature,
+        type: validLicense.type,
+        features: validLicense.features,
+        metadata: validLicense.metadata,
+      );
+      expect(
+        sut.validateSignature(tamperedExpiration),
+        isFalse,
+        reason: 'Изменение срока действия должно делать подпись невалидной',
+      );
+
+      // Тестируем изменение features
+      final tamperedFeatures = License(
+        id: validLicense.id,
+        appId: validLicense.appId,
+        expirationDate: validLicense.expirationDate,
+        createdAt: validLicense.createdAt,
+        signature: validLicense.signature,
+        type: validLicense.type,
+        features: {
+          'maxUsers': 1000,
+          'premium': true,
+          'extraFeature': 'unlocked',
+        }, // Изменили features
+        metadata: validLicense.metadata,
+      );
+      expect(
+        sut.validateSignature(tamperedFeatures),
+        isFalse,
+        reason: 'Изменение features должно делать подпись невалидной',
+      );
+
+      // Тестируем изменение metadata
+      final tamperedMetadata = License(
+        id: validLicense.id,
+        appId: validLicense.appId,
+        expirationDate: validLicense.expirationDate,
+        createdAt: validLicense.createdAt,
+        signature: validLicense.signature,
+        type: validLicense.type,
+        features: validLicense.features,
+        metadata: {'owner': 'Hacker Inc', 'email': 'hacker@example.com'}, // Изменили metadata
+      );
+      expect(
+        sut.validateSignature(tamperedMetadata),
+        isFalse,
+        reason: 'Изменение metadata должно делать подпись невалидной',
+      );
+    });
   });
 }
