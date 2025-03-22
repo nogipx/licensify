@@ -12,7 +12,8 @@ class LicenseRepository implements ILicenseRepository {
   final ILicenseStorage _storage;
 
   /// Конструктор
-  const LicenseRepository({required ILicenseStorage storage}) : _storage = storage;
+  const LicenseRepository({required ILicenseStorage storage})
+    : _storage = storage;
 
   @override
   Future<License?> getCurrentLicense() async {

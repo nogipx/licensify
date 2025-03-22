@@ -55,7 +55,10 @@ class CheckLicenseUseCase {
 
       return ActiveLicenseStatus(license);
     } catch (e) {
-      return ErrorLicenseStatus(message: 'Error checking license', exception: e);
+      return ErrorLicenseStatus(
+        message: 'Error checking license',
+        exception: e,
+      );
     }
   }
 
@@ -76,7 +79,10 @@ class CheckLicenseUseCase {
 
       return checkCurrentLicense();
     } catch (e) {
-      return ErrorLicenseStatus(message: 'Error checking license from binary data', exception: e);
+      return ErrorLicenseStatus(
+        message: 'Error checking license from binary data',
+        exception: e,
+      );
     }
   }
 
