@@ -6,49 +6,56 @@ import 'dart:async';
 
 import 'package:licensify/licensify.dart';
 
-/// Сценарий использования для мониторинга статуса лицензии
+/// Use case for monitoring license status over time
+///
+/// This class provides continuous license state monitoring with periodic checks,
+/// notifying subscribers of any changes through a stream.
 class MonitorLicenseUseCase {
   final CheckLicenseUseCase _checkLicenseUseCase;
 
-  /// Период проверки лицензии по умолчанию (1 день)
+  /// Default license check period (1 day)
   static const _defaultCheckPeriod = Duration(days: 1);
 
-  /// Контроллер для статуса лицензии
+  /// Controller for broadcasting license status updates
   final _statusController = StreamController<LicenseStatus>.broadcast();
 
-  /// Таймер для периодической проверки
+  /// Timer for periodic license validation
   Timer? _checkTimer;
 
-  /// Последний известный статус
+  /// Most recent license status
   LicenseStatus? _lastKnownStatus;
 
-  /// Конструктор
+  /// Creates a new license monitor with the provided license checker
   MonitorLicenseUseCase({required CheckLicenseUseCase checkLicenseUseCase})
     : _checkLicenseUseCase = checkLicenseUseCase;
 
-  /// Поток статуса лицензии
+  /// Stream of license status updates
+  ///
+  /// Subscribe to this stream to be notified of license status changes
   Stream<LicenseStatus> get licenseStatusStream => _statusController.stream;
 
-  /// Последний известный статус лицензии
+  /// Most recent license status
   LicenseStatus? get currentStatus => _lastKnownStatus;
 
-  /// Начинает мониторинг лицензии
+  /// Starts periodic license monitoring
+  ///
+  /// [checkPeriod] - How often to check for license changes (default: 1 day)
   Future<void> startMonitoring({Duration checkPeriod = _defaultCheckPeriod}) async {
-    // Проверяем текущую лицензию немедленно
+    // Perform initial check immediately
     await _checkAndEmitStatus();
 
-    // Настраиваем периодическую проверку
+    // Set up periodic checking
     _checkTimer?.cancel();
     _checkTimer = Timer.periodic(checkPeriod, (_) => _checkAndEmitStatus());
   }
 
-  /// Останавливает мониторинг
+  /// Stops periodic license monitoring
   void stopMonitoring() {
     _checkTimer?.cancel();
     _checkTimer = null;
   }
 
-  /// Проверяет статус лицензии и отправляет его в поток
+  /// Checks license status and emits it to the stream
   Future<void> _checkAndEmitStatus() async {
     final status = await _checkLicenseUseCase.checkCurrentLicense();
     _lastKnownStatus = status;
@@ -58,7 +65,7 @@ class MonitorLicenseUseCase {
     }
   }
 
-  /// Освобождает ресурсы
+  /// Releases resources used by this use case
   void dispose() {
     stopMonitoring();
     _statusController.close();

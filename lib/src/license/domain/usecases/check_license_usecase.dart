@@ -6,19 +6,37 @@ import 'dart:typed_data';
 
 import 'package:licensify/licensify.dart';
 
-/// Сценарий использования для проверки лицензии
+/// Use case for checking license validity
+///
+/// This class handles verification of license status including signature
+/// validation and expiration checks
 class CheckLicenseUseCase {
+  /// Repository for license storage and retrieval
   final ILicenseRepository _repository;
+
+  /// Validator for cryptographic signature and expiration
   final ILicenseValidator _validator;
 
-  /// Конструктор
+  /// Creates a new instance with the specified dependencies
+  ///
+  /// [repository] - Repository for license storage and retrieval
+  /// [validator] - Validator for license integrity and expiration
   const CheckLicenseUseCase({
     required ILicenseRepository repository,
     required ILicenseValidator validator,
   }) : _repository = repository,
        _validator = validator;
 
-  /// Проверяет текущую лицензию
+  /// Checks the current license in the repository
+  ///
+  /// Verifies signature and expiration date of the installed license.
+  ///
+  /// Returns a LicenseStatus indicating the current state:
+  /// - ActiveLicenseStatus - License is valid and active
+  /// - ExpiredLicenseStatus - License has expired
+  /// - InvalidLicenseStatus - License signature is invalid
+  /// - NoLicenseStatus - No license is installed
+  /// - ErrorLicenseStatus - An error occurred during validation
   Future<LicenseStatus> checkCurrentLicense() async {
     try {
       final license = await _repository.getCurrentLicense();
@@ -28,7 +46,7 @@ class CheckLicenseUseCase {
       }
 
       if (!_validator.validateSignature(license)) {
-        return const InvalidLicenseStatus(message: 'Недействительная подпись лицензии');
+        return const InvalidLicenseStatus(message: 'Invalid license signature');
       }
 
       if (!_validator.validateExpiration(license)) {
@@ -37,43 +55,54 @@ class CheckLicenseUseCase {
 
       return ActiveLicenseStatus(license);
     } catch (e) {
-      return ErrorLicenseStatus(message: 'Ошибка при проверке лицензии', exception: e);
+      return ErrorLicenseStatus(message: 'Error checking license', exception: e);
     }
   }
 
-  /// Проверяет лицензию из бинарных данных
+  /// Checks a license from binary data
+  ///
+  /// Saves the license from binary data and then verifies its validity.
+  ///
+  /// [licenseData] - The raw bytes of the license file
+  ///
+  /// Returns a LicenseStatus indicating the license state
   Future<LicenseStatus> checkLicenseFromBytes(Uint8List licenseData) async {
     try {
       final result = await _repository.saveLicenseFromBytes(licenseData);
 
       if (!result) {
-        return const ErrorLicenseStatus(message: 'Не удалось сохранить лицензию');
+        return const ErrorLicenseStatus(message: 'Failed to save license');
       }
 
       return checkCurrentLicense();
     } catch (e) {
-      return ErrorLicenseStatus(
-        message: 'Ошибка при проверке лицензии из бинарных данных',
-        exception: e,
-      );
+      return ErrorLicenseStatus(message: 'Error checking license from binary data', exception: e);
     }
   }
 
-  /// Проверяет лицензию из файла
+  /// Checks a license from a file
+  ///
+  /// Loads the license from the specified file path and verifies its validity.
+  ///
+  /// [filePath] - Path to the license file
+  ///
+  /// Returns a LicenseStatus indicating the license state
   Future<LicenseStatus> checkLicenseFromFile(String filePath) async {
     try {
       final result = await _repository.saveLicenseFromFile(filePath);
 
       if (!result) {
-        return const ErrorLicenseStatus(message: 'Не удалось сохранить лицензию из файла');
+        return const ErrorLicenseStatus(message: 'Failed to save license from file');
       }
 
       return checkCurrentLicense();
     } catch (e) {
-      return ErrorLicenseStatus(message: 'Ошибка при проверке лицензии из файла', exception: e);
+      return ErrorLicenseStatus(message: 'Error checking license from file', exception: e);
     }
   }
 
-  /// Удаляет текущую лицензию
+  /// Removes the current license
+  ///
+  /// Returns true if the license was successfully removed, false otherwise
   Future<bool> removeLicense() => _repository.removeLicense();
 }

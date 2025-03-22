@@ -6,36 +6,52 @@ import 'dart:typed_data';
 
 import 'package:licensify/licensify.dart';
 
-/// Типы лицензий
-enum LicenseType { trial, standard, pro }
+/// License types supported by the system
+enum LicenseType {
+  /// Trial license with limited functionality or time period
+  trial,
 
-/// Доменная сущность лицензии
+  /// Standard license with basic functionality
+  standard,
+
+  /// Professional license with all features enabled
+  pro,
+}
+
+/// License domain entity
+///
+/// Represents a cryptographically signed license with validity information
+/// and custom features.
 class License {
-  /// Уникальный идентификатор лицензии
+  /// Unique license identifier (UUID)
   final String id;
 
-  /// Идентификатор приложения, для которого действует лицензия
+  /// Application identifier this license is valid for
   final String appId;
 
-  /// Дата истечения срока действия лицензии (UTC)
+  /// License expiration date (UTC)
   final DateTime expirationDate;
 
-  /// Дата создания лицензии (UTC)
+  /// License creation date (UTC)
   final DateTime createdAt;
 
-  /// Подпись лицензии для проверки подлинности
+  /// Cryptographic signature for license verification
   final String signature;
 
-  /// Тип лицензии (trial - тестовая, standard - с ограничениями, pro - все фичи)
+  /// License type (trial, standard, or pro)
   final LicenseType type;
 
-  /// Доступные функции или ограничения для данной лицензии
+  /// Available features or limitations for this license
+  /// Can contain any custom parameters needed by the application
   final Map<String, dynamic> features;
 
-  /// Дополнительные метаданные лицензии
+  /// Additional license metadata
+  /// Can store information about customer, purchase, etc.
   final Map<String, dynamic>? metadata;
 
-  /// Конструктор
+  /// Creates a new license instance
+  ///
+  /// All dates are automatically converted to UTC
   License({
     required this.id,
     required this.appId,
@@ -48,16 +64,17 @@ class License {
   }) : expirationDate = expirationDate.isUtc ? expirationDate : expirationDate.toUtc(),
        createdAt = createdAt.isUtc ? createdAt : createdAt.toUtc();
 
-  /// Проверяет, истек ли срок действия лицензии
+  /// Checks if license has expired
   bool get isExpired => DateTime.now().toUtc().isAfter(expirationDate);
 
-  /// Возвращает оставшееся количество дней
+  /// Returns the number of days remaining until expiration
+  /// May return negative values if license has already expired
   int get remainingDays => expirationDate.difference(DateTime.now().toUtc()).inDays;
 
-  /// Преобразует лицензию в массив байтов с использованием форматированного заголовка
+  /// Converts the license to a byte array using formatted header
   Uint8List get bytes => LicenseFileFormat.encodeToBytes(toJson());
 
-  /// Преобразует лицензию в JSON
+  /// Converts the license to JSON representation
   Map<String, dynamic> toJson() => {
     'id': id,
     'appId': appId,

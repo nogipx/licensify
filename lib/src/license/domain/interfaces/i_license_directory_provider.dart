@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-/// Интерфейс для доступа к директории приложения
+/// Interface for accessing the application's license storage directory
 abstract class ILicenseDirectoryProvider {
-  /// Возвращает путь к директории приложения
+  /// Returns the path to the directory where license files should be stored
   Future<String> getLicenseDirectoryPath();
 }

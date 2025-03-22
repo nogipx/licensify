@@ -5,86 +5,86 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-/// Утилиты для работы с бинарным форматом файла лицензии
+/// Utilities for working with the binary license file format
 class LicenseFileFormat {
-  /// Магическая последовательность для идентификации файлов лицензий
+  /// Magic sequence for identifying license files
   static const String magicHeader = 'LCSF';
 
-  /// Текущая версия формата файла
+  /// Current file format version
   static const int formatVersion = 1;
 
-  /// Преобразует данные лицензии в бинарный формат файла
+  /// Converts license data to binary file format
   ///
-  /// Структура файла:
-  /// - [0-3] Магическая последовательность 'LCSF'
-  /// - [4-7] Версия формата (uint32)
-  /// - [8+]  Сериализованный JSON с данными лицензии
+  /// File structure:
+  /// - [0-3] Magic sequence 'LCSF'
+  /// - [4-7] Format version (uint32)
+  /// - [8+]  Serialized JSON with license data
   static Uint8List encodeToBytes(Map<String, dynamic> licenseData) {
-    // Сериализуем данные лицензии в JSON
+    // Serialize license data to JSON
     final jsonData = utf8.encode(jsonEncode(licenseData));
 
-    // Создаем буфер для бинарных данных
+    // Create buffer for binary data
     final result = BytesBuilder();
 
-    // Добавляем магическую последовательность
+    // Add magic sequence
     result.add(utf8.encode(magicHeader));
 
-    // Добавляем версию формата (4 байта, little-endian)
+    // Add format version (4 bytes, little-endian)
     final versionBytes = Uint8List(4);
     final versionData = ByteData.view(versionBytes.buffer);
     versionData.setUint32(0, formatVersion, Endian.little);
     result.add(versionBytes);
 
-    // Добавляем данные лицензии
+    // Add license data
     result.add(jsonData);
 
     return result.toBytes();
   }
 
-  /// Декодирует бинарные данные файла лицензии и проверяет формат
+  /// Decodes binary license file data and verifies the format
   ///
-  /// Возвращает null, если формат файла неверный
+  /// Returns null if the file format is invalid
   static Map<String, dynamic>? decodeFromBytes(Uint8List bytes) {
     try {
-      // Проверяем минимальную длину файла (8 байт для заголовка)
+      // Check minimum file length (8 bytes for header)
       if (bytes.length < 8) {
         return null;
       }
 
-      // Проверяем магическую последовательность
+      // Check magic sequence
       final headerBytes = bytes.sublist(0, 4);
       final header = utf8.decode(headerBytes);
       if (header != magicHeader) {
         return null;
       }
 
-      // Получаем версию формата
+      // Get format version
       final versionData = ByteData.view(bytes.buffer, bytes.offsetInBytes + 4, 4);
       final version = versionData.getUint32(0, Endian.little);
 
-      // Проверяем версию (пока поддерживаем только версию 1)
+      // Check version (currently we only support version 1)
       if (version != formatVersion) {
         return null;
       }
 
-      // Извлекаем JSON данные
+      // Extract JSON data
       final jsonBytes = bytes.sublist(8);
       final jsonString = utf8.decode(jsonBytes);
 
-      // Парсим JSON
+      // Parse JSON
       return jsonDecode(jsonString);
     } catch (e) {
       return null;
     }
   }
 
-  /// Проверяет, имеет ли файл правильный формат лицензии
+  /// Checks if the file has a valid license format
   static bool isValidLicenseFile(Uint8List bytes) {
     if (bytes.length < 8) {
       return false;
     }
 
-    // Проверяем магическую последовательность
+    // Check magic sequence
     final headerBytes = bytes.sublist(0, 4);
     final header = utf8.decode(headerBytes);
     return header == magicHeader;

@@ -2,10 +2,15 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-/// Расширение для работы с датами в контексте лицензий
+/// Extension methods for DateTime to support license operations
 extension DateTimeExtensions on DateTime {
-  /// Округляет дату до минут, обнуляя секунды и миллисекунды
-  /// и возвращает UTC дату
+  /// Rounds the datetime to minutes (removing seconds and milliseconds)
+  /// and converts to UTC
+  ///
+  /// This is useful for producing consistent datetime values for license validation
+  /// where precision to the second is not necessary.
+  ///
+  /// Returns a new DateTime in UTC with seconds and smaller units set to zero
   DateTime roundToMinutes() {
     final utcDate = isUtc ? this : toUtc();
     return DateTime.utc(
@@ -14,9 +19,22 @@ extension DateTimeExtensions on DateTime {
       utcDate.day,
       utcDate.hour,
       utcDate.minute,
-      0, // секунды = 0
-      0, // миллисекунды = 0
-      0, // микросекунды = 0
+      0, // seconds = 0
+      0, // milliseconds = 0
+      0, // microseconds = 0
     );
   }
+
+  /// Calculates days remaining until this date from the current time
+  ///
+  /// Returns the number of days remaining (can be negative if date is in the past)
+  int get daysRemaining {
+    final now = DateTime.now();
+    return difference(now).inDays;
+  }
+
+  /// Checks if this date is in the past
+  ///
+  /// Returns true if the date has passed, false otherwise
+  bool get isPast => isAfter(DateTime.now());
 }

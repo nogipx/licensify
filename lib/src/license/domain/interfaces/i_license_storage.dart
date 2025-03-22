@@ -4,17 +4,30 @@
 
 import 'dart:typed_data';
 
-/// Интерфейс для хранилища лицензий
+/// Storage interface for license data persistence
+///
+/// This interface abstracts the physical storage of license data,
+/// allowing for different storage mechanisms (file, memory, etc.)
 abstract class ILicenseStorage {
-  /// Сохраняет данные лицензии
+  /// Saves license data to storage
+  ///
+  /// [data] - Binary license data to be stored
+  ///
+  /// Returns true if data was successfully saved, false otherwise
   Future<bool> saveLicenseData(Uint8List data);
 
-  /// Загружает данные лицензии
+  /// Loads license data from storage
+  ///
+  /// Returns the binary license data or null if no license exists
   Future<Uint8List?> loadLicenseData();
 
-  /// Проверяет наличие лицензии
+  /// Checks if a license exists in storage
+  ///
+  /// Returns true if a license is present, false otherwise
   Future<bool> hasLicense();
 
-  /// Удаляет данные лицензии
+  /// Deletes license data from storage
+  ///
+  /// Returns true if data was successfully deleted, false otherwise
   Future<bool> deleteLicenseData();
 }

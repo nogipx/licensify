@@ -9,55 +9,58 @@ import 'package:basic_utils/basic_utils.dart';
 import 'package:licensify/licensify.dart';
 import 'package:pointycastle/export.dart';
 
-/// Реализация валидатора лицензии
+/// Implementation of license validator
+///
+/// This class validates license authenticity using RSA signatures
+/// and checks license expiration dates.
 class LicenseValidator implements ILicenseValidator {
-  /// Публичный ключ для проверки подписи
+  /// Public key for signature verification in PEM format
   final String _publicKey;
 
-  /// Конструктор
+  /// Creates a new validator with the specified RSA public key
   const LicenseValidator({required String publicKey}) : _publicKey = publicKey;
 
   @override
   bool validateSignature(License license) {
     try {
-      // Получаем округленную дату истечения лицензии
+      // Get rounded expiration date
       final roundedExpirationDate = license.expirationDate.roundToMinutes();
 
-      // Cериализуем features и metadata для проверки подписи
+      // Serialize features and metadata for signature verification
       final featuresJson = jsonEncode(license.features);
       final metadataJson = license.metadata != null ? jsonEncode(license.metadata) : '';
 
-      // Формируем данные для проверки подписи (включая все поля)
+      // Form data string for verification (including all fields)
       final dataToVerify =
           '${license.id}:${license.appId}:${roundedExpirationDate.toIso8601String()}:${license.type.name}:$featuresJson:$metadataJson';
 
-      // Подготавливаем публичный ключ
+      // Prepare the public key
       final publicKey = CryptoUtils.rsaPublicKeyFromPem(_publicKey);
 
-      // Декодируем подпись из Base64
+      // Decode signature from Base64
       final signatureBytes = base64Decode(license.signature);
 
-      // Проверяем подпись с помощью RSA-SHA512
+      // Verify signature using RSA-SHA512
       final verifier = RSASigner(SHA512Digest(), '0609608648016503040203');
       verifier.init(false, PublicKeyParameter<RSAPublicKey>(publicKey));
 
       final signatureParams = Uint8List.fromList(utf8.encode(dataToVerify));
       return verifier.verifySignature(signatureParams, RSASignature(signatureBytes));
     } catch (e) {
-      print('Ошибка проверки подписи: $e');
+      print('Signature verification error: $e');
       return false;
     }
   }
 
   @override
   bool validateExpiration(License license) {
-    // Лицензия действительна, если дата истечения еще не наступила
+    // License is valid if expiration date hasn't passed
     return !license.isExpired;
   }
 
   @override
   bool validateLicense(License license) {
-    // Лицензия валидна, если подпись верна и срок действия не истек
+    // License is valid if both signature is correct and it hasn't expired
     return validateSignature(license) && validateExpiration(license);
   }
 }

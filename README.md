@@ -1,52 +1,67 @@
 # Licensify
 
-Продвинутое решение для лицензирования Flutter/Dart приложений с надежной защитой и гибкими опциями.
+Advanced licensing solution for Flutter/Dart applications with robust protection and flexible options.
 
-## Описание
+## Description
 
-`licensify` - это легковесная, но мощная библиотека для внедрения системы лицензирования в ваши Flutter и Dart приложения. Библиотека предоставляет защищенный механизм проверки лицензий с использованием криптографических подписей и гибкую систему настройки типов лицензий.
+`licensify` is a lightweight yet powerful library for implementing a licensing system in your Flutter and Dart applications. The library provides a secure mechanism for license verification using cryptographic signatures and a flexible system for configuring license types.
 
-### Основные возможности
+### Key Features
 
-- 🔒 **Надежная защита**: Использование HMAC-SHA256 для проверки подлинности лицензий
-- 🕒 **Управление сроками**: Автоматическая проверка срока действия лицензий
-- 🔄 **Разные типы лицензий**: Поддержка trial, standard, pro и других типов
-- 📋 **Расширяемые данные**: Возможность добавления custom-параметров в лицензии
-- 💾 **Гибкое хранение**: Поддержка файлового хранилища и хранилища в памяти
-- 📲 **Простое внедрение**: Легкая интеграция в любое Dart/Flutter приложение
+- 🔒 **Robust Protection**: Using RSA for license authenticity verification
+- 🕒 **Expiration Management**: Automatic verification of license expiration dates
+- 🔄 **Multiple License Types**: Support for trial, standard, pro, and other types
+- 📋 **Extensible Data**: Ability to add custom parameters to licenses
+- 💾 **Flexible Storage**: Support for file storage and in-memory storage
+- 📲 **Simple Implementation**: Easy integration into any Dart/Flutter application
 
-## Установка
+## Installation
 
-Добавьте `licensify` в ваш `pubspec.yaml`:
+Add `licensify` to your `pubspec.yaml`:
 
 ```yaml
 dependencies:
   licensify: ^1.0.0
 ```
 
-И запустите:
+And run:
 
 ```bash
 dart pub get
 ```
 
-Для Flutter проектов:
+For Flutter projects:
 
 ```bash
 flutter pub get
 ```
 
-## Использование
+## Usage
 
-### Генерация новой лицензии
+### Key Generation
 
 ```dart
 import 'package:licensify/licensify.dart';
 
-// Создание генератора лицензий с приватным ключом
-final generator = GenerateLicenseUseCase(signatureKey: yourPrivateKey);
+// Generate RSA keys (store in a secure place!)
+final keys = RsaKeyGenerator.generateKeyPairAsPem(bitLength: 2048);
 
-// Генерация новой лицензии
+print('Public Key:');
+print(keys.publicKey);
+
+print('Private Key:');
+print(keys.privateKey);
+```
+
+### Generating a New License
+
+```dart
+import 'package:licensify/licensify.dart';
+
+// Create a license generator with private key
+final generator = GenerateLicenseUseCase(privateKey: yourPrivateKey);
+
+// Generate a new license
 final license = generator.generateLicense(
   appId: 'com.your.app',
   expirationDate: DateTime.now().add(const Duration(days: 30)),
@@ -54,66 +69,66 @@ final license = generator.generateLicense(
   features: {'maxUsers': 10, 'canExport': true},
 );
 
-// Экспорт в байты для сохранения в файл
+// Export to bytes for saving to a file
 final licenseBytes = generator.licenseToBytes(license);
 ```
 
-### Проверка лицензии
+### License Verification
 
 ```dart
 import 'package:licensify/licensify.dart';
 
-// Создание репозитория и валидатора
+// Create repository and validator
 final storage = LicenseStorage();
 final repository = LicenseRepository(storage: storage);
 final validator = LicenseValidator(publicKey: yourPublicKey);
 
-// Создание юзкейса для проверки
+// Create a use case for verification
 final licenseChecker = CheckLicenseUseCase(
   repository: repository,
   validator: validator,
 );
 
-// Проверка текущей лицензии
+// Check current license
 final licenseStatus = await licenseChecker.checkCurrentLicense();
 
 if (licenseStatus.isActive) {
-  // Лицензия действительна
+  // License is valid
   final activeLicense = (licenseStatus as ActiveLicenseStatus).license;
-  print('Лицензия активна до: ${activeLicense.expirationDate}');
-  print('Осталось дней: ${activeLicense.remainingDays}');
+  print('License active until: ${activeLicense.expirationDate}');
+  print('Days remaining: ${activeLicense.remainingDays}');
 } else if (licenseStatus.isExpired) {
-  // Лицензия просрочена
-  print('Срок действия лицензии истек');
+  // License is expired
+  print('License has expired');
 } else if (licenseStatus.isInvalid) {
-  // Лицензия недействительна
-  print('Лицензия недействительна (неверная подпись)');
+  // License is invalid
+  print('License is invalid (incorrect signature)');
 } else if (licenseStatus.isNoLicense) {
-  // Лицензия отсутствует
-  print('Лицензия не установлена');
+  // No license
+  print('No license installed');
 } else if (licenseStatus.isError) {
-  // Ошибка при проверке
-  print('Произошла ошибка при проверке лицензии');
+  // Error during verification
+  print('An error occurred during license verification');
 }
 ```
 
-### Сохранение и загрузка лицензий
+### Saving and Loading Licenses
 
 ```dart
-// Сохранение лицензии из файла
+// Save license from file
 final success = await repository.saveLicenseFromFile('path/to/license.dat');
 
-// Сохранение лицензии из байтов
-final licenseBytes = readLicenseBytes(); // ваша функция чтения байтов
+// Save license from bytes
+final licenseBytes = readLicenseBytes(); // your function to read bytes
 final savedFromBytes = await repository.saveLicenseFromBytes(licenseBytes);
 
-// Удаление лицензии
+// Remove license
 final removed = await repository.removeLicense();
 ```
 
-### Различные типы хранилищ
+### Different Storage Types
 
-#### Файловое хранилище (по умолчанию)
+#### File Storage (default)
 
 ```dart
 final directoryProvider = DefaultLicenseDirectoryProvider();
@@ -124,97 +139,103 @@ final storage = FileLicenseStorage(
 final repository = LicenseRepository(storage: storage);
 ```
 
-#### Хранилище в памяти
+#### In-Memory Storage
 
 ```dart
-// Пустое хранилище в памяти
+// Empty in-memory storage
 final storage = InMemoryLicenseStorage();
 
-// Или хранилище с предварительно загруженными данными
-final licenseData = Uint8List.fromList([/* данные лицензии */]);
+// Or storage with pre-loaded data
+final licenseData = Uint8List.fromList([/* license data */]);
 final storage = InMemoryLicenseStorage.withData(licenseData);
 
 final repository = LicenseRepository(storage: storage);
 ```
 
-## Архитектура
+## Architecture
 
-Библиотека построена на принципах Clean Architecture:
+The library is built on Clean Architecture principles:
 
-- **Domain Layer**: Бизнес-логика и основные сущности
+- **Domain Layer**: Business logic and core entities
   - Entities: License, LicenseStatus
   - Repositories: ILicenseRepository
   - UseCases: CheckLicenseUseCase, GenerateLicenseUseCase
 
-- **Data Layer**: Реализация репозиториев и источников данных
+- **Data Layer**: Implementation of repositories and data sources
   - Repositories: LicenseRepository
   - Data Sources: 
-    - FileLicenseStorage - хранилище лицензий в файловой системе
-    - InMemoryLicenseStorage - хранилище лицензий в памяти 
+    - FileLicenseStorage - license storage in the file system
+    - InMemoryLicenseStorage - license storage in memory 
   - Validators: LicenseValidator
 
-## Формат лицензии
+## License Format
 
-Лицензия в `licensify` представляет собой защищенную структуру данных, которая содержит всю необходимую информацию для проверки прав на использование вашего приложения.
+A license in `licensify` is a secured data structure that contains all the necessary information to verify the rights to use your application.
 
-### Структура лицензии
+### License Structure
 
 ```json
 {
+  "id": "550e8400-e29b-41d4-a716-446655440000",
   "appId": "com.example.myapp",
-  "created": "2024-07-25T14:30:00Z",
-  "expires": "2025-07-25T14:30:00Z",
-  "type": "pro",
+  "createdAt": "2024-07-25T14:30:00Z",
+  "expirationDate": "2025-07-25T14:30:00Z",
+  "type": "trial",
   "features": {
     "maxUsers": 50,
     "canExport": true,
     "modules": ["analytics", "reporting", "admin"]
   },
-  "signature": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0"
+  "metadata": {
+    "clientName": "Example Corp",
+    "contactEmail": "support@example.com"
+  },
+  "signature": "Base64EncodedSignature..."
 }
 ```
 
-Поля лицензии:
-- `appId` - уникальный идентификатор приложения
-- `created` - дата создания лицензии в формате ISO 8601
-- `expires` - дата окончания срока действия в формате ISO 8601
-- `type` - тип лицензии (trial, standard, pro и т.д.)
-- `features` - дополнительные параметры лицензии (могут быть любыми JSON-совместимыми типами)
-- `signature` - криптографическая подпись для проверки подлинности
+License fields:
+- `id` - unique license identifier
+- `appId` - unique application identifier
+- `createdAt` - license creation date in ISO 8601 format
+- `expirationDate` - expiration date in ISO 8601 format
+- `type` - license type (trial, standard, pro, etc.)
+- `features` - additional license parameters (can be any JSON-compatible types)
+- `metadata` - license metadata (e.g., client information)
+- `signature` - RSA signature for license authenticity verification
 
-### Формат файла лицензии
+### License File Format
 
-Лицензия сохраняется в бинарном формате со следующей структурой:
+The license is saved in a format protected against tampering using cryptographic signature:
 
-1. **Заголовок** (8 байт) - содержит магическую последовательность 'LCSF' (License File) и версию формата
-2. **Метаданные** - JSON-структура, содержащая:
-   - `appId`: идентификатор приложения
-   - `created`: дата создания в формате ISO 8601
-   - `expires`: дата окончания в формате ISO 8601
-   - `type`: тип лицензии (число или строка)
-   - `features`: объект с дополнительными параметрами
-3. **Подпись** - HMAC-SHA256 подпись метаданных, обеспечивающая защиту от подделки
+1. License data is serialized to JSON
+2. RSA signature is applied to the data using the private key
+3. Verification is performed using the public key
 
-Для создания и проверки лицензий используется пара ключей:
-- **Приватный ключ** - используется только на стороне разработчика для создания лицензий
-- **Публичный ключ** - встраивается в приложение для проверки подлинности лицензий
+A pair of RSA keys is used for creating and verifying licenses:
+- **Private key** - used only by the developer to create licenses
+- **Public key** - embedded in the application to verify license authenticity
 
-### Примечания по безопасности
+### Security Notes
 
-- Храните приватный ключ в безопасном месте и не включайте его в код приложения
-- Для повышения безопасности рекомендуется использовать обфускацию кода
-- Механизм HMAC-SHA256 обеспечивает защиту от изменения содержимого лицензии
-- В случае особых требований к безопасности рассмотрите возможность дополнительной серверной проверки лицензий
+- Store the private key in a secure location and do not include it in your application code
+- For enhanced security, it is recommended to use code obfuscation in release builds
+- The RSA mechanism provides reliable protection against license content modification
+- For special security requirements, consider additional server-side license verification
 
-## Лицензия
+## Complete Example
+
+Check out the complete example of library usage in [example/rsa_license_demo.dart](https://github.com/nogipx/licensify/blob/main/example/rsa_license_demo.dart).
+
+## License
 
 ```
 SPDX-FileCopyrightText: 2025 Karim "nogipx" Mamatkazin <nogipx@gmail.com>
 SPDX-License-Identifier: LGPL-3.0-or-later
 ```
 
-Этот пакет распространяется под лицензией LGPL-3.0. Подробности в файле LICENSE.
+This package is distributed under the LGPL-3.0 license. Details in the LICENSE file.
 
 ---
 
-Создано с ❤️ by nogipx
+Created with ❤️ by nogipx

@@ -13,7 +13,6 @@ dependencies:
   uuid: ^4.5.1
   crypto: ^3.0.6
   freezed_annotation: ^2.4.4
-  rsa_encrypt: ^2.0.0
   pointycastle: ^3.9.1
   basic_utils: ^5.7.0
 

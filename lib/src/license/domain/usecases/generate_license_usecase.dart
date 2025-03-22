@@ -10,15 +10,28 @@ import 'package:licensify/licensify.dart';
 import 'package:pointycastle/export.dart';
 import 'package:uuid/uuid.dart';
 
-/// Сценарий использования для генерации лицензии
+/// Use case for generating a new license
+///
+/// This class is responsible for creating cryptographically signed licenses.
+/// It should only be used on the license issuer side, not in the client application.
 class GenerateLicenseUseCase {
-  /// Приватный ключ для подписи лицензии
+  /// Private key for signing licenses
   final String _privateKey;
 
-  /// Конструктор
+  /// Creates a new license generator with the specified RSA private key
+  ///
+  /// The private key must be in PEM format
   const GenerateLicenseUseCase({required String privateKey}) : _privateKey = privateKey;
 
-  /// Генерирует новую лицензию
+  /// Generates a new license with RSA signature
+  ///
+  /// [appId] - Unique identifier of the application this license is for
+  /// [expirationDate] - Date when the license expires
+  /// [type] - License type (trial, standard, pro)
+  /// [features] - Custom features map that can contain any application-specific parameters
+  /// [metadata] - Optional metadata for the license (e.g., customer info)
+  ///
+  /// Returns a cryptographically signed License object
   License generateLicense({
     required String appId,
     required DateTime expirationDate,
@@ -28,21 +41,21 @@ class GenerateLicenseUseCase {
   }) {
     final id = const Uuid().v4();
 
-    // Округляем время создания до минут
+    // Round creation time to minutes for consistency
     final createdAt = DateTime.now().toUtc().roundToMinutes();
 
-    // Преобразуем дату истечения в UTC и округляем до минут
+    // Convert expiration date to UTC and round to minutes
     final utcExpirationDate = expirationDate.roundToMinutes();
 
-    // Cериализуем features и metadata для подписи
+    // Serialize features and metadata for signing
     final featuresJson = jsonEncode(features);
     final metadataJson = metadata != null ? jsonEncode(metadata) : '';
 
-    // Формируем данные для подписи (включая все поля)
+    // Form data string for signing (including all fields)
     final dataToSign =
         '$id:$appId:${utcExpirationDate.toIso8601String()}:${type.name}:$featuresJson:$metadataJson';
 
-    // Создаем RSA подпись с приватным ключом
+    // Create RSA signature with the private key
     final privateKey = CryptoUtils.rsaPrivateKeyFromPem(_privateKey);
     final signer = RSASigner(SHA512Digest(), '0609608648016503040203');
     signer.init(true, PrivateKeyParameter<RSAPrivateKey>(privateKey));
@@ -50,7 +63,7 @@ class GenerateLicenseUseCase {
     final signatureBytes = signer.generateSignature(Uint8List.fromList(utf8.encode(dataToSign)));
     final signature = base64Encode(signatureBytes.bytes);
 
-    // Создаем лицензию
+    // Create the license
     return License(
       id: id,
       appId: appId,

@@ -4,26 +4,30 @@
 
 import 'license.dart';
 
-/// Базовый класс статуса лицензии
+/// Base class for license status
+///
+/// Provides a common interface for all possible license states.
+/// Applications should check the status type to determine how to proceed.
 abstract class LicenseStatus {
   const LicenseStatus();
 
-  /// Возвращает true, если лицензия активна
+  /// Returns true if the license is active and valid
   bool get isActive => this is ActiveLicenseStatus;
 
-  /// Возвращает true, если лицензия истекла
+  /// Returns true if the license has expired
   bool get isExpired => this is ExpiredLicenseStatus;
 
-  /// Возвращает true, если нет лицензии
+  /// Returns true if no license is installed
   bool get isNoLicense => this is NoLicenseStatus;
 
-  /// Возвращает true, если лицензия недействительна
+  /// Returns true if the license is invalid (e.g., tampered with)
   bool get isInvalid => this is InvalidLicenseStatus;
 
-  /// Возвращает true, если произошла ошибка
+  /// Returns true if an error occurred during license validation
   bool get isError => this is ErrorLicenseStatus;
 
-  /// Возвращает лицензию, если она есть
+  /// Returns the license object if available (for Active or Expired status)
+  /// Returns null for other status types
   License? get license =>
       this is ActiveLicenseStatus
           ? (this as ActiveLicenseStatus).license
@@ -32,34 +36,48 @@ abstract class LicenseStatus {
           : null;
 }
 
-/// Нет лицензии
+/// Status indicating no license is installed
 class NoLicenseStatus extends LicenseStatus {
   const NoLicenseStatus();
 }
 
-/// Лицензия активна
+/// Status indicating the license is valid and active
 class ActiveLicenseStatus extends LicenseStatus {
+  /// The active license object
   @override
   final License license;
+
+  /// Creates an active license status with the specified license
   const ActiveLicenseStatus(this.license);
 }
 
-/// Лицензия истекла
+/// Status indicating the license has expired
 class ExpiredLicenseStatus extends LicenseStatus {
+  /// The expired license object
   @override
   final License license;
+
+  /// Creates an expired license status with the specified license
   const ExpiredLicenseStatus(this.license);
 }
 
-/// Лицензия недействительна
+/// Status indicating the license is invalid (tampered with or incorrect)
 class InvalidLicenseStatus extends LicenseStatus {
+  /// Optional message describing why the license is invalid
   final String? message;
+
+  /// Creates an invalid license status with an optional error message
   const InvalidLicenseStatus({this.message});
 }
 
-/// Ошибка при проверке лицензии
+/// Status indicating an error occurred during license checking
 class ErrorLicenseStatus extends LicenseStatus {
+  /// Error message describing what went wrong
   final String message;
+
+  /// The exception that caused the error, if available
   final Object? exception;
+
+  /// Creates an error license status with the specified error details
   const ErrorLicenseStatus({required this.message, this.exception});
 }

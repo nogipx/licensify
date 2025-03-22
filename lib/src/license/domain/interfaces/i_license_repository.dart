@@ -6,20 +6,39 @@ import 'dart:typed_data';
 
 import 'package:licensify/licensify.dart';
 
-/// Интерфейс репозитория для работы с лицензиями
+/// Repository interface for license operations
+///
+/// This interface defines methods for license storage, retrieval, and management.
+/// Implementations handle the persistence and loading of license data.
 abstract class ILicenseRepository {
-  /// Получает текущую лицензию
+  /// Retrieves the currently installed license
+  ///
+  /// Returns the active license or null if no license is installed
   Future<License?> getCurrentLicense();
 
-  /// Сохраняет лицензию
+  /// Saves a license to storage
+  ///
+  /// [license] - The license object to save
+  ///
+  /// Returns true if the operation was successful, false otherwise
   Future<bool> saveLicense(License license);
 
-  /// Сохраняет лицензию из бинарных данных
+  /// Saves a license from raw binary data
+  ///
+  /// [licenseData] - The raw license file data as bytes
+  ///
+  /// Returns true if the operation was successful, false otherwise
   Future<bool> saveLicenseFromBytes(Uint8List licenseData);
 
-  /// Сохраняет лицензию из файла
+  /// Saves a license from a file
+  ///
+  /// [filePath] - Path to the license file
+  ///
+  /// Returns true if the operation was successful, false otherwise
   Future<bool> saveLicenseFromFile(String filePath);
 
-  /// Удаляет текущую лицензию
+  /// Removes the current license from storage
+  ///
+  /// Returns true if the operation was successful, false otherwise
   Future<bool> removeLicense();
 }

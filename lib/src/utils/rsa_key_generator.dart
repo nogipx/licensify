@@ -8,14 +8,18 @@ import 'dart:typed_data';
 import 'package:basic_utils/basic_utils.dart';
 import 'package:pointycastle/export.dart';
 
-/// Утилита для генерации пары RSA ключей
+/// Utility for generating RSA key pairs
 class RsaKeyGenerator {
-  /// Генерирует пару RSA ключей с заданным размером
+  /// Generates an RSA key pair with the specified bit length
+  ///
+  /// [bitLength] - The length of the key in bits (default: 2048)
+  ///
+  /// Returns an asymmetric key pair containing RSA public and private keys
   static AsymmetricKeyPair<RSAPublicKey, RSAPrivateKey> generateKeyPair({int bitLength = 2048}) {
     final keyGen = KeyGenerator('RSA');
     final secureRandom = SecureRandom('Fortuna');
 
-    // Инициализируем генератор случайных чисел
+    // Initialize random number generator
     final seedSource = Random.secure();
     final seeds = <int>[];
     for (var i = 0; i < 32; i++) {
@@ -23,11 +27,11 @@ class RsaKeyGenerator {
     }
     secureRandom.seed(KeyParameter(Uint8List.fromList(seeds)));
 
-    // Параметры для генерации ключей
+    // Parameters for key generation
     final rsaParams = RSAKeyGeneratorParameters(BigInt.from(65537), bitLength, 64);
     final params = ParametersWithRandom(rsaParams, secureRandom);
 
-    // Генерируем ключи
+    // Generate keys
     keyGen.init(params);
     final keyPair = keyGen.generateKeyPair();
 
@@ -37,11 +41,15 @@ class RsaKeyGenerator {
     return AsymmetricKeyPair<RSAPublicKey, RSAPrivateKey>(publicKey, privateKey);
   }
 
-  /// Возвращает пару ключей в формате PEM
+  /// Returns a pair of keys in PEM format
+  ///
+  /// [bitLength] - The length of the key in bits (default: 2048)
+  ///
+  /// Returns a record containing public and private keys as PEM strings
   static ({String publicKey, String privateKey}) generateKeyPairAsPem({int bitLength = 2048}) {
     final keyPair = generateKeyPair(bitLength: bitLength);
 
-    // Конвертируем ключи в формат PEM
+    // Convert keys to PEM format
     final publicKeyPem = CryptoUtils.encodeRSAPublicKeyToPem(keyPair.publicKey);
     final privateKeyPem = CryptoUtils.encodeRSAPrivateKeyToPem(keyPair.privateKey);
 

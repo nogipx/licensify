@@ -5,15 +5,15 @@
 import 'dart:typed_data';
 import 'package:licensify/licensify.dart';
 
-/// Реализация хранилища лицензий в памяти (для тестирования или специфических сценариев)
+/// In-memory implementation of license storage (for testing or specific scenarios)
 class InMemoryLicenseStorage implements ILicenseStorage {
-  /// Данные лицензии, хранимые в памяти
+  /// License data stored in memory
   Uint8List? _licenseData;
 
-  /// Создаёт пустое хранилище в памяти
+  /// Creates an empty in-memory storage
   InMemoryLicenseStorage();
 
-  /// Создаёт хранилище с предварительно загруженными данными
+  /// Creates storage with pre-loaded data
   InMemoryLicenseStorage.withData(this._licenseData);
 
   @override
@@ -46,11 +46,11 @@ class InMemoryLicenseStorage implements ILicenseStorage {
     }
   }
 
-  /// Очищает данные хранилища
+  /// Clears storage data
   void clear() {
     _licenseData = null;
   }
 
-  /// Возвращает текущий размер данных лицензии в байтах или 0, если лицензия отсутствует
+  /// Returns the current size of license data in bytes or 0 if license is absent
   int get dataSize => _licenseData?.length ?? 0;
 }

@@ -7,19 +7,19 @@ import 'dart:typed_data';
 
 import 'package:licensify/licensify.dart';
 
-/// Реализация хранилища лицензий с использованием файловой системы
+/// File-based implementation of license storage
 class FileLicenseStorage implements ILicenseStorage {
   final ILicenseDirectoryProvider _directoryProvider;
   final String _licenseFileName;
 
-  /// Конструктор
+  /// Constructor
   const FileLicenseStorage({
     required ILicenseDirectoryProvider directoryProvider,
     required String licenseFileName,
   }) : _directoryProvider = directoryProvider,
        _licenseFileName = licenseFileName;
 
-  /// Получает путь к файлу лицензии
+  /// Gets the license file path
   Future<String> _getLicenseFilePath() async {
     final licenseDirPath = await _directoryProvider.getLicenseDirectoryPath();
     return '$licenseDirPath/$_licenseFileName';
