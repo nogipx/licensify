@@ -18,7 +18,7 @@ void main() {
     setUp(() {
       storage = InMemoryLicenseStorage();
       sut = LicenseRepository(storage: storage);
-      licenseGenerator = GenerateLicenseUseCase(privateKey: TestConstants.privateKey);
+      licenseGenerator = GenerateLicenseUseCase(privateKey: TestConstants.testPrivateKey);
     });
 
     test('возвращает_null_если_лицензия_отсутствует', () async {
@@ -34,7 +34,7 @@ void main() {
     test('загружает_валидную_лицензию_из_хранилища', () async {
       // Arrange
       final license = licenseGenerator.generateLicense(
-        appId: TestConstants.appId,
+        appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
       );
       final licenseData = license.bytes;
@@ -57,7 +57,7 @@ void main() {
       await storage.saveLicenseData(
         licenseGenerator
             .generateLicense(
-              appId: TestConstants.appId,
+              appId: TestConstants.testAppId,
               expirationDate: DateTime.now().add(Duration(days: 30)),
             )
             .bytes,
@@ -75,7 +75,7 @@ void main() {
     test('успешно_сохраняет_лицензию', () async {
       // Arrange
       final license = licenseGenerator.generateLicense(
-        appId: TestConstants.appId,
+        appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
       );
 
@@ -94,7 +94,7 @@ void main() {
     test('сохраняет_лицензию_из_массива_байтов', () async {
       // Arrange
       final license = licenseGenerator.generateLicense(
-        appId: TestConstants.appId,
+        appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
       );
       final licenseData = license.bytes;
@@ -118,7 +118,7 @@ void main() {
 
       // Создаем лицензию и записываем ее в файл
       final license = licenseGenerator.generateLicense(
-        appId: TestConstants.appId,
+        appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
       );
       final licenseData = license.bytes;
@@ -153,7 +153,7 @@ void main() {
     test('успешно_удаляет_существующую_лицензию', () async {
       // Arrange - сохраняем лицензию, чтобы было что удалять
       final license = licenseGenerator.generateLicense(
-        appId: TestConstants.appId,
+        appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
       );
       await sut.saveLicense(license);

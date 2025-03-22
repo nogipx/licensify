@@ -12,11 +12,13 @@ void main() {
   group('LicenseValidator', () {
     test('подтверждает_корректную_подпись_лицензии', () {
       // Arrange
-      final sut = LicenseValidator(publicKey: TestConstants.publicKey);
+      final sut = LicenseValidator(publicKey: TestConstants.testPublicKey);
 
       // Сначала создаем валидную лицензию с GenerateLicenseUseCase для проверки
-      final license = GenerateLicenseUseCase(privateKey: TestConstants.privateKey).generateLicense(
-        appId: TestConstants.appId,
+      final license = GenerateLicenseUseCase(
+        privateKey: TestConstants.testPrivateKey,
+      ).generateLicense(
+        appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
         type: LicenseType.trial,
       );
@@ -30,12 +32,12 @@ void main() {
 
     test('отклоняет_лицензию_с_неверной_подписью', () {
       // Arrange
-      final sut = LicenseValidator(publicKey: TestConstants.publicKey);
+      final sut = LicenseValidator(publicKey: TestConstants.testPublicKey);
 
       // Создаем лицензию с заведомо неверной подписью в формате base64
       final license = License(
         id: 'test-id',
-        appId: TestConstants.appId,
+        appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
         createdAt: DateTime.now(),
         signature: base64Encode(utf8.encode('invalid_signature')), // Корректный base64 формат
@@ -55,12 +57,12 @@ void main() {
 
       // Создаем лицензию с одним ключом
       final license = GenerateLicenseUseCase(privateKey: differentKeys.privateKey).generateLicense(
-        appId: TestConstants.appId,
+        appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
       );
 
       // Пытаемся проверить другим ключом
-      final sut = LicenseValidator(publicKey: TestConstants.publicKey);
+      final sut = LicenseValidator(publicKey: TestConstants.testPublicKey);
 
       // Act
       final result = sut.validateSignature(license);
@@ -71,9 +73,11 @@ void main() {
 
     test('подтверждает_действие_непросроченной_лицензии', () {
       // Arrange
-      final sut = LicenseValidator(publicKey: TestConstants.publicKey);
-      final license = GenerateLicenseUseCase(privateKey: TestConstants.privateKey).generateLicense(
-        appId: TestConstants.appId,
+      final sut = LicenseValidator(publicKey: TestConstants.testPublicKey);
+      final license = GenerateLicenseUseCase(
+        privateKey: TestConstants.testPrivateKey,
+      ).generateLicense(
+        appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
       );
 
@@ -86,13 +90,13 @@ void main() {
 
     test('отклоняет_просроченную_лицензию', () {
       // Arrange
-      final sut = LicenseValidator(publicKey: TestConstants.publicKey);
+      final sut = LicenseValidator(publicKey: TestConstants.testPublicKey);
 
       // Создаем просроченную лицензию
       final expiredDate = DateTime.now().subtract(Duration(days: 1));
       final license = GenerateLicenseUseCase(
-        privateKey: TestConstants.privateKey,
-      ).generateLicense(appId: TestConstants.appId, expirationDate: expiredDate);
+        privateKey: TestConstants.testPrivateKey,
+      ).generateLicense(appId: TestConstants.testAppId, expirationDate: expiredDate);
 
       // Act
       final result = sut.validateExpiration(license);
@@ -103,9 +107,11 @@ void main() {
 
     test('подтверждает_полностью_валидную_лицензию', () {
       // Arrange
-      final sut = LicenseValidator(publicKey: TestConstants.publicKey);
-      final license = GenerateLicenseUseCase(privateKey: TestConstants.privateKey).generateLicense(
-        appId: TestConstants.appId,
+      final sut = LicenseValidator(publicKey: TestConstants.testPublicKey);
+      final license = GenerateLicenseUseCase(
+        privateKey: TestConstants.testPrivateKey,
+      ).generateLicense(
+        appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
       );
 
@@ -118,13 +124,13 @@ void main() {
 
     test('отклоняет_лицензию_с_валидной_подписью_но_просроченную', () {
       // Arrange
-      final sut = LicenseValidator(publicKey: TestConstants.publicKey);
+      final sut = LicenseValidator(publicKey: TestConstants.testPublicKey);
 
       // Создаем просроченную лицензию с валидной подписью
       final expiredDate = DateTime.now().subtract(Duration(days: 1));
       final license = GenerateLicenseUseCase(
-        privateKey: TestConstants.privateKey,
-      ).generateLicense(appId: TestConstants.appId, expirationDate: expiredDate);
+        privateKey: TestConstants.testPrivateKey,
+      ).generateLicense(appId: TestConstants.testAppId, expirationDate: expiredDate);
 
       // Act
       final result = sut.validateLicense(license);
@@ -135,12 +141,12 @@ void main() {
 
     test('отклоняет_лицензию_с_неверной_подписью_но_действующим_сроком', () {
       // Arrange
-      final sut = LicenseValidator(publicKey: TestConstants.publicKey);
+      final sut = LicenseValidator(publicKey: TestConstants.testPublicKey);
 
       // Создаем лицензию с заведомо неверной подписью в формате base64
       final license = License(
         id: 'test-id',
-        appId: TestConstants.appId,
+        appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
         createdAt: DateTime.now(),
         signature: base64Encode(utf8.encode('invalid_signature')), // Корректный base64 формат
@@ -156,11 +162,13 @@ void main() {
 
     test('микросекунды_и_секунды_не_влияют_на_валидацию_подписи', () {
       // Arrange
-      final sut = LicenseValidator(publicKey: TestConstants.publicKey);
+      final sut = LicenseValidator(publicKey: TestConstants.testPublicKey);
 
       // Создаем лицензию
-      final license = GenerateLicenseUseCase(privateKey: TestConstants.privateKey).generateLicense(
-        appId: TestConstants.appId,
+      final license = GenerateLicenseUseCase(
+        privateKey: TestConstants.testPrivateKey,
+      ).generateLicense(
+        appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
       );
 

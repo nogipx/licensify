@@ -20,7 +20,7 @@ void main() {
     }) {
       return License(
         id: id ?? 'test-license-id',
-        appId: appId ?? TestConstants.appId,
+        appId: appId ?? TestConstants.testAppId,
         expirationDate:
             expirationDate ??
             DateTime.now().add(Duration(days: TestConstants.defaultLicenseDuration)).toUtc(),

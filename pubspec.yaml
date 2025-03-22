@@ -30,3 +30,5 @@ topics:
   - validation
   - cryptography
 
+false_secrets:
+  - /test/license/helpers/test_constants.dart

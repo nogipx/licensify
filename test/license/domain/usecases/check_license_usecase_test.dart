@@ -19,7 +19,7 @@ void main() {
     setUp(() {
       storage = InMemoryLicenseStorage();
       repository = LicenseRepository(storage: storage);
-      validator = LicenseValidator(publicKey: TestConstants.publicKey);
+      validator = LicenseValidator(publicKey: TestConstants.testPublicKey);
       sut = CheckLicenseUseCase(repository: repository, validator: validator);
     });
 
@@ -37,7 +37,7 @@ void main() {
       // Arrange - создаем лицензию с неверной подписью
       final license = License(
         id: 'test-id',
-        appId: TestConstants.appId,
+        appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
         createdAt: DateTime.now(),
         signature: base64Encode(utf8.encode('invalid_signature')),
@@ -56,8 +56,8 @@ void main() {
       // Arrange - создаем просроченную лицензию с валидной подписью
       final expiredDate = DateTime.now().subtract(Duration(days: 1));
       final expiredLicense = GenerateLicenseUseCase(
-        privateKey: TestConstants.privateKey,
-      ).generateLicense(appId: TestConstants.appId, expirationDate: expiredDate);
+        privateKey: TestConstants.testPrivateKey,
+      ).generateLicense(appId: TestConstants.testAppId, expirationDate: expiredDate);
       await repository.saveLicense(expiredLicense);
 
       // Act
@@ -71,9 +71,9 @@ void main() {
     test('определяет_действующую_лицензию', () async {
       // Arrange - создаем действующую лицензию с валидной подписью
       final validLicense = GenerateLicenseUseCase(
-        privateKey: TestConstants.privateKey,
+        privateKey: TestConstants.testPrivateKey,
       ).generateLicense(
-        appId: TestConstants.appId,
+        appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
       );
       await repository.saveLicense(validLicense);
@@ -101,9 +101,9 @@ void main() {
     test('удаляет_лицензию_успешно', () async {
       // Arrange
       final validLicense = GenerateLicenseUseCase(
-        privateKey: TestConstants.privateKey,
+        privateKey: TestConstants.testPrivateKey,
       ).generateLicense(
-        appId: TestConstants.appId,
+        appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
       );
       await repository.saveLicense(validLicense);

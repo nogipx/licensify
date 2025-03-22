@@ -12,7 +12,7 @@ void main() {
   group('GenerateLicenseUseCase', () {
     test('создает_валидную_лицензию_с_заданными_параметрами', () {
       // Arrange
-      final sut = GenerateLicenseUseCase(privateKey: TestConstants.privateKey);
+      final sut = GenerateLicenseUseCase(privateKey: TestConstants.testPrivateKey);
       final expirationDate =
           DateTime.now()
               .add(Duration(days: TestConstants.defaultLicenseDuration))
@@ -22,7 +22,7 @@ void main() {
 
       // Act
       final license = sut.generateLicense(
-        appId: TestConstants.appId,
+        appId: TestConstants.testAppId,
         expirationDate: expirationDate,
         type: LicenseType.pro,
         features: features,
@@ -30,7 +30,7 @@ void main() {
 
       // Assert
       expect(license.id, isNotEmpty);
-      expect(license.appId, equals(TestConstants.appId));
+      expect(license.appId, equals(TestConstants.testAppId));
       expect(license.expirationDate, equals(expirationDate));
       expect(license.type, equals(LicenseType.pro));
       expect(license.features, equals(features));
@@ -40,7 +40,7 @@ void main() {
 
     test('создает_действительную_подпись_RSA', () {
       // Arrange
-      final sut = GenerateLicenseUseCase(privateKey: TestConstants.privateKey);
+      final sut = GenerateLicenseUseCase(privateKey: TestConstants.testPrivateKey);
       final expirationDate =
           DateTime.now()
               .add(Duration(days: TestConstants.defaultLicenseDuration))
@@ -49,12 +49,12 @@ void main() {
 
       // Act
       final license = sut.generateLicense(
-        appId: TestConstants.appId,
+        appId: TestConstants.testAppId,
         expirationDate: expirationDate,
       );
 
       // Verify the signature using the validator
-      final validator = LicenseValidator(publicKey: TestConstants.publicKey);
+      final validator = LicenseValidator(publicKey: TestConstants.testPublicKey);
       final isValid = validator.validateSignature(license);
 
       // Assert
@@ -63,7 +63,7 @@ void main() {
 
     test('подпись_валидна_только_для_правильной_пары_ключей', () {
       // Arrange
-      final sut = GenerateLicenseUseCase(privateKey: TestConstants.privateKey);
+      final sut = GenerateLicenseUseCase(privateKey: TestConstants.testPrivateKey);
       final expirationDate =
           DateTime.now()
               .add(Duration(days: TestConstants.defaultLicenseDuration))
@@ -75,7 +75,7 @@ void main() {
 
       // Act
       final license = sut.generateLicense(
-        appId: TestConstants.appId,
+        appId: TestConstants.testAppId,
         expirationDate: expirationDate,
       );
 
@@ -84,7 +84,7 @@ void main() {
       final isValidWithWrongKey = wrongValidator.validateSignature(license);
 
       // Verify with correct public key
-      final correctValidator = LicenseValidator(publicKey: TestConstants.publicKey);
+      final correctValidator = LicenseValidator(publicKey: TestConstants.testPublicKey);
       final isValidWithCorrectKey = correctValidator.validateSignature(license);
 
       // Assert
@@ -102,11 +102,11 @@ void main() {
 
     test('по_умолчанию_создает_пробную_лицензию', () {
       // Arrange
-      final sut = GenerateLicenseUseCase(privateKey: TestConstants.privateKey);
+      final sut = GenerateLicenseUseCase(privateKey: TestConstants.testPrivateKey);
 
       // Act
       final license = sut.generateLicense(
-        appId: TestConstants.appId,
+        appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(Duration(days: TestConstants.defaultLicenseDuration)),
       );
 
@@ -116,9 +116,9 @@ void main() {
 
     test('сериализует_лицензию_в_бинарный_формат_с_заголовком', () {
       // Arrange
-      final sut = GenerateLicenseUseCase(privateKey: TestConstants.privateKey);
+      final sut = GenerateLicenseUseCase(privateKey: TestConstants.testPrivateKey);
       final license = sut.generateLicense(
-        appId: TestConstants.appId,
+        appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(Duration(days: TestConstants.defaultLicenseDuration)),
         type: LicenseType.standard,
         features: {'maxUsers': 5},
