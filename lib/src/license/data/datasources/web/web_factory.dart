@@ -2,6 +2,5 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-// Core entities
-export 'src/license/_index.dart';
-export 'src/utils/_index.dart';
+// Direct import of the WASM implementation
+export 'web_wasm_factory.dart';

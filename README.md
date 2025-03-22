@@ -167,18 +167,84 @@ final storage = FileLicenseStorage(
 final repository = LicenseRepository(storage: storage);
 ```
 
-#### In-Memory Storage
+#### In-Memory Storage (for testing)
 
 ```dart
-// Empty in-memory storage
 final storage = InMemoryLicenseStorage();
-
-// Or storage with pre-loaded data
-final licenseData = Uint8List.fromList([/* license data */]);
-final storage = InMemoryLicenseStorage.withData(licenseData);
-
 final repository = LicenseRepository(storage: storage);
 ```
+
+### Web Platform Support
+
+Licensify supports web platforms, including WebAssembly (WASM). The library automatically detects the platform and uses the appropriate implementation.
+
+#### Web Storage (for browser applications)
+
+```dart
+// Create a web-compatible storage
+final storage = WebStorageFactory.createWebStorage();
+final repository = LicenseRepository(storage: storage);
+```
+
+This storage implementation:
+- Uses browser's localStorage on JavaScript (dart2js) builds
+- Uses browser APIs with dart:js_interop on WebAssembly (dart2wasm) builds 
+- Falls back to in-memory storage if web storage is not available
+
+#### Custom Storage Key
+
+You can customize the key used for storing license data in the browser:
+
+```dart
+final storage = WebStorageFactory.createWebStorage(
+  storageKey: 'my_app_license',
+);
+```
+
+### Monitoring License Status
+
+```dart
+final licenseMonitor = MonitorLicenseUseCase(
+  repository: repository,
+  validator: validator,
+);
+
+// Start monitoring with automatic checks every 24 hours
+licenseMonitor.startMonitoring(
+  // This callback will be called whenever the license status changes
+  onStatusChanged: (status) {
+    if (status.isActive) {
+      showActiveUI();
+    } else if (status.isExpired) {
+      showExpiredUI();
+    } else {
+      showUnlicensedUI();
+    }
+  }
+);
+
+// Stop monitoring
+licenseMonitor.stopMonitoring();
+```
+
+## Web Support
+
+Licensify now supports web applications through WebAssembly! You can use the library in your Flutter web projects:
+
+```dart
+// Create web-specific storage for WASM platform
+final storage = WebStorageFactory.createStorage(
+  storageKey: 'myapp_license_key',
+);
+
+// Use the storage with your repository
+final repository = LicenseRepository(storage: storage);
+
+// Then use repository as normal
+final licenseManager = CheckLicenseUseCase(repository: repository);
+```
+
+The web implementation uses the browser's LocalStorage API for persistent license storage.
 
 ## Architecture
 
