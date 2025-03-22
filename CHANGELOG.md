@@ -1,3 +1,6 @@
+## 1.4.0 - 2024-07-31
+- Remove redutant dependencies
+
 ## 1.3.1 - 2024-07-31
 - Added pre-commit hook for automatic code formatting
 - Configured formatting compatibility with pub.dev requirements (80 characters)
