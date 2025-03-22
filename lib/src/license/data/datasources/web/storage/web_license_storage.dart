@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
+import 'dart:js_interop';
 
 import 'package:licensify/licensify.dart';
 import '../interop/js_interop.dart' as wasm_interop;
@@ -52,7 +53,7 @@ class WebLicenseStorage implements ILicenseStorage {
   }
 
   /// Get localStorage object
-  dynamic get _localStorage {
+  wasm_interop.JSStorage? get _localStorage {
     try {
       // Check if JS interop is provided
       if (_jsInterop == null) {
@@ -61,7 +62,7 @@ class WebLicenseStorage implements ILicenseStorage {
 
       // Access localStorage through the provided interop
       final window = _jsInterop.window;
-      return window?.localStorage;
+      return window.localStorage;
     } catch (e) {
       return null;
     }
@@ -80,7 +81,10 @@ class WebLicenseStorage implements ILicenseStorage {
 
         // Store in localStorage
         final localStorage = _localStorage;
-        localStorage.setItem(_storageKey, base64Data);
+        if (localStorage == null) return false;
+
+        // Use JS interoperability to set item
+        localStorage.setItem(_storageKey.toJS, base64Data.toJS);
         return true;
       } catch (e) {
         return false;
@@ -98,7 +102,11 @@ class WebLicenseStorage implements ILicenseStorage {
       try {
         // Get from localStorage
         final localStorage = _localStorage;
-        final base64Data = localStorage.getItem(_storageKey);
+        if (localStorage == null) return null;
+
+        // Use JS interoperability to get item
+        final jsResult = localStorage.getItem(_storageKey.toJS);
+        final base64Data = jsResult?.toDart;
 
         if (base64Data == null || base64Data.isEmpty) {
           return null;
@@ -122,7 +130,10 @@ class WebLicenseStorage implements ILicenseStorage {
       try {
         // Check if key exists in localStorage
         final localStorage = _localStorage;
-        final data = localStorage.getItem(_storageKey);
+        if (localStorage == null) return false;
+
+        final jsResult = localStorage.getItem(_storageKey.toJS);
+        final data = jsResult?.toDart;
         return data != null && data.isNotEmpty;
       } catch (e) {
         return false;
@@ -140,7 +151,10 @@ class WebLicenseStorage implements ILicenseStorage {
       try {
         // Remove from localStorage
         final localStorage = _localStorage;
-        localStorage.removeItem(_storageKey);
+        if (localStorage == null) return false;
+
+        // Use JS interoperability to remove item
+        localStorage.removeItem(_storageKey.toJS);
         return true;
       } catch (e) {
         return false;

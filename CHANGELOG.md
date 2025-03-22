@@ -2,6 +2,13 @@
 
 All notable changes to the Licensify package will be documented in this file.
 
+## 1.2.1 - 2024-07-29
+
+### Improved
+- Refactored JS interop to be fully WASM-compatible using dart:js_interop
+- Updated localStorage implementation to use modern WASM-compliant APIs
+- Enhanced web platform support with proper WASM compatibility
+
 ## 1.2.0 - 2024-03-22
 
 ### Added
