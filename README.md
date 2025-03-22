@@ -2,271 +2,136 @@
 
 Advanced licensing solution for Flutter/Dart applications with robust protection and flexible options.
 
-## Description
+## Features
 
-`licensify` is a lightweight yet powerful library for implementing a licensing system in your Flutter and Dart applications. The library provides a secure mechanism for license verification using cryptographic signatures and a flexible system for configuring license types.
-
-### Key Features
-
-- 🔒 **Robust Protection**: Using RSA for license authenticity verification
-- 🕒 **Expiration Management**: Automatic verification of license expiration dates
-- 🔄 **Multiple License Types**: Support for standard predefined and custom license types
-- 📋 **Extensible Data**: Ability to add custom parameters to licenses
-- 💾 **Flexible Storage**: Support for file storage and in-memory storage
-- 📲 **Simple Implementation**: Easy integration into any Dart/Flutter application
+- 🔒 **RSA Verification**: Secure cryptographic signatures
+- 🕒 **Expiration Dates**: Automatic expiration verification
+- 🔄 **Custom License Types**: Standard and custom license types
+- 📋 **Flexible Features**: Add custom parameters and metadata
+- 💾 **Multiple Storages**: File, memory, and web storage options
+- 📲 **Cross-Platform**: Works on mobile, desktop, and web (WASM)
 
 ## Installation
 
-Add `licensify` to your `pubspec.yaml`:
-
 ```yaml
 dependencies:
-  licensify: ^1.0.0
+  licensify: ^1.1.0
 ```
 
-And run:
+## Quick Start
 
-```bash
-dart pub get
-```
-
-For Flutter projects:
-
-```bash
-flutter pub get
-```
-
-## Usage
-
-### Key Generation
+### Generate License Keys
 
 ```dart
-import 'package:licensify/licensify.dart';
-
-// Generate RSA keys (store in a secure place!)
+// Generate RSA keys (do this once, store private key securely!)
 final keys = RsaKeyGenerator.generateKeyPairAsPem(bitLength: 2048);
-
-print('Public Key:');
-print(keys.publicKey);
-
-print('Private Key:');
-print(keys.privateKey);
 ```
 
-### Generating a New License
+### Create & Distribute Licenses
 
 ```dart
-import 'package:licensify/licensify.dart';
-
-// Create a license generator with private key
+// Generate a license for a customer
 final generator = GenerateLicenseUseCase(privateKey: yourPrivateKey);
-
-// Generate a new license with a standard type
 final license = generator.generateLicense(
   appId: 'com.your.app',
-  expirationDate: DateTime.now().add(const Duration(days: 30)),
-  type: LicenseType.pro,
-  features: {'maxUsers': 10, 'canExport': true},
+  expirationDate: DateTime.now().add(const Duration(days: 365)),
+  type: LicenseType.pro,  // Or custom: LicenseType('enterprise')
+  features: {'maxUsers': 10, 'modules': ['reporting', 'export']},
 );
 
-// Export to bytes for saving to a file
+// Export license to file or bytes for distribution
 final licenseBytes = generator.licenseToBytes(license);
 ```
 
-### Custom License Types
-
-Licensify allows you to define your own license types beyond the standard ones:
+### Verify Licenses in Your App
 
 ```dart
-// Define custom license types
-final enterpriseType = LicenseType('enterprise');
-final educationType = LicenseType('education');
-final lifetimeType = LicenseType('lifetime');
-
-// Use custom type when generating a license
-final enterpriseLicense = generator.generateLicense(
-  appId: 'com.your.app',
-  expirationDate: DateTime.now().add(const Duration(days: 365)),
-  type: enterpriseType,
-  features: {'maxUsers': 100, 'priority': 'high', 'supportLevel': 'premium'},
+// Setup (do once at app startup)
+final storage = FileLicenseStorage(
+  directoryProvider: DefaultLicenseDirectoryProvider(),
+  licenseFileName: 'license.dat',
 );
-```
-
-The predefined types (`LicenseType.trial`, `LicenseType.standard`, and `LicenseType.pro`) are available for common scenarios, but you can create any custom type that fits your business model.
-
-### License Verification
-
-```dart
-import 'package:licensify/licensify.dart';
-
-// Create repository and validator
-final storage = LicenseStorage();
 final repository = LicenseRepository(storage: storage);
-final validator = LicenseValidator(publicKey: yourPublicKey);
-
-// Create a use case for verification
+final validator = LicenseValidator(publicKey: yourPublicKey); 
 final licenseChecker = CheckLicenseUseCase(
   repository: repository,
   validator: validator,
 );
 
-// Check current license
-final licenseStatus = await licenseChecker.checkCurrentLicense();
-
-if (licenseStatus.isActive) {
-  // License is valid
-  final activeLicense = (licenseStatus as ActiveLicenseStatus).license;
-  print('License active until: ${activeLicense.expirationDate}');
-  print('Days remaining: ${activeLicense.remainingDays}');
-  
-  // Check license type
-  if (activeLicense.type == LicenseType.pro) {
+// Check license
+final status = await licenseChecker.checkCurrentLicense();
+if (status.isActive) {
+  final license = (status as ActiveLicenseStatus).license;
+  // Enable features based on license type and features
+  if (license.type == LicenseType.pro || license.type.name == 'enterprise') {
     enableProFeatures();
-  } else if (activeLicense.type.name == 'enterprise') {
-    enableEnterpriseFeatures();
   }
-} else if (licenseStatus.isExpired) {
-  // License is expired
-  print('License has expired');
-} else if (licenseStatus.isInvalid) {
-  // License is invalid
-  print('License is invalid (incorrect signature)');
-} else if (licenseStatus.isNoLicense) {
-  // No license
-  print('No license installed');
-} else if (licenseStatus.isError) {
-  // Error during verification
-  print('An error occurred during license verification');
+} else {
+  // Handle invalid/expired/missing license
 }
 ```
 
-### Saving and Loading Licenses
+## Storage Options
+
+### File Storage (Default for Mobile/Desktop)
 
 ```dart
-// Save license from file
-final success = await repository.saveLicenseFromFile('path/to/license.dat');
-
-// Save license from bytes
-final licenseBytes = readLicenseBytes(); // your function to read bytes
-final savedFromBytes = await repository.saveLicenseFromBytes(licenseBytes);
-
-// Remove license
-final removed = await repository.removeLicense();
-```
-
-### Different Storage Types
-
-#### File Storage (default)
-
-```dart
-final directoryProvider = DefaultLicenseDirectoryProvider();
 final storage = FileLicenseStorage(
-  directoryProvider: directoryProvider,
+  directoryProvider: DefaultLicenseDirectoryProvider(),
   licenseFileName: 'license.dat',
 );
-final repository = LicenseRepository(storage: storage);
 ```
 
-#### In-Memory Storage (for testing)
+### In-Memory Storage (Testing)
 
 ```dart
 final storage = InMemoryLicenseStorage();
-final repository = LicenseRepository(storage: storage);
 ```
 
-### Web Platform Support
-
-Licensify supports web platforms, including WebAssembly (WASM). The library automatically detects the platform and uses the appropriate implementation.
-
-#### Web Storage (for browser applications)
+### Web Storage (WASM)
 
 ```dart
-// Create a web-compatible storage
-final storage = WebStorageFactory.createWebStorage();
-final repository = LicenseRepository(storage: storage);
-```
-
-This storage implementation:
-- Uses browser's localStorage on JavaScript (dart2js) builds
-- Uses browser APIs with dart:js_interop on WebAssembly (dart2wasm) builds 
-- Falls back to in-memory storage if web storage is not available
-
-#### Custom Storage Key
-
-You can customize the key used for storing license data in the browser:
-
-```dart
-final storage = WebStorageFactory.createWebStorage(
-  storageKey: 'my_app_license',
+final storage = WebStorageFactory.createStorage(
+  storageKey: 'app_license',
 );
 ```
 
-### Monitoring License Status
+## License Monitoring
 
 ```dart
-final licenseMonitor = MonitorLicenseUseCase(
-  repository: repository,
-  validator: validator,
-);
+final monitor = MonitorLicenseUseCase(repository: repository, validator: validator);
 
-// Start monitoring with automatic checks every 24 hours
-licenseMonitor.startMonitoring(
-  // This callback will be called whenever the license status changes
+// Auto-check license status periodically
+monitor.startMonitoring(
   onStatusChanged: (status) {
-    if (status.isActive) {
-      showActiveUI();
-    } else if (status.isExpired) {
-      showExpiredUI();
-    } else {
-      showUnlicensedUI();
-    }
+    // Update UI based on status
   }
 );
-
-// Stop monitoring
-licenseMonitor.stopMonitoring();
 ```
 
-## Web Support
-
-Licensify now supports web applications through WebAssembly! You can use the library in your Flutter web projects:
+## Custom License Types
 
 ```dart
-// Create web-specific storage for WASM platform
-final storage = WebStorageFactory.createStorage(
-  storageKey: 'myapp_license_key',
-);
+// Define custom license types beyond standard ones
+final enterpriseType = LicenseType('enterprise');
+final educationType = LicenseType('education');
 
-// Use the storage with your repository
-final repository = LicenseRepository(storage: storage);
-
-// Then use repository as normal
-final licenseManager = CheckLicenseUseCase(repository: repository);
+// Standard types are predefined
+final trial = LicenseType.trial;
+final standard = LicenseType.standard;
+final pro = LicenseType.pro;
 ```
-
-The web implementation uses the browser's LocalStorage API for persistent license storage.
-
-## Architecture
-
-The library is built on Clean Architecture principles:
-
-- **Domain Layer**: Business logic and core entities
-  - Entities: License, LicenseStatus
-  - Repositories: ILicenseRepository
-  - UseCases: CheckLicenseUseCase, GenerateLicenseUseCase
-
-- **Data Layer**: Implementation of repositories and data sources
-  - Repositories: LicenseRepository
-  - Data Sources: 
-    - FileLicenseStorage - license storage in the file system
-    - InMemoryLicenseStorage - license storage in memory 
-  - Validators: LicenseValidator
 
 ## License Format
 
-A license in `licensify` is a secured data structure that contains all the necessary information to verify the rights to use your application.
+Licenses include:
+- Unique ID and app ID
+- Creation and expiration dates
+- License type (standard or custom)
+- Custom features and metadata
+- RSA signature for verification
 
-### License Structure
+Full JSON structure:
 
 ```json
 {
@@ -277,59 +142,30 @@ A license in `licensify` is a secured data structure that contains all the neces
   "type": "enterprise",
   "features": {
     "maxUsers": 50,
-    "canExport": true,
-    "modules": ["analytics", "reporting", "admin"]
+    "modules": ["analytics", "reporting"]
   },
   "metadata": {
-    "clientName": "Example Corp",
-    "contactEmail": "support@example.com"
+    "clientName": "Example Corp"
   },
   "signature": "Base64EncodedSignature..."
 }
 ```
 
-License fields:
-- `id` - unique license identifier
-- `appId` - unique application identifier
-- `createdAt` - license creation date in ISO 8601 format
-- `expirationDate` - expiration date in ISO 8601 format
-- `type` - license type (can be standard "trial", "standard", "pro", or any custom name)
-- `features` - additional license parameters (can be any JSON-compatible types)
-- `metadata` - license metadata (e.g., client information)
-- `signature` - RSA signature for license authenticity verification
+## Security Notes
 
-### License File Format
-
-The license is saved in a format protected against tampering using cryptographic signature:
-
-1. License data is serialized to JSON
-2. RSA signature is applied to the data using the private key
-3. Verification is performed using the public key
-
-A pair of RSA keys is used for creating and verifying licenses:
-- **Private key** - used only by the developer to create licenses
-- **Public key** - embedded in the application to verify license authenticity
-
-### Security Notes
-
-- Store the private key in a secure location and do not include it in your application code
-- For enhanced security, it is recommended to use code obfuscation in release builds
-- The RSA mechanism provides reliable protection against license content modification
-- For special security requirements, consider additional server-side license verification
+- Store private keys securely, never in your app
+- Public key is safe to embed in your application
+- Consider using code obfuscation in release builds
+- For high-security needs, add server-side verification
 
 ## Complete Example
 
-Check out the complete example of library usage in [example/rsa_license_demo.dart](https://github.com/nogipx/licensify/blob/main/example/rsa_license_demo.dart).
+See [example/rsa_license_demo.dart](https://github.com/nogipx/licensify/blob/main/example/rsa_license_demo.dart) for a complete implementation.
 
 ## License
 
 ```
-SPDX-FileCopyrightText: 2025 Karim "nogipx" Mamatkazin <nogipx@gmail.com>
 SPDX-License-Identifier: LGPL-3.0-or-later
 ```
 
-This package is distributed under the LGPL-3.0 license. Details in the LICENSE file.
-
----
-
-Created with ❤️ by nogipx
+Created by Karim "nogipx" Mamatkazin
