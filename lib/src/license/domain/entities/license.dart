@@ -6,16 +6,41 @@ import 'dart:typed_data';
 
 import 'package:licensify/licensify.dart';
 
-/// License types supported by the system
-enum LicenseType {
+/// License type representation
+///
+/// This class allows both using predefined license types and
+/// creating custom types for specific business needs.
+class LicenseType {
+  /// The name identifier of the license type
+  final String name;
+
+  /// Creates a license type with the specified name
+  ///
+  /// Use this constructor to create custom license types:
+  /// ```dart
+  /// final enterpriseType = LicenseType('enterprise');
+  /// ```
+  const LicenseType(this.name);
+
   /// Trial license with limited functionality or time period
-  trial,
+  static const trial = LicenseType('trial');
 
   /// Standard license with basic functionality
-  standard,
+  static const standard = LicenseType('standard');
 
   /// Professional license with all features enabled
-  pro,
+  static const pro = LicenseType('pro');
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is LicenseType && runtimeType == other.runtimeType && name == other.name;
+
+  @override
+  int get hashCode => name.hashCode;
+
+  @override
+  String toString() => 'LicenseType($name)';
 }
 
 /// License domain entity
@@ -38,7 +63,7 @@ class License {
   /// Cryptographic signature for license verification
   final String signature;
 
-  /// License type (trial, standard, or pro)
+  /// License type (can be predefined or custom)
   final LicenseType type;
 
   /// Available features or limitations for this license

@@ -5,47 +5,68 @@
 import 'package:licensify/licensify.dart';
 
 void main() async {
-  // Генерируем пару RSA ключей
-  print('Генерация RSA ключей...');
+  // Generate RSA key pair
+  print('Generating RSA keys...');
   final keys = RsaKeyGenerator.generateKeyPairAsPem(bitLength: 2048);
 
-  print('Публичный ключ:');
+  print('Public key:');
   print(keys.publicKey);
-  print('\nПриватный ключ:');
+  print('\nPrivate key:');
   print(keys.privateKey);
 
-  // Генерируем лицензию с приватным ключом
-  print('\nГенерация тестовой лицензии...');
-  final license = GenerateLicenseUseCase(privateKey: keys.privateKey).generateLicense(
+  // Create a license generator
+  final generator = GenerateLicenseUseCase(privateKey: keys.privateKey);
+
+  // Generate a license with a standard type
+  print('\nGenerating standard license...');
+  final license = generator.generateLicense(
     appId: 'com.example.app',
     expirationDate: DateTime.now().add(Duration(days: 30)),
     type: LicenseType.trial,
   );
 
-  print('Сгенерирована лицензия:');
+  print('Generated license:');
   print('ID: ${license.id}');
-  print('Срок действия: ${license.expirationDate}');
-  print('Подпись: ${license.signature}');
+  print('Type: ${license.type.name}');
+  print('Expiration date: ${license.expirationDate}');
+  print('Signature: ${license.signature}');
 
-  // Проверяем лицензию с публичным ключом
-  print('\nПроверка лицензии...');
+  // Generate a license with a custom type
+  print('\nGenerating custom license type...');
+  final enterpriseType = LicenseType('enterprise');
+  final enterpriseLicense = generator.generateLicense(
+    appId: 'com.example.app',
+    expirationDate: DateTime.now().add(Duration(days: 365)),
+    type: enterpriseType,
+    features: {
+      'maxUsers': 100,
+      'supportLevel': 'premium',
+      'modules': ['admin', 'analytics', 'reporting'],
+    },
+  );
+
+  print('Generated enterprise license:');
+  print('ID: ${enterpriseLicense.id}');
+  print('Type: ${enterpriseLicense.type.name}');
+  print('Features: ${enterpriseLicense.features}');
+  print('Expiration date: ${enterpriseLicense.expirationDate}');
+
+  // Verify license with public key
+  print('\nVerifying licenses...');
   final validator = LicenseValidator(publicKey: keys.publicKey);
 
-  final isSignatureValid = validator.validateSignature(license);
-  print('Подпись валидна: $isSignatureValid');
+  final isStandardValid = validator.validateLicense(license);
+  print('Standard license valid: $isStandardValid');
 
-  final isExpirationValid = validator.validateExpiration(license);
-  print('Срок действия валиден: $isExpirationValid');
+  final isEnterpriseValid = validator.validateLicense(enterpriseLicense);
+  print('Enterprise license valid: $isEnterpriseValid');
 
-  final isLicenseValid = validator.validateLicense(license);
-  print('Лицензия валидна: $isLicenseValid');
-
-  // Создаем некорректную лицензию для демонстрации проверки
-  print('\nПроверка некорректной лицензии...');
+  // Create an invalid license for demonstration
+  print('\nVerifying tampered license...');
   final invalidLicense = License(
     id: license.id,
     appId: license.appId,
-    // Изменяем срок действия, что делает подпись недействительной
+    // Change expiration date, which makes the signature invalid
     expirationDate: license.expirationDate.add(Duration(days: 1)),
     createdAt: license.createdAt,
     signature: license.signature,
@@ -55,5 +76,5 @@ void main() async {
   );
 
   final isInvalidSignatureValid = validator.validateSignature(invalidLicense);
-  print('Подпись некорректной лицензии валидна: $isInvalidSignatureValid');
+  print('Tampered license signature valid: $isInvalidSignatureValid');
 }

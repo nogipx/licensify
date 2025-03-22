@@ -8,41 +8,41 @@ import 'package:licensify/licensify.dart';
 part 'license_model.freezed.dart';
 part 'license_model.g.dart';
 
-/// Модель данных лицензии
+/// License data model
 @freezed
 class LicenseModel with _$LicenseModel {
   const LicenseModel._();
 
   const factory LicenseModel({
-    /// Уникальный идентификатор лицензии
+    /// Unique license identifier
     required String id,
 
-    /// Идентификатор приложения, для которого действует лицензия
+    /// Application identifier this license is valid for
     required String appId,
 
-    /// Дата истечения срока действия лицензии
+    /// License expiration date
     required DateTime expirationDate,
 
-    /// Дата создания лицензии
+    /// License creation date
     required DateTime createdAt,
 
-    /// Подпись лицензии для проверки подлинности
+    /// Cryptographic signature for license verification
     required String signature,
 
-    /// Тип лицензии (например, trial, standard, pro)
+    /// License type name (e.g., trial, standard, pro, or custom)
     @Default('standard') String type,
 
-    /// Доступные функции или ограничения для данной лицензии
+    /// Available features or limitations for this license
     @Default({}) Map<String, dynamic> features,
 
-    /// Дополнительные метаданные лицензии
+    /// Additional license metadata
     Map<String, dynamic>? metadata,
   }) = _LicenseModel;
 
-  /// Создаёт объект модели из JSON
+  /// Creates a model object from JSON
   factory LicenseModel.fromJson(Map<String, dynamic> json) => _$LicenseModelFromJson(json);
 
-  /// Преобразование из доменной сущности
+  /// Converts from domain entity
   factory LicenseModel.fromDomain(License license) => LicenseModel(
     id: license.id,
     appId: license.appId,
@@ -54,15 +54,28 @@ class LicenseModel with _$LicenseModel {
     metadata: license.metadata,
   );
 
-  /// Получает доменную сущность из модели
+  /// Gets a domain entity from the model
   License toDomain() => License(
     id: id,
     appId: appId,
     expirationDate: expirationDate,
     createdAt: createdAt,
     signature: signature,
-    type: LicenseType.values.firstWhere((e) => e.name == type, orElse: () => LicenseType.trial),
+    type: _typeFromString(type),
     features: features,
     metadata: metadata,
   );
+
+  /// Converts string type to LicenseType object
+  ///
+  /// Uses predefined types if the name matches, otherwise creates a custom type
+  LicenseType _typeFromString(String typeName) {
+    // Check standard types first
+    if (typeName == LicenseType.trial.name) return LicenseType.trial;
+    if (typeName == LicenseType.standard.name) return LicenseType.standard;
+    if (typeName == LicenseType.pro.name) return LicenseType.pro;
+
+    // Create custom type if no standard type matches
+    return LicenseType(typeName);
+  }
 }

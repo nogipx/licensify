@@ -10,7 +10,7 @@ Advanced licensing solution for Flutter/Dart applications with robust protection
 
 - 🔒 **Robust Protection**: Using RSA for license authenticity verification
 - 🕒 **Expiration Management**: Automatic verification of license expiration dates
-- 🔄 **Multiple License Types**: Support for trial, standard, pro, and other types
+- 🔄 **Multiple License Types**: Support for standard predefined and custom license types
 - 📋 **Extensible Data**: Ability to add custom parameters to licenses
 - 💾 **Flexible Storage**: Support for file storage and in-memory storage
 - 📲 **Simple Implementation**: Easy integration into any Dart/Flutter application
@@ -61,7 +61,7 @@ import 'package:licensify/licensify.dart';
 // Create a license generator with private key
 final generator = GenerateLicenseUseCase(privateKey: yourPrivateKey);
 
-// Generate a new license
+// Generate a new license with a standard type
 final license = generator.generateLicense(
   appId: 'com.your.app',
   expirationDate: DateTime.now().add(const Duration(days: 30)),
@@ -72,6 +72,27 @@ final license = generator.generateLicense(
 // Export to bytes for saving to a file
 final licenseBytes = generator.licenseToBytes(license);
 ```
+
+### Custom License Types
+
+Licensify allows you to define your own license types beyond the standard ones:
+
+```dart
+// Define custom license types
+final enterpriseType = LicenseType('enterprise');
+final educationType = LicenseType('education');
+final lifetimeType = LicenseType('lifetime');
+
+// Use custom type when generating a license
+final enterpriseLicense = generator.generateLicense(
+  appId: 'com.your.app',
+  expirationDate: DateTime.now().add(const Duration(days: 365)),
+  type: enterpriseType,
+  features: {'maxUsers': 100, 'priority': 'high', 'supportLevel': 'premium'},
+);
+```
+
+The predefined types (`LicenseType.trial`, `LicenseType.standard`, and `LicenseType.pro`) are available for common scenarios, but you can create any custom type that fits your business model.
 
 ### License Verification
 
@@ -97,6 +118,13 @@ if (licenseStatus.isActive) {
   final activeLicense = (licenseStatus as ActiveLicenseStatus).license;
   print('License active until: ${activeLicense.expirationDate}');
   print('Days remaining: ${activeLicense.remainingDays}');
+  
+  // Check license type
+  if (activeLicense.type == LicenseType.pro) {
+    enableProFeatures();
+  } else if (activeLicense.type.name == 'enterprise') {
+    enableEnterpriseFeatures();
+  }
 } else if (licenseStatus.isExpired) {
   // License is expired
   print('License has expired');
@@ -180,7 +208,7 @@ A license in `licensify` is a secured data structure that contains all the neces
   "appId": "com.example.myapp",
   "createdAt": "2024-07-25T14:30:00Z",
   "expirationDate": "2025-07-25T14:30:00Z",
-  "type": "trial",
+  "type": "enterprise",
   "features": {
     "maxUsers": 50,
     "canExport": true,
@@ -199,7 +227,7 @@ License fields:
 - `appId` - unique application identifier
 - `createdAt` - license creation date in ISO 8601 format
 - `expirationDate` - expiration date in ISO 8601 format
-- `type` - license type (trial, standard, pro, etc.)
+- `type` - license type (can be standard "trial", "standard", "pro", or any custom name)
 - `features` - additional license parameters (can be any JSON-compatible types)
 - `metadata` - license metadata (e.g., client information)
 - `signature` - RSA signature for license authenticity verification
