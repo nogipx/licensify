@@ -59,7 +59,11 @@ class LicenseFileFormat {
       }
 
       // Get format version
-      final versionData = ByteData.view(bytes.buffer, bytes.offsetInBytes + 4, 4);
+      final versionData = ByteData.view(
+        bytes.buffer,
+        bytes.offsetInBytes + 4,
+        4,
+      );
       final version = versionData.getUint32(0, Endian.little);
 
       // Check version (currently we only support version 1)

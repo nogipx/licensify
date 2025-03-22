@@ -55,7 +55,10 @@ class CheckLicenseUseCase {
 
       return ActiveLicenseStatus(license);
     } catch (e) {
-      return ErrorLicenseStatus(message: 'Error checking license', exception: e);
+      return ErrorLicenseStatus(
+        message: 'Error checking license',
+        exception: e,
+      );
     }
   }
 
@@ -76,7 +79,10 @@ class CheckLicenseUseCase {
 
       return checkCurrentLicense();
     } catch (e) {
-      return ErrorLicenseStatus(message: 'Error checking license from binary data', exception: e);
+      return ErrorLicenseStatus(
+        message: 'Error checking license from binary data',
+        exception: e,
+      );
     }
   }
 
@@ -92,12 +98,17 @@ class CheckLicenseUseCase {
       final result = await _repository.saveLicenseFromFile(filePath);
 
       if (!result) {
-        return const ErrorLicenseStatus(message: 'Failed to save license from file');
+        return const ErrorLicenseStatus(
+          message: 'Failed to save license from file',
+        );
       }
 
       return checkCurrentLicense();
     } catch (e) {
-      return ErrorLicenseStatus(message: 'Error checking license from file', exception: e);
+      return ErrorLicenseStatus(
+        message: 'Error checking license from file',
+        exception: e,
+      );
     }
   }
 

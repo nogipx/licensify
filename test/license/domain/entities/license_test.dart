@@ -23,7 +23,9 @@ void main() {
         appId: appId ?? TestConstants.testAppId,
         expirationDate:
             expirationDate ??
-            DateTime.now().add(Duration(days: TestConstants.defaultLicenseDuration)).toUtc(),
+            DateTime.now()
+                .add(Duration(days: TestConstants.defaultLicenseDuration))
+                .toUtc(),
         createdAt: createdAt ?? DateTime.now().toUtc(),
         signature: signature ?? 'test_signature',
         type: type,
@@ -47,7 +49,8 @@ void main() {
     test('истекшая_лицензия_возвращает_true', () {
       // Arrange
       final sut = createLicense(
-        expirationDate: DateTime.now().subtract(const Duration(days: 1)).toUtc(),
+        expirationDate:
+            DateTime.now().subtract(const Duration(days: 1)).toUtc(),
       );
 
       // Act
@@ -89,7 +92,10 @@ void main() {
       final nonUtcCreatedDate = DateTime.now();
 
       // Act
-      final sut = createLicense(expirationDate: nonUtcExpDate, createdAt: nonUtcCreatedDate);
+      final sut = createLicense(
+        expirationDate: nonUtcExpDate,
+        createdAt: nonUtcCreatedDate,
+      );
 
       // Assert
       expect(sut.expirationDate.isUtc, isTrue);
@@ -102,7 +108,10 @@ void main() {
       final utcCreatedDate = DateTime.now().toUtc();
 
       // Act
-      final sut = createLicense(expirationDate: utcExpDate, createdAt: utcCreatedDate);
+      final sut = createLicense(
+        expirationDate: utcExpDate,
+        createdAt: utcCreatedDate,
+      );
 
       // Assert
       expect(sut.expirationDate.isUtc, isTrue);

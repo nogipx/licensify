@@ -15,7 +15,9 @@ class RsaKeyGenerator {
   /// [bitLength] - The length of the key in bits (default: 2048)
   ///
   /// Returns an asymmetric key pair containing RSA public and private keys
-  static AsymmetricKeyPair<RSAPublicKey, RSAPrivateKey> generateKeyPair({int bitLength = 2048}) {
+  static AsymmetricKeyPair<RSAPublicKey, RSAPrivateKey> generateKeyPair({
+    int bitLength = 2048,
+  }) {
     final keyGen = KeyGenerator('RSA');
     final secureRandom = SecureRandom('Fortuna');
 
@@ -28,7 +30,11 @@ class RsaKeyGenerator {
     secureRandom.seed(KeyParameter(Uint8List.fromList(seeds)));
 
     // Parameters for key generation
-    final rsaParams = RSAKeyGeneratorParameters(BigInt.from(65537), bitLength, 64);
+    final rsaParams = RSAKeyGeneratorParameters(
+      BigInt.from(65537),
+      bitLength,
+      64,
+    );
     final params = ParametersWithRandom(rsaParams, secureRandom);
 
     // Generate keys
@@ -38,7 +44,10 @@ class RsaKeyGenerator {
     final publicKey = keyPair.publicKey as RSAPublicKey;
     final privateKey = keyPair.privateKey as RSAPrivateKey;
 
-    return AsymmetricKeyPair<RSAPublicKey, RSAPrivateKey>(publicKey, privateKey);
+    return AsymmetricKeyPair<RSAPublicKey, RSAPrivateKey>(
+      publicKey,
+      privateKey,
+    );
   }
 
   /// Returns a pair of keys in PEM format
@@ -46,12 +55,16 @@ class RsaKeyGenerator {
   /// [bitLength] - The length of the key in bits (default: 2048)
   ///
   /// Returns a record containing public and private keys as PEM strings
-  static ({String publicKey, String privateKey}) generateKeyPairAsPem({int bitLength = 2048}) {
+  static ({String publicKey, String privateKey}) generateKeyPairAsPem({
+    int bitLength = 2048,
+  }) {
     final keyPair = generateKeyPair(bitLength: bitLength);
 
     // Convert keys to PEM format
     final publicKeyPem = CryptoUtils.encodeRSAPublicKeyToPem(keyPair.publicKey);
-    final privateKeyPem = CryptoUtils.encodeRSAPrivateKeyToPem(keyPair.privateKey);
+    final privateKeyPem = CryptoUtils.encodeRSAPrivateKeyToPem(
+      keyPair.privateKey,
+    );
 
     return (publicKey: publicKeyPem, privateKey: privateKeyPem);
   }

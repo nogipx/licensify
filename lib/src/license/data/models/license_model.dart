@@ -10,9 +10,11 @@ part 'license_model.g.dart';
 
 /// License data model
 @freezed
-class LicenseModel with _$LicenseModel {
+sealed class LicenseModel with _$LicenseModel {
   const LicenseModel._();
 
+  // ignore: invalid_annotation_target
+  @JsonSerializable(explicitToJson: true)
   const factory LicenseModel({
     /// Unique license identifier
     required String id,

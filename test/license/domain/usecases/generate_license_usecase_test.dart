@@ -12,7 +12,9 @@ void main() {
   group('GenerateLicenseUseCase', () {
     test('создает_валидную_лицензию_с_заданными_параметрами', () {
       // Arrange
-      final sut = GenerateLicenseUseCase(privateKey: TestConstants.testPrivateKey);
+      final sut = GenerateLicenseUseCase(
+        privateKey: TestConstants.testPrivateKey,
+      );
       final expirationDate =
           DateTime.now()
               .add(Duration(days: TestConstants.defaultLicenseDuration))
@@ -40,7 +42,9 @@ void main() {
 
     test('создает_действительную_подпись_RSA', () {
       // Arrange
-      final sut = GenerateLicenseUseCase(privateKey: TestConstants.testPrivateKey);
+      final sut = GenerateLicenseUseCase(
+        privateKey: TestConstants.testPrivateKey,
+      );
       final expirationDate =
           DateTime.now()
               .add(Duration(days: TestConstants.defaultLicenseDuration))
@@ -54,7 +58,9 @@ void main() {
       );
 
       // Verify the signature using the validator
-      final validator = LicenseValidator(publicKey: TestConstants.testPublicKey);
+      final validator = LicenseValidator(
+        publicKey: TestConstants.testPublicKey,
+      );
       final isValid = validator.validateSignature(license);
 
       // Assert
@@ -63,7 +69,9 @@ void main() {
 
     test('подпись_валидна_только_для_правильной_пары_ключей', () {
       // Arrange
-      final sut = GenerateLicenseUseCase(privateKey: TestConstants.testPrivateKey);
+      final sut = GenerateLicenseUseCase(
+        privateKey: TestConstants.testPrivateKey,
+      );
       final expirationDate =
           DateTime.now()
               .add(Duration(days: TestConstants.defaultLicenseDuration))
@@ -71,7 +79,9 @@ void main() {
               .roundToMinutes();
 
       // Генерируем новую пару ключей
-      final differentKeys = RsaKeyGenerator.generateKeyPairAsPem(bitLength: 2048);
+      final differentKeys = RsaKeyGenerator.generateKeyPairAsPem(
+        bitLength: 2048,
+      );
 
       // Act
       final license = sut.generateLicense(
@@ -80,18 +90,23 @@ void main() {
       );
 
       // Verify with wrong public key
-      final wrongValidator = LicenseValidator(publicKey: differentKeys.publicKey);
+      final wrongValidator = LicenseValidator(
+        publicKey: differentKeys.publicKey,
+      );
       final isValidWithWrongKey = wrongValidator.validateSignature(license);
 
       // Verify with correct public key
-      final correctValidator = LicenseValidator(publicKey: TestConstants.testPublicKey);
+      final correctValidator = LicenseValidator(
+        publicKey: TestConstants.testPublicKey,
+      );
       final isValidWithCorrectKey = correctValidator.validateSignature(license);
 
       // Assert
       expect(
         isValidWithWrongKey,
         isFalse,
-        reason: 'Подпись не должна быть валидна с неправильным публичным ключом',
+        reason:
+            'Подпись не должна быть валидна с неправильным публичным ключом',
       );
       expect(
         isValidWithCorrectKey,
@@ -102,12 +117,16 @@ void main() {
 
     test('по_умолчанию_создает_пробную_лицензию', () {
       // Arrange
-      final sut = GenerateLicenseUseCase(privateKey: TestConstants.testPrivateKey);
+      final sut = GenerateLicenseUseCase(
+        privateKey: TestConstants.testPrivateKey,
+      );
 
       // Act
       final license = sut.generateLicense(
         appId: TestConstants.testAppId,
-        expirationDate: DateTime.now().add(Duration(days: TestConstants.defaultLicenseDuration)),
+        expirationDate: DateTime.now().add(
+          Duration(days: TestConstants.defaultLicenseDuration),
+        ),
       );
 
       // Assert
@@ -116,10 +135,14 @@ void main() {
 
     test('сериализует_лицензию_в_бинарный_формат_с_заголовком', () {
       // Arrange
-      final sut = GenerateLicenseUseCase(privateKey: TestConstants.testPrivateKey);
+      final sut = GenerateLicenseUseCase(
+        privateKey: TestConstants.testPrivateKey,
+      );
       final license = sut.generateLicense(
         appId: TestConstants.testAppId,
-        expirationDate: DateTime.now().add(Duration(days: TestConstants.defaultLicenseDuration)),
+        expirationDate: DateTime.now().add(
+          Duration(days: TestConstants.defaultLicenseDuration),
+        ),
         type: LicenseType.standard,
         features: {'maxUsers': 5},
       );
@@ -129,10 +152,17 @@ void main() {
 
       // Assert
       // Проверяем магический заголовок
-      expect(utf8.decode(bytes.sublist(0, 4)), equals(LicenseFileFormat.magicHeader));
+      expect(
+        utf8.decode(bytes.sublist(0, 4)),
+        equals(LicenseFileFormat.magicHeader),
+      );
 
       // Проверяем версию формата
-      final versionData = ByteData.view(bytes.buffer, bytes.offsetInBytes + 4, 4);
+      final versionData = ByteData.view(
+        bytes.buffer,
+        bytes.offsetInBytes + 4,
+        4,
+      );
       final version = versionData.getUint32(0, Endian.little);
       expect(version, equals(LicenseFileFormat.formatVersion));
 

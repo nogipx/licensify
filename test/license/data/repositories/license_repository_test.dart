@@ -18,7 +18,9 @@ void main() {
     setUp(() {
       storage = InMemoryLicenseStorage();
       sut = LicenseRepository(storage: storage);
-      licenseGenerator = GenerateLicenseUseCase(privateKey: TestConstants.testPrivateKey);
+      licenseGenerator = GenerateLicenseUseCase(
+        privateKey: TestConstants.testPrivateKey,
+      );
     });
 
     test('возвращает_null_если_лицензия_отсутствует', () async {
@@ -63,7 +65,9 @@ void main() {
             .bytes,
       );
       // Портим данные
-      await storage.saveLicenseData(Uint8List.fromList('invalid json'.codeUnits));
+      await storage.saveLicenseData(
+        Uint8List.fromList('invalid json'.codeUnits),
+      );
 
       // Act
       final result = await sut.getCurrentLicense();

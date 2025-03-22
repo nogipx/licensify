@@ -40,7 +40,9 @@ class MonitorLicenseUseCase {
   /// Starts periodic license monitoring
   ///
   /// [checkPeriod] - How often to check for license changes (default: 1 day)
-  Future<void> startMonitoring({Duration checkPeriod = _defaultCheckPeriod}) async {
+  Future<void> startMonitoring({
+    Duration checkPeriod = _defaultCheckPeriod,
+  }) async {
     // Perform initial check immediately
     await _checkAndEmitStatus();
 

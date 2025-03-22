@@ -10,7 +10,7 @@ import 'package:licensify/licensify.dart';
 ///
 /// This interface defines methods for license storage, retrieval, and management.
 /// Implementations handle the persistence and loading of license data.
-abstract class ILicenseRepository {
+abstract interface class ILicenseRepository {
   /// Retrieves the currently installed license
   ///
   /// Returns the active license or null if no license is installed

@@ -40,7 +40,9 @@ void main() {
         appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
         createdAt: DateTime.now(),
-        signature: base64Encode(utf8.encode('invalid_signature')), // Корректный base64 формат
+        signature: base64Encode(
+          utf8.encode('invalid_signature'),
+        ), // Корректный base64 формат
         type: LicenseType.trial,
       );
 
@@ -53,10 +55,14 @@ void main() {
 
     test('отклоняет_лицензию_с_неправильным_ключом', () {
       // Arrange
-      final differentKeys = RsaKeyGenerator.generateKeyPairAsPem(bitLength: 2048);
+      final differentKeys = RsaKeyGenerator.generateKeyPairAsPem(
+        bitLength: 2048,
+      );
 
       // Создаем лицензию с одним ключом
-      final license = GenerateLicenseUseCase(privateKey: differentKeys.privateKey).generateLicense(
+      final license = GenerateLicenseUseCase(
+        privateKey: differentKeys.privateKey,
+      ).generateLicense(
         appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
       );
@@ -96,7 +102,10 @@ void main() {
       final expiredDate = DateTime.now().subtract(Duration(days: 1));
       final license = GenerateLicenseUseCase(
         privateKey: TestConstants.testPrivateKey,
-      ).generateLicense(appId: TestConstants.testAppId, expirationDate: expiredDate);
+      ).generateLicense(
+        appId: TestConstants.testAppId,
+        expirationDate: expiredDate,
+      );
 
       // Act
       final result = sut.validateExpiration(license);
@@ -130,7 +139,10 @@ void main() {
       final expiredDate = DateTime.now().subtract(Duration(days: 1));
       final license = GenerateLicenseUseCase(
         privateKey: TestConstants.testPrivateKey,
-      ).generateLicense(appId: TestConstants.testAppId, expirationDate: expiredDate);
+      ).generateLicense(
+        appId: TestConstants.testAppId,
+        expirationDate: expiredDate,
+      );
 
       // Act
       final result = sut.validateLicense(license);
@@ -149,7 +161,9 @@ void main() {
         appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
         createdAt: DateTime.now(),
-        signature: base64Encode(utf8.encode('invalid_signature')), // Корректный base64 формат
+        signature: base64Encode(
+          utf8.encode('invalid_signature'),
+        ), // Корректный base64 формат
         type: LicenseType.trial,
       );
 
@@ -273,7 +287,9 @@ void main() {
       final tamperedExpiration = License(
         id: validLicense.id,
         appId: validLicense.appId,
-        expirationDate: validLicense.expirationDate.add(Duration(days: 365)), // Добавили год
+        expirationDate: validLicense.expirationDate.add(
+          Duration(days: 365),
+        ), // Добавили год
         createdAt: validLicense.createdAt,
         signature: validLicense.signature,
         type: validLicense.type,
@@ -316,7 +332,10 @@ void main() {
         signature: validLicense.signature,
         type: validLicense.type,
         features: validLicense.features,
-        metadata: {'owner': 'Hacker Inc', 'email': 'hacker@example.com'}, // Изменили metadata
+        metadata: {
+          'owner': 'Hacker Inc',
+          'email': 'hacker@example.com',
+        }, // Изменили metadata
       );
       expect(
         sut.validateSignature(tamperedMetadata),

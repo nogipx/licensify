@@ -8,7 +8,7 @@ import 'package:licensify/licensify.dart';
 ///
 /// Implementations of this interface handle verification of license
 /// authenticity and expiration status.
-abstract class ILicenseValidator {
+abstract interface class ILicenseValidator {
   /// Validates the cryptographic signature of a license
   ///
   /// Returns true if the signature is valid, false otherwise

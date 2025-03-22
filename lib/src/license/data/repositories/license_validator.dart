@@ -28,7 +28,8 @@ class LicenseValidator implements ILicenseValidator {
 
       // Serialize features and metadata for signature verification
       final featuresJson = jsonEncode(license.features);
-      final metadataJson = license.metadata != null ? jsonEncode(license.metadata) : '';
+      final metadataJson =
+          license.metadata != null ? jsonEncode(license.metadata) : '';
 
       // Form data string for verification (including all fields)
       final dataToVerify =
@@ -45,7 +46,10 @@ class LicenseValidator implements ILicenseValidator {
       verifier.init(false, PublicKeyParameter<RSAPublicKey>(publicKey));
 
       final signatureParams = Uint8List.fromList(utf8.encode(dataToVerify));
-      return verifier.verifySignature(signatureParams, RSASignature(signatureBytes));
+      return verifier.verifySignature(
+        signatureParams,
+        RSASignature(signatureBytes),
+      );
     } catch (e) {
       print('Signature verification error: $e');
       return false;

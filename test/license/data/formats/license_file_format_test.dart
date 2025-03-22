@@ -11,17 +11,31 @@ void main() {
   group('LicenseFileFormat', () {
     test('encodeToBytes_добавляет_заголовок_и_версию', () {
       // Arrange
-      final jsonData = {'id': '12345', 'appId': 'com.test.app', 'type': 'standard'};
+      final jsonData = {
+        'id': '12345',
+        'appId': 'com.test.app',
+        'type': 'standard',
+      };
 
       // Act
       final result = LicenseFileFormat.encodeToBytes(jsonData);
 
       // Assert
-      expect(result.length, greaterThan(8)); // Минимальная длина: заголовок + версия
-      expect(utf8.decode(result.sublist(0, 4)), equals('LCSF')); // Проверка заголовка
+      expect(
+        result.length,
+        greaterThan(8),
+      ); // Минимальная длина: заголовок + версия
+      expect(
+        utf8.decode(result.sublist(0, 4)),
+        equals('LCSF'),
+      ); // Проверка заголовка
 
       // Проверка версии
-      final versionData = ByteData.view(result.buffer, result.offsetInBytes + 4, 4);
+      final versionData = ByteData.view(
+        result.buffer,
+        result.offsetInBytes + 4,
+        4,
+      );
       final version = versionData.getUint32(0, Endian.little);
       expect(version, equals(LicenseFileFormat.formatVersion));
     });
@@ -167,7 +181,9 @@ void main() {
 
       // Act
       final isValidShort = LicenseFileFormat.isValidLicenseFile(tooShortData);
-      final isValidWrongHeader = LicenseFileFormat.isValidLicenseFile(invalidHeaderData.toBytes());
+      final isValidWrongHeader = LicenseFileFormat.isValidLicenseFile(
+        invalidHeaderData.toBytes(),
+      );
 
       // Assert
       expect(isValidShort, isFalse);

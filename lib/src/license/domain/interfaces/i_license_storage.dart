@@ -8,7 +8,7 @@ import 'dart:typed_data';
 ///
 /// This interface abstracts the physical storage of license data,
 /// allowing for different storage mechanisms (file, memory, etc.)
-abstract class ILicenseStorage {
+abstract interface class ILicenseStorage {
   /// Saves license data to storage
   ///
   /// [data] - Binary license data to be stored

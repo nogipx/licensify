@@ -34,7 +34,9 @@ class LicenseType {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is LicenseType && runtimeType == other.runtimeType && name == other.name;
+      other is LicenseType &&
+          runtimeType == other.runtimeType &&
+          name == other.name;
 
   @override
   int get hashCode => name.hashCode;
@@ -86,7 +88,8 @@ class License {
     this.type = LicenseType.trial,
     this.features = const {},
     this.metadata,
-  }) : expirationDate = expirationDate.isUtc ? expirationDate : expirationDate.toUtc(),
+  }) : expirationDate =
+           expirationDate.isUtc ? expirationDate : expirationDate.toUtc(),
        createdAt = createdAt.isUtc ? createdAt : createdAt.toUtc();
 
   /// Checks if license has expired
@@ -94,7 +97,8 @@ class License {
 
   /// Returns the number of days remaining until expiration
   /// May return negative values if license has already expired
-  int get remainingDays => expirationDate.difference(DateTime.now().toUtc()).inDays;
+  int get remainingDays =>
+      expirationDate.difference(DateTime.now().toUtc()).inDays;
 
   /// Converts the license to a byte array using formatted header
   Uint8List get bytes => LicenseFileFormat.encodeToBytes(toJson());

@@ -21,7 +21,8 @@ class GenerateLicenseUseCase {
   /// Creates a new license generator with the specified RSA private key
   ///
   /// The private key must be in PEM format
-  const GenerateLicenseUseCase({required String privateKey}) : _privateKey = privateKey;
+  const GenerateLicenseUseCase({required String privateKey})
+    : _privateKey = privateKey;
 
   /// Generates a new license with RSA signature
   ///
@@ -60,7 +61,9 @@ class GenerateLicenseUseCase {
     final signer = RSASigner(SHA512Digest(), '0609608648016503040203');
     signer.init(true, PrivateKeyParameter<RSAPrivateKey>(privateKey));
 
-    final signatureBytes = signer.generateSignature(Uint8List.fromList(utf8.encode(dataToSign)));
+    final signatureBytes = signer.generateSignature(
+      Uint8List.fromList(utf8.encode(dataToSign)),
+    );
     final signature = base64Encode(signatureBytes.bytes);
 
     // Create the license

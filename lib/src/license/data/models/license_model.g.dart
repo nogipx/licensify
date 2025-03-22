@@ -1,7 +1,3 @@
-// SPDX-FileCopyrightText: 2025 Karim "nogipx" Mamatkazin <nogipx@gmail.com>
-//
-// SPDX-License-Identifier: LGPL-3.0-or-later
-
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
 part of 'license_model.dart';
@@ -10,8 +6,8 @@ part of 'license_model.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
-_$LicenseModelImpl _$$LicenseModelImplFromJson(Map<String, dynamic> json) =>
-    _$LicenseModelImpl(
+_LicenseModel _$LicenseModelFromJson(Map<String, dynamic> json) =>
+    _LicenseModel(
       id: json['id'] as String,
       appId: json['appId'] as String,
       expirationDate: DateTime.parse(json['expirationDate'] as String),
@@ -22,7 +18,7 @@ _$LicenseModelImpl _$$LicenseModelImplFromJson(Map<String, dynamic> json) =>
       metadata: json['metadata'] as Map<String, dynamic>?,
     );
 
-Map<String, dynamic> _$$LicenseModelImplToJson(_$LicenseModelImpl instance) =>
+Map<String, dynamic> _$LicenseModelToJson(_LicenseModel instance) =>
     <String, dynamic>{
       'id': instance.id,
       'appId': instance.appId,
