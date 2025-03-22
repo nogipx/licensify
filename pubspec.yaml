@@ -1,0 +1,32 @@
+name: licensify
+description: A lightweight yet powerful license management solution for Flutter and Dart applications with cryptographically secure signatures
+version: 1.0.0
+homepage: https://github.com/nogipx/licensify
+repository: https://github.com/nogipx/licensify
+issue_tracker: https://github.com/nogipx/licensify/issues
+documentation: https://github.com/nogipx/licensify/blob/main/README.md
+
+environment:
+  sdk: ^3.7.0
+
+dependencies:
+  uuid: ^4.5.1
+  crypto: ^3.0.6
+  freezed_annotation: ^2.4.4
+  rsa_encrypt: ^2.0.0
+  pointycastle: ^3.9.1
+  basic_utils: ^5.7.0
+
+dev_dependencies:
+  lints: ^5.0.0
+  test: ^1.24.0
+  freezed: ^2.5.7
+  build_runner: ^2.4.15
+  packo: any
+
+topics:
+  - license
+  - security
+  - validation
+  - cryptography
+
