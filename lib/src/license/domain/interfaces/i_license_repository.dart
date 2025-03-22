@@ -30,13 +30,6 @@ abstract interface class ILicenseRepository {
   /// Returns true if the operation was successful, false otherwise
   Future<bool> saveLicenseFromBytes(Uint8List licenseData);
 
-  /// Saves a license from a file
-  ///
-  /// [filePath] - Path to the license file
-  ///
-  /// Returns true if the operation was successful, false otherwise
-  Future<bool> saveLicenseFromFile(String filePath);
-
   /// Removes the current license from storage
   ///
   /// Returns true if the operation was successful, false otherwise

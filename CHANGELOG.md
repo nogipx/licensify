@@ -2,6 +2,22 @@
 
 All notable changes to the Licensify package will be documented in this file.
 
+## 1.3.0 - 2024-07-30
+
+### Changed
+- Redesigned storage architecture to be platform-independent
+- Removed built-in file and web storage implementations
+- Added clear examples for custom storage implementations
+- Simplified API by removing platform-specific code
+- Now fully compatible with all platforms including WASM
+
+## 1.2.2 - 2024-07-29
+
+### Fixed
+- Removed direct dart:io imports for full WASM compatibility
+- Added platform-conditional imports for file operations
+- Ensured compatibility with both web and native platforms
+
 ## 1.2.1 - 2024-07-29
 
 ### Improved

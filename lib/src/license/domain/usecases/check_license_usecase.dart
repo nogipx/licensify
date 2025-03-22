@@ -55,10 +55,7 @@ class CheckLicenseUseCase {
 
       return ActiveLicenseStatus(license);
     } catch (e) {
-      return ErrorLicenseStatus(
-        message: 'Error checking license',
-        exception: e,
-      );
+      return ErrorLicenseStatus(message: 'Error checking license', exception: e);
     }
   }
 
@@ -79,36 +76,7 @@ class CheckLicenseUseCase {
 
       return checkCurrentLicense();
     } catch (e) {
-      return ErrorLicenseStatus(
-        message: 'Error checking license from binary data',
-        exception: e,
-      );
-    }
-  }
-
-  /// Checks a license from a file
-  ///
-  /// Loads the license from the specified file path and verifies its validity.
-  ///
-  /// [filePath] - Path to the license file
-  ///
-  /// Returns a LicenseStatus indicating the license state
-  Future<LicenseStatus> checkLicenseFromFile(String filePath) async {
-    try {
-      final result = await _repository.saveLicenseFromFile(filePath);
-
-      if (!result) {
-        return const ErrorLicenseStatus(
-          message: 'Failed to save license from file',
-        );
-      }
-
-      return checkCurrentLicense();
-    } catch (e) {
-      return ErrorLicenseStatus(
-        message: 'Error checking license from file',
-        exception: e,
-      );
+      return ErrorLicenseStatus(message: 'Error checking license from binary data', exception: e);
     }
   }
 

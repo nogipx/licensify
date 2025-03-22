@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:test/test.dart';
 
@@ -18,9 +17,7 @@ void main() {
     setUp(() {
       storage = InMemoryLicenseStorage();
       sut = LicenseRepository(storage: storage);
-      licenseGenerator = GenerateLicenseUseCase(
-        privateKey: TestConstants.testPrivateKey,
-      );
+      licenseGenerator = GenerateLicenseUseCase(privateKey: TestConstants.testPrivateKey);
     });
 
     test('возвращает_null_если_лицензия_отсутствует', () async {
@@ -65,9 +62,7 @@ void main() {
             .bytes,
       );
       // Портим данные
-      await storage.saveLicenseData(
-        Uint8List.fromList('invalid json'.codeUnits),
-      );
+      await storage.saveLicenseData(Uint8List.fromList('invalid json'.codeUnits));
 
       // Act
       final result = await sut.getCurrentLicense();
@@ -113,45 +108,6 @@ void main() {
       final savedLicense = await sut.getCurrentLicense();
       expect(savedLicense, isNotNull);
       expect(savedLicense!.id, equals(license.id));
-    });
-
-    test('сохраняет_лицензию_из_существующего_файла', () async {
-      // Arrange - создаем временный файл для теста
-      final tempDir = Directory.systemTemp;
-      final tempFile = File('${tempDir.path}/test_license.dat');
-
-      // Создаем лицензию и записываем ее в файл
-      final license = licenseGenerator.generateLicense(
-        appId: TestConstants.testAppId,
-        expirationDate: DateTime.now().add(Duration(days: 30)),
-      );
-      final licenseData = license.bytes;
-      await tempFile.writeAsBytes(licenseData);
-
-      // Act
-      final result = await sut.saveLicenseFromFile(tempFile.path);
-
-      // Assert
-      expect(result, isTrue);
-
-      // Дополнительно проверяем, что лицензия действительно сохранена
-      final savedLicense = await sut.getCurrentLicense();
-      expect(savedLicense, isNotNull);
-      expect(savedLicense!.id, equals(license.id));
-
-      // Cleanup
-      await tempFile.delete();
-    });
-
-    test('возвращает_ошибку_при_отсутствии_файла', () async {
-      // Arrange
-      const nonExistentPath = '/path/that/does/not/exist.lic';
-
-      // Act
-      final result = await sut.saveLicenseFromFile(nonExistentPath);
-
-      // Assert
-      expect(result, isFalse);
     });
 
     test('успешно_удаляет_существующую_лицензию', () async {

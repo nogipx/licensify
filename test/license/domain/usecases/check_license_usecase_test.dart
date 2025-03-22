@@ -57,10 +57,7 @@ void main() {
       final expiredDate = DateTime.now().subtract(Duration(days: 1));
       final expiredLicense = GenerateLicenseUseCase(
         privateKey: TestConstants.testPrivateKey,
-      ).generateLicense(
-        appId: TestConstants.testAppId,
-        expirationDate: expiredDate,
-      );
+      ).generateLicense(appId: TestConstants.testAppId, expirationDate: expiredDate);
       await repository.saveLicense(expiredLicense);
 
       // Act
@@ -68,10 +65,7 @@ void main() {
 
       // Assert
       expect(result.isExpired, isTrue);
-      expect(
-        (result as ExpiredLicenseStatus).license.id,
-        equals(expiredLicense.id),
-      );
+      expect((result as ExpiredLicenseStatus).license.id, equals(expiredLicense.id));
     });
 
     test('определяет_действующую_лицензию', () async {
@@ -89,10 +83,7 @@ void main() {
 
       // Assert
       expect(result.isActive, isTrue);
-      expect(
-        (result as ActiveLicenseStatus).license.id,
-        equals(validLicense.id),
-      );
+      expect((result as ActiveLicenseStatus).license.id, equals(validLicense.id));
     });
 
     test('обрабатывает_ошибки_репозитория', () async {
@@ -149,11 +140,6 @@ class _FailingLicenseRepository implements ILicenseRepository {
 
   @override
   Future<bool> saveLicenseFromBytes(Uint8List licenseData) async {
-    return true;
-  }
-
-  @override
-  Future<bool> saveLicenseFromFile(String filePath) async {
     return true;
   }
 }

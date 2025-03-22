@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:licensify/licensify.dart';
@@ -13,8 +12,7 @@ class LicenseRepository implements ILicenseRepository {
   final ILicenseStorage _storage;
 
   /// Конструктор
-  const LicenseRepository({required ILicenseStorage storage})
-    : _storage = storage;
+  const LicenseRepository({required ILicenseStorage storage}) : _storage = storage;
 
   @override
   Future<License?> getCurrentLicense() async {
@@ -99,23 +97,6 @@ class LicenseRepository implements ILicenseRepository {
 
       // Формат правильный, сохраняем как есть
       return await _storage.saveLicenseData(licenseData);
-    } catch (e) {
-      return false;
-    }
-  }
-
-  @override
-  Future<bool> saveLicenseFromFile(String filePath) async {
-    try {
-      // Читаем файл
-      final file = File(filePath);
-      if (!await file.exists()) {
-        return false;
-      }
-
-      // Читаем данные и сохраняем
-      final licenseData = await file.readAsBytes();
-      return await saveLicenseFromBytes(licenseData);
     } catch (e) {
       return false;
     }

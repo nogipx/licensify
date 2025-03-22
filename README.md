@@ -8,14 +8,14 @@ Advanced licensing solution for Flutter/Dart applications with robust protection
 - 🕒 **Expiration Dates**: Automatic expiration verification
 - 🔄 **Custom License Types**: Standard and custom license types
 - 📋 **Flexible Features**: Add custom parameters and metadata
-- 💾 **Multiple Storages**: File, memory, and web storage options
-- 📲 **Cross-Platform**: Works on mobile, desktop, and web (WASM)
+- 💾 **Storage Independence**: Bring your own storage solution
+- 📲 **Cross-Platform**: Works on all platforms including web (WASM)
 
 ## Installation
 
 ```yaml
 dependencies:
-  licensify: ^1.1.0
+  licensify: ^1.2.2
 ```
 
 ## Quick Start
@@ -39,7 +39,7 @@ final license = generator.generateLicense(
   features: {'maxUsers': 10, 'modules': ['reporting', 'export']},
 );
 
-// Export license to file or bytes for distribution
+// Export license to bytes for distribution
 final licenseBytes = generator.licenseToBytes(license);
 ```
 
@@ -47,10 +47,8 @@ final licenseBytes = generator.licenseToBytes(license);
 
 ```dart
 // Setup (do once at app startup)
-final storage = FileLicenseStorage(
-  directoryProvider: DefaultLicenseDirectoryProvider(),
-  licenseFileName: 'license.dat',
-);
+// Use your own storage mechanism or use built-in InMemoryLicenseStorage for testing
+final storage = InMemoryLicenseStorage();
 final repository = LicenseRepository(storage: storage);
 final validator = LicenseValidator(publicKey: yourPublicKey); 
 final licenseChecker = CheckLicenseUseCase(
@@ -73,27 +71,39 @@ if (status.isActive) {
 
 ## Storage Options
 
-### File Storage (Default for Mobile/Desktop)
+The Licensify package follows the repository pattern and allows you to implement your own storage solution. Simply implement the `ILicenseStorage` interface to provide your own mechanism.
 
-```dart
-final storage = FileLicenseStorage(
-  directoryProvider: DefaultLicenseDirectoryProvider(),
-  licenseFileName: 'license.dat',
-);
-```
-
-### In-Memory Storage (Testing)
+### In-Memory Storage (For Testing)
 
 ```dart
 final storage = InMemoryLicenseStorage();
 ```
 
-### Web Storage (WASM)
+### Implement Your Own Storage
 
 ```dart
-final storage = WebStorageFactory.createStorage(
-  storageKey: 'app_license',
-);
+// Implement ILicenseStorage to create your own storage mechanism
+class MyCustomStorage implements ILicenseStorage {
+  @override
+  Future<bool> deleteLicenseData() async {
+    // Your implementation
+  }
+
+  @override
+  Future<bool> hasLicense() async {
+    // Your implementation
+  }
+
+  @override
+  Future<Uint8List?> loadLicenseData() async {
+    // Your implementation
+  }
+
+  @override
+  Future<bool> saveLicenseData(Uint8List data) async {
+    // Your implementation
+  }
+}
 ```
 
 ## License Monitoring
