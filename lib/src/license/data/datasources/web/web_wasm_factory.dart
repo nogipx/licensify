@@ -6,7 +6,8 @@
 // It should not be imported directly, but through web_factory.dart
 
 import 'package:licensify/src/license/data/datasources/web/storage/web_license_storage.dart';
-import 'package:licensify/src/license/data/datasources/web/interop/js_interop.dart' as wasm_interop;
+import 'package:licensify/src/license/data/datasources/web/interop/js_interop.dart'
+    as wasm_interop;
 
 /// Factory for creating web implementations for WebAssembly platform
 ///

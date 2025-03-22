@@ -2,7 +2,8 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-import 'package:licensify/src/license/data/datasources/web/interop/js_interop.dart' as wasm_interop;
+import 'package:licensify/src/license/data/datasources/web/interop/js_interop.dart'
+    as wasm_interop;
 import 'package:licensify/src/license/data/datasources/web/storage/web_license_storage.dart';
 
 /// Factory for creating web storage instances

@@ -21,12 +21,16 @@ class WebLicenseStorage implements ILicenseStorage {
   final wasm_interop.JsInterop? _jsInterop;
 
   /// Constructor
-  const WebLicenseStorage({required String storageKey, wasm_interop.JsInterop? jsInterop})
-    : _storageKey = storageKey,
-      _jsInterop = jsInterop;
+  const WebLicenseStorage({
+    required String storageKey,
+    wasm_interop.JsInterop? jsInterop,
+  }) : _storageKey = storageKey,
+       _jsInterop = jsInterop;
 
   /// Helper method to perform localStorage access with proper error handling
-  Future<T> _performStorageOperation<T>(FutureOr<T> Function() operation) async {
+  Future<T> _performStorageOperation<T>(
+    FutureOr<T> Function() operation,
+  ) async {
     try {
       return await operation();
     } catch (e) {

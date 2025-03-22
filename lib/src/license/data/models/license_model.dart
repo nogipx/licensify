@@ -42,7 +42,8 @@ sealed class LicenseModel with _$LicenseModel {
   }) = _LicenseModel;
 
   /// Creates a model object from JSON
-  factory LicenseModel.fromJson(Map<String, dynamic> json) => _$LicenseModelFromJson(json);
+  factory LicenseModel.fromJson(Map<String, dynamic> json) =>
+      _$LicenseModelFromJson(json);
 
   /// Converts from domain entity
   factory LicenseModel.fromDomain(License license) => LicenseModel(
