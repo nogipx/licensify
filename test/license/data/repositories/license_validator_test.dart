@@ -344,4 +344,146 @@ void main() {
       );
     });
   });
+
+  group('License Schema Validation', () {
+    late ILicenseValidator validator;
+    late License validLicense;
+    late License invalidLicense;
+    late LicenseSchema schema;
+
+    setUp(() {
+      validator = LicenseValidator(publicKey: TestConstants.testPublicKey);
+
+      validLicense = License(
+        id: 'test-id',
+        appId: 'com.example.app',
+        expirationDate: DateTime.now().add(const Duration(days: 365)),
+        createdAt: DateTime.now(),
+        signature: 'signature',
+        features: {
+          'maxUsers': 50,
+          'modules': ['reporting', 'export'],
+          'premium': true,
+        },
+        metadata: {'clientName': 'Example Corp', 'deviceHash': 'device-123'},
+      );
+
+      invalidLicense = License(
+        id: 'test-id',
+        appId: 'com.example.app',
+        expirationDate: DateTime.now().add(const Duration(days: 365)),
+        createdAt: DateTime.now(),
+        signature: 'signature',
+        features: {
+          'maxUsers': 0, // Invalid
+          'modules': [], // Invalid
+        },
+        metadata: {
+          'clientName': 'A', // Too short
+        },
+      );
+
+      schema = LicenseSchema(
+        featureSchema: {
+          'maxUsers': SchemaField(
+            type: FieldType.integer,
+            required: true,
+            validators: [NumberValidator(minimum: 5, maximum: 100)],
+          ),
+          'modules': SchemaField(
+            type: FieldType.array,
+            required: true,
+            validators: [
+              ArrayValidator(minItems: 1, itemValidator: StringValidator()),
+            ],
+          ),
+          'premium': SchemaField(type: FieldType.boolean),
+        },
+        metadataSchema: {
+          'clientName': SchemaField(
+            type: FieldType.string,
+            required: true,
+            validators: [StringValidator(minLength: 3)],
+          ),
+          'deviceHash': SchemaField(type: FieldType.string),
+        },
+        allowUnknownFeatures: false,
+      );
+    });
+
+    test('validateSchema returns valid result for valid license', () {
+      final result = validator.validateSchema(validLicense, schema);
+
+      expect(result.isValid, isTrue);
+      expect(result.errors, isNull);
+    });
+
+    test('validateSchema returns invalid result for invalid license', () {
+      final result = validator.validateSchema(invalidLicense, schema);
+
+      expect(result.isValid, isFalse);
+      expect(result.errors, isNotNull);
+    });
+
+    test(
+      'validateLicenseWithSchema combines signature and schema validation',
+      () {
+        // Even with valid schema, overall validation fails because signature is invalid
+        final isValid = validator.validateLicenseWithSchema(
+          validLicense,
+          schema,
+        );
+
+        expect(isValid, isFalse); // Signature validation fails
+      },
+    );
+
+    test('validateLicenseWithSchema returns false for invalid schema', () {
+      final isValid = validator.validateLicenseWithSchema(
+        invalidLicense,
+        schema,
+      );
+
+      expect(isValid, isFalse);
+    });
+
+    test('validateLicenseWithSchema returns true when all validations pass', () {
+      // Create a mock validator that always returns true for signature validation
+      final mockValidator = _MockAlwaysValidValidator();
+
+      final isValid = mockValidator.validateLicenseWithSchema(
+        validLicense,
+        schema,
+      );
+
+      expect(isValid, isTrue);
+    });
+  });
+}
+
+/// Mock validator that always returns true for signature validation
+class _MockAlwaysValidValidator implements ILicenseValidator {
+  @override
+  bool validateSignature(License license) => true;
+
+  @override
+  bool validateExpiration(License license) => true;
+
+  @override
+  bool validateLicense(License license) => true;
+
+  @override
+  ValidationResult validateSchema(License license, LicenseSchema schema) {
+    return schema.validateLicense(license);
+  }
+
+  @override
+  bool validateLicenseWithSchema(License license, LicenseSchema schema) {
+    if (!validateLicense(license)) {
+      return false;
+    }
+
+    final schemaResult = validateSchema(license, schema);
+    return schemaResult.isValid;
+  }
 }

@@ -153,34 +153,6 @@ if (validationResult.isValid) {
 final isValid = validator.validateLicenseWithSchema(license, enterpriseSchema);
 ```
 
-## Device Binding
-
-You can bind licenses to specific devices by storing a device hash in metadata:
-
-```dart
-// Helper extension to simplify device binding
-extension DeviceBinding on License {
-  // Get device hash from license
-  String? get deviceHash => metadata?['deviceHash'] as String?;
-  
-  // Check if license is bound to a device
-  bool isDeviceBound() => deviceHash != null;
-  
-  // Validate against current device
-  bool isValidForDevice(String currentDeviceHash) {
-    return !isDeviceBound() || deviceHash == currentDeviceHash;
-  }
-}
-
-// Check if license is valid for this device
-final deviceHash = getDeviceUniqueId(); // Your implementation
-if (license.isValidForDevice(deviceHash)) {
-  // License is valid for this device
-} else {
-  // License is bound to a different device
-}
-```
-
 ## Custom License Types
 
 ```dart

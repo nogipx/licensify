@@ -109,7 +109,7 @@ class LicenseSchema {
     if (errors.isEmpty) {
       return ValidationResult.success();
     } else {
-      return ValidationResult.failure(errors);
+      return ValidationResult(isValid: false, errors: errors);
     }
   }
 }
@@ -441,7 +441,7 @@ class ObjectValidator implements FieldValidator {
     if (errors.isEmpty) {
       return ValidationResult.success();
     } else {
-      return ValidationResult.failure(errors);
+      return ValidationResult(isValid: false, errors: errors);
     }
   }
 }
