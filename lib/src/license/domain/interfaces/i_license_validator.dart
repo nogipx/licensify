@@ -19,8 +19,20 @@ abstract interface class ILicenseValidator {
   /// Returns true if the license has not expired, false otherwise
   bool validateExpiration(License license);
 
+  /// Validates the license fields against a schema
+  ///
+  /// Returns a [ValidationResult] with details about schema validation
+  ValidationResult validateSchema(License license, LicenseSchema schema);
+
   /// Performs complete license validation (both signature and expiration)
   ///
   /// Returns true only if both the signature is valid and the license has not expired
   bool validateLicense(License license);
+
+  /// Performs complete license validation including schema validation
+  ///
+  /// Returns true only if all validations pass (signature, expiration, schema)
+  /// If schema validation fails, details can be accessed through the
+  /// [validateSchema] method.
+  bool validateLicenseWithSchema(License license, LicenseSchema schema);
 }

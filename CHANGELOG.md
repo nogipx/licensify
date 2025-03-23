@@ -1,3 +1,10 @@
+## 1.6.0 - 2024-08-01
+- Added license schema validation system
+- Support for feature and metadata structure validation
+- Validators for different data types (string, number, array, object)
+- Custom validation rules (min/max length, patterns, ranges)
+- Example for schema validation usage
+
 ## 1.5.0 - 2024-08-01
 - Removed license monitoring functionality
 - Simplified API by removing redundant components and nested directory structure

@@ -10,12 +10,13 @@ Advanced licensing solution for Flutter/Dart applications with robust protection
 - 📋 **Flexible Features**: Add custom parameters and metadata
 - 💾 **Storage Independence**: Bring your own storage solution
 - 📲 **Cross-Platform**: Works on all platforms including web (WASM)
+- 🔍 **Schema Validation**: Validate license feature structure with customizable schemas
 
 ## Installation
 
 ```yaml
 dependencies:
-  licensify: ^1.4.0
+  licensify: ^1.6.0
 ```
 
 ## Quick Start
@@ -37,6 +38,8 @@ final license = generator.generateLicense(
   expirationDate: DateTime.now().add(const Duration(days: 365)),
   type: LicenseType.pro,  // Or custom: LicenseType('enterprise')
   features: {'maxUsers': 10, 'modules': ['reporting', 'export']},
+  // Optional device binding
+  metadata: {'deviceHash': 'unique-device-identifier'},
 );
 
 // Export license to bytes for distribution
@@ -106,17 +109,76 @@ class MyCustomStorage implements ILicenseStorage {
 }
 ```
 
-## License Monitoring
+## Schema Validation
+
+Define and validate expected structure for license features and metadata:
 
 ```dart
-final monitor = MonitorLicenseUseCase(repository: repository, validator: validator);
-
-// Auto-check license status periodically
-monitor.startMonitoring(
-  onStatusChanged: (status) {
-    // Update UI based on status
-  }
+// Define a schema for enterprise licenses
+final enterpriseSchema = LicenseSchema(
+  // Feature fields schema
+  featureSchema: {
+    'maxUsers': SchemaField(
+      type: FieldType.integer,
+      required: true,
+      validators: [NumberValidator(minimum: 1, maximum: 1000)],
+    ),
+    'modules': SchemaField(
+      type: FieldType.array,
+      required: true,
+      validators: [ArrayValidator(minItems: 1)],
+    ),
+  },
+  // Metadata fields schema
+  metadataSchema: {
+    'clientName': SchemaField(
+      type: FieldType.string,
+      required: true,
+    ),
+    'deviceHash': SchemaField(type: FieldType.string),
+  },
+  // Don't allow unknown feature fields
+  allowUnknownFeatures: false,
 );
+
+// Validate a license against the schema
+final validationResult = validator.validateSchema(license, enterpriseSchema);
+if (validationResult.isValid) {
+  print('License schema valid!');
+} else {
+  print('Schema validation failed: ${validationResult.errors}');
+}
+
+// Validate everything at once (signature, expiration, schema)
+final isValid = validator.validateLicenseWithSchema(license, enterpriseSchema);
+```
+
+## Device Binding
+
+You can bind licenses to specific devices by storing a device hash in metadata:
+
+```dart
+// Helper extension to simplify device binding
+extension DeviceBinding on License {
+  // Get device hash from license
+  String? get deviceHash => metadata?['deviceHash'] as String?;
+  
+  // Check if license is bound to a device
+  bool isDeviceBound() => deviceHash != null;
+  
+  // Validate against current device
+  bool isValidForDevice(String currentDeviceHash) {
+    return !isDeviceBound() || deviceHash == currentDeviceHash;
+  }
+}
+
+// Check if license is valid for this device
+final deviceHash = getDeviceUniqueId(); // Your implementation
+if (license.isValidForDevice(deviceHash)) {
+  // License is valid for this device
+} else {
+  // License is bound to a different device
+}
 ```
 
 ## Custom License Types
@@ -155,7 +217,8 @@ Full JSON structure:
     "modules": ["analytics", "reporting"]
   },
   "metadata": {
-    "clientName": "Example Corp"
+    "clientName": "Example Corp",
+    "deviceHash": "device-unique-identifier"
   },
   "signature": "Base64EncodedSignature..."
 }

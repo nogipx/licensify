@@ -4,3 +4,4 @@
 
 export 'license.dart';
 export 'license_status.dart';
+export 'license_schema.dart';

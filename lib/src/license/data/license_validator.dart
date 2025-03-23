@@ -63,8 +63,26 @@ class LicenseValidator implements ILicenseValidator {
   }
 
   @override
+  ValidationResult validateSchema(License license, LicenseSchema schema) {
+    // Use the schema's validateLicense method to validate the license
+    return schema.validateLicense(license);
+  }
+
+  @override
   bool validateLicense(License license) {
     // License is valid if both signature is correct and it hasn't expired
     return validateSignature(license) && validateExpiration(license);
+  }
+
+  @override
+  bool validateLicenseWithSchema(License license, LicenseSchema schema) {
+    // First validate signature and expiration
+    if (!validateLicense(license)) {
+      return false;
+    }
+
+    // Then validate against the schema
+    final schemaResult = validateSchema(license, schema);
+    return schemaResult.isValid;
   }
 }
