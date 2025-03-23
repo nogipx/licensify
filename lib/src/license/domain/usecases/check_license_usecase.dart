@@ -2,8 +2,6 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-import 'dart:typed_data';
-
 import 'package:licensify/licensify.dart';
 
 /// Use case for checking license validity
@@ -11,9 +9,6 @@ import 'package:licensify/licensify.dart';
 /// This class handles verification of license status including signature
 /// validation and expiration checks
 class CheckLicenseUseCase {
-  /// Repository for license storage and retrieval
-  final ILicenseRepository _repository;
-
   /// Validator for cryptographic signature and expiration
   final ILicenseValidator _validator;
 
@@ -21,26 +16,18 @@ class CheckLicenseUseCase {
   ///
   /// [repository] - Repository for license storage and retrieval
   /// [validator] - Validator for license integrity and expiration
-  const CheckLicenseUseCase({
-    required ILicenseRepository repository,
-    required ILicenseValidator validator,
-  }) : _repository = repository,
-       _validator = validator;
+  const CheckLicenseUseCase({required ILicenseValidator validator})
+    : _validator = validator;
 
-  /// Checks the current license in the repository
+  /// Checks a license from binary data
   ///
-  /// Verifies signature and expiration date of the installed license.
+  /// Saves the license from binary data and then verifies its validity.
   ///
-  /// Returns a LicenseStatus indicating the current state:
-  /// - ActiveLicenseStatus - License is valid and active
-  /// - ExpiredLicenseStatus - License has expired
-  /// - InvalidLicenseStatus - License signature is invalid
-  /// - NoLicenseStatus - No license is installed
-  /// - ErrorLicenseStatus - An error occurred during validation
-  Future<LicenseStatus> checkCurrentLicense() async {
+  /// [licenseData] - The raw bytes of the license file
+  ///
+  /// Returns a LicenseStatus indicating the license state
+  Future<LicenseStatus> call(License? license) async {
     try {
-      final license = await _repository.getCurrentLicense();
-
       if (license == null) {
         return const NoLicenseStatus();
       }
@@ -56,38 +43,9 @@ class CheckLicenseUseCase {
       return ActiveLicenseStatus(license);
     } catch (e) {
       return ErrorLicenseStatus(
-        message: 'Error checking license',
-        exception: e,
-      );
-    }
-  }
-
-  /// Checks a license from binary data
-  ///
-  /// Saves the license from binary data and then verifies its validity.
-  ///
-  /// [licenseData] - The raw bytes of the license file
-  ///
-  /// Returns a LicenseStatus indicating the license state
-  Future<LicenseStatus> checkLicenseFromBytes(Uint8List licenseData) async {
-    try {
-      final result = await _repository.saveLicenseFromBytes(licenseData);
-
-      if (!result) {
-        return const ErrorLicenseStatus(message: 'Failed to save license');
-      }
-
-      return checkCurrentLicense();
-    } catch (e) {
-      return ErrorLicenseStatus(
         message: 'Error checking license from binary data',
         exception: e,
       );
     }
   }
-
-  /// Removes the current license
-  ///
-  /// Returns true if the license was successfully removed, false otherwise
-  Future<bool> removeLicense() => _repository.removeLicense();
 }

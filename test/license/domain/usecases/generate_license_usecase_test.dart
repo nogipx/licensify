@@ -154,7 +154,7 @@ void main() {
       // Проверяем магический заголовок
       expect(
         utf8.decode(bytes.sublist(0, 4)),
-        equals(LicenseFileFormat.magicHeader),
+        equals(LicenseEncoder.magicHeader),
       );
 
       // Проверяем версию формата
@@ -164,10 +164,10 @@ void main() {
         4,
       );
       final version = versionData.getUint32(0, Endian.little);
-      expect(version, equals(LicenseFileFormat.formatVersion));
+      expect(version, equals(LicenseEncoder.formatVersion));
 
       // Декодируем данные лицензии
-      final jsonData = LicenseFileFormat.decodeFromBytes(bytes);
+      final jsonData = LicenseEncoder.decodeFromBytes(bytes);
       expect(jsonData, isNotNull);
       expect(jsonData!['id'], equals(license.id));
       expect(jsonData['appId'], equals(license.appId));

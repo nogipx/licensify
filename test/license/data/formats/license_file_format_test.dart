@@ -18,7 +18,7 @@ void main() {
       };
 
       // Act
-      final result = LicenseFileFormat.encodeToBytes(jsonData);
+      final result = LicenseEncoder.encodeToBytes(jsonData);
 
       // Assert
       expect(
@@ -37,7 +37,7 @@ void main() {
         4,
       );
       final version = versionData.getUint32(0, Endian.little);
-      expect(version, equals(LicenseFileFormat.formatVersion));
+      expect(version, equals(LicenseEncoder.formatVersion));
     });
 
     test('decodeFromBytes_возвращает_корректные_данные', () {
@@ -49,10 +49,10 @@ void main() {
         'type': 'pro',
         'features': <String, dynamic>{'maxUsers': 10},
       };
-      final encodedData = LicenseFileFormat.encodeToBytes(originalData);
+      final encodedData = LicenseEncoder.encodeToBytes(originalData);
 
       // Act
-      final decodedData = LicenseFileFormat.decodeFromBytes(encodedData);
+      final decodedData = LicenseEncoder.decodeFromBytes(encodedData);
 
       // Assert
       expect(decodedData, isNotNull);
@@ -73,7 +73,7 @@ void main() {
 
       final versionBytes = Uint8List(4);
       final versionData = ByteData.view(versionBytes.buffer);
-      versionData.setUint32(0, LicenseFileFormat.formatVersion, Endian.little);
+      versionData.setUint32(0, LicenseEncoder.formatVersion, Endian.little);
 
       final result =
           BytesBuilder()
@@ -84,7 +84,7 @@ void main() {
       final invalidData = result.toBytes();
 
       // Act
-      final decodedData = LicenseFileFormat.decodeFromBytes(invalidData);
+      final decodedData = LicenseEncoder.decodeFromBytes(invalidData);
 
       // Assert
       expect(decodedData, isNull);
@@ -93,7 +93,7 @@ void main() {
     test('decodeFromBytes_возвращает_null_при_неверной_версии', () {
       // Arrange: создаем данные с неправильной версией
       final jsonData = utf8.encode(jsonEncode({'id': '12345'}));
-      final header = utf8.encode(LicenseFileFormat.magicHeader);
+      final header = utf8.encode(LicenseEncoder.magicHeader);
 
       final versionBytes = Uint8List(4);
       final versionData = ByteData.view(versionBytes.buffer);
@@ -108,7 +108,7 @@ void main() {
       final invalidData = result.toBytes();
 
       // Act
-      final decodedData = LicenseFileFormat.decodeFromBytes(invalidData);
+      final decodedData = LicenseEncoder.decodeFromBytes(invalidData);
 
       // Assert
       expect(decodedData, isNull);
@@ -119,7 +119,7 @@ void main() {
       final tooShortData = Uint8List(4);
 
       // Act
-      final decodedData = LicenseFileFormat.decodeFromBytes(tooShortData);
+      final decodedData = LicenseEncoder.decodeFromBytes(tooShortData);
 
       // Assert
       expect(decodedData, isNull);
@@ -128,11 +128,11 @@ void main() {
     test('decodeFromBytes_возвращает_null_при_некорректном_JSON', () {
       // Arrange: создаем данные с неправильным JSON
       final invalidJson = utf8.encode('{ this is not valid json');
-      final header = utf8.encode(LicenseFileFormat.magicHeader);
+      final header = utf8.encode(LicenseEncoder.magicHeader);
 
       final versionBytes = Uint8List(4);
       final versionData = ByteData.view(versionBytes.buffer);
-      versionData.setUint32(0, LicenseFileFormat.formatVersion, Endian.little);
+      versionData.setUint32(0, LicenseEncoder.formatVersion, Endian.little);
 
       final result =
           BytesBuilder()
@@ -143,7 +143,7 @@ void main() {
       final invalidData = result.toBytes();
 
       // Act
-      final decodedData = LicenseFileFormat.decodeFromBytes(invalidData);
+      final decodedData = LicenseEncoder.decodeFromBytes(invalidData);
 
       // Assert
       expect(decodedData, isNull);
@@ -152,10 +152,10 @@ void main() {
     test('isValidLicenseFile_возвращает_true_для_корректных_данных', () {
       // Arrange
       final jsonData = {'id': '12345'};
-      final encodedData = LicenseFileFormat.encodeToBytes(jsonData);
+      final encodedData = LicenseEncoder.encodeToBytes(jsonData);
 
       // Act
-      final isValid = LicenseFileFormat.isValidLicenseFile(encodedData);
+      final isValid = LicenseEncoder.isValidLicenseFile(encodedData);
 
       // Assert
       expect(isValid, isTrue);
@@ -171,7 +171,7 @@ void main() {
 
       final versionBytes = Uint8List(4);
       final versionData = ByteData.view(versionBytes.buffer);
-      versionData.setUint32(0, LicenseFileFormat.formatVersion, Endian.little);
+      versionData.setUint32(0, LicenseEncoder.formatVersion, Endian.little);
 
       final invalidHeaderData =
           BytesBuilder()
@@ -180,8 +180,8 @@ void main() {
             ..add(jsonData);
 
       // Act
-      final isValidShort = LicenseFileFormat.isValidLicenseFile(tooShortData);
-      final isValidWrongHeader = LicenseFileFormat.isValidLicenseFile(
+      final isValidShort = LicenseEncoder.isValidLicenseFile(tooShortData);
+      final isValidWrongHeader = LicenseEncoder.isValidLicenseFile(
         invalidHeaderData.toBytes(),
       );
 

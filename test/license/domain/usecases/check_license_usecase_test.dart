@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:test/test.dart';
 
 import 'package:licensify/licensify.dart';
@@ -11,23 +10,19 @@ import '../../helpers/test_constants.dart';
 
 void main() {
   group('CheckLicenseUseCase', () {
-    late InMemoryLicenseStorage storage;
-    late LicenseRepository repository;
     late LicenseValidator validator;
     late CheckLicenseUseCase sut;
 
     setUp(() {
-      storage = InMemoryLicenseStorage();
-      repository = LicenseRepository(storage: storage);
       validator = LicenseValidator(publicKey: TestConstants.testPublicKey);
-      sut = CheckLicenseUseCase(repository: repository, validator: validator);
+      sut = CheckLicenseUseCase(validator: validator);
     });
 
     test('сообщает_что_лицензия_отсутствует', () async {
       // Arrange - хранилище пустое
 
       // Act
-      final result = await sut.checkCurrentLicense();
+      final result = await sut(null);
 
       // Assert
       expect(result.isNoLicense, isTrue);
@@ -43,10 +38,9 @@ void main() {
         signature: base64Encode(utf8.encode('invalid_signature')),
         type: LicenseType.trial,
       );
-      await repository.saveLicense(license);
 
       // Act
-      final result = await sut.checkCurrentLicense();
+      final result = await sut(license);
 
       // Assert
       expect(result.isInvalid, isTrue);
@@ -61,10 +55,9 @@ void main() {
         appId: TestConstants.testAppId,
         expirationDate: expiredDate,
       );
-      await repository.saveLicense(expiredLicense);
 
       // Act
-      final result = await sut.checkCurrentLicense();
+      final result = await sut(expiredLicense);
 
       // Assert
       expect(result.isExpired, isTrue);
@@ -82,10 +75,9 @@ void main() {
         appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
       );
-      await repository.saveLicense(validLicense);
 
       // Act
-      final result = await sut.checkCurrentLicense();
+      final result = await sut(validLicense);
 
       // Assert
       expect(result.isActive, isTrue);
@@ -94,61 +86,5 @@ void main() {
         equals(validLicense.id),
       );
     });
-
-    test('обрабатывает_ошибки_репозитория', () async {
-      // Arrange - используем специальный репозиторий, который генерирует исключение
-      final failingRepo = _FailingLicenseRepository();
-      sut = CheckLicenseUseCase(repository: failingRepo, validator: validator);
-
-      // Act
-      final result = await sut.checkCurrentLicense();
-
-      // Assert
-      expect(result.isError, isTrue);
-    });
-
-    test('удаляет_лицензию_успешно', () async {
-      // Arrange
-      final validLicense = GenerateLicenseUseCase(
-        privateKey: TestConstants.testPrivateKey,
-      ).generateLicense(
-        appId: TestConstants.testAppId,
-        expirationDate: DateTime.now().add(Duration(days: 30)),
-      );
-      await repository.saveLicense(validLicense);
-
-      // Act
-      final result = await sut.removeLicense();
-
-      // Assert
-      expect(result, isTrue);
-
-      // Проверяем что лицензия действительно удалена
-      final status = await sut.checkCurrentLicense();
-      expect(status.isNoLicense, isTrue);
-    });
   });
-}
-
-/// Репозиторий, генерирующий исключение при проверке наличия лицензии
-class _FailingLicenseRepository implements ILicenseRepository {
-  @override
-  Future<License?> getCurrentLicense() async {
-    throw Exception('Repository error');
-  }
-
-  @override
-  Future<bool> removeLicense() async {
-    return true;
-  }
-
-  @override
-  Future<bool> saveLicense(License license) async {
-    return true;
-  }
-
-  @override
-  Future<bool> saveLicenseFromBytes(Uint8List licenseData) async {
-    return true;
-  }
 }

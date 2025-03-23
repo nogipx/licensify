@@ -1,3 +1,11 @@
+## 1.5.0 - 2024-08-01
+- Removed license monitoring functionality
+- Simplified API by removing redundant components and nested directory structure
+- Refactored public API for more intuitive usage
+- Replaced LicenseFileFormat with LicenseEncoder for better clarity
+- Flattened export structure for easier imports
+- Added docs/ directory to .pubignore
+
 ## 1.4.0 - 2024-07-31
 - Remove redutant dependencies
 

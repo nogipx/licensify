@@ -94,26 +94,6 @@ void main() {
       expect(savedLicense!.id, equals(license.id));
     });
 
-    test('сохраняет_лицензию_из_массива_байтов', () async {
-      // Arrange
-      final license = licenseGenerator.generateLicense(
-        appId: TestConstants.testAppId,
-        expirationDate: DateTime.now().add(Duration(days: 30)),
-      );
-      final licenseData = license.bytes;
-
-      // Act
-      final result = await sut.saveLicenseFromBytes(licenseData);
-
-      // Assert
-      expect(result, isTrue);
-
-      // Дополнительно проверяем, что лицензия действительно сохранена
-      final savedLicense = await sut.getCurrentLicense();
-      expect(savedLicense, isNotNull);
-      expect(savedLicense!.id, equals(license.id));
-    });
-
     test('успешно_удаляет_существующую_лицензию', () async {
       // Arrange - сохраняем лицензию, чтобы было что удалять
       final license = licenseGenerator.generateLicense(

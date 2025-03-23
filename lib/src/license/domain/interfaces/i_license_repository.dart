@@ -23,12 +23,12 @@ abstract interface class ILicenseRepository {
   /// Returns true if the operation was successful, false otherwise
   Future<bool> saveLicense(License license);
 
-  /// Saves a license from raw binary data
+  /// Retrieves a license from raw binary data
   ///
   /// [licenseData] - The raw license file data as bytes
   ///
-  /// Returns true if the operation was successful, false otherwise
-  Future<bool> saveLicenseFromBytes(Uint8List licenseData);
+  /// Returns the license object or null if the data is invalid
+  Future<License?> getLicenseFromBytes(Uint8List licenseData);
 
   /// Removes the current license from storage
   ///

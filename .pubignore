@@ -3,3 +3,4 @@ test/
 justfile
 REUSE.toml
 coverage/
+docs/

@@ -101,7 +101,7 @@ class License {
       expirationDate.difference(DateTime.now().toUtc()).inDays;
 
   /// Converts the license to a byte array using formatted header
-  Uint8List get bytes => LicenseFileFormat.encodeToBytes(toJson());
+  Uint8List get bytes => LicenseEncoder.encodeToBytes(toJson());
 
   /// Converts the license to JSON representation
   Map<String, dynamic> toJson() => {

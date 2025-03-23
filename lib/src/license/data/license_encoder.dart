@@ -6,7 +6,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 /// Utilities for working with the binary license file format
-class LicenseFileFormat {
+class LicenseEncoder {
   /// Magic sequence for identifying license files
   static const String magicHeader = 'LCSF';
 
