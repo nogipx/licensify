@@ -70,6 +70,18 @@ class InvalidLicenseStatus extends LicenseStatus {
   const InvalidLicenseStatus({this.message});
 }
 
+/// Status indicating the license is invalid (tampered with or incorrect)
+class InvalidLicenseSchemaStatus extends LicenseStatus {
+  /// Optional message describing why the license is invalid
+  final String? message;
+
+  /// Errors in the license schema
+  final Map<String, dynamic>? errors;
+
+  /// Creates an invalid license status with an optional error message
+  const InvalidLicenseSchemaStatus({this.message, this.errors});
+}
+
 /// Status indicating an error occurred during license checking
 class ErrorLicenseStatus extends LicenseStatus {
   /// Error message describing what went wrong

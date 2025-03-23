@@ -16,7 +16,7 @@ Advanced licensing solution for Flutter/Dart applications with robust protection
 
 ```yaml
 dependencies:
-  licensify: ^1.6.0
+  licensify: ^1.6.1
 ```
 
 ## Quick Start

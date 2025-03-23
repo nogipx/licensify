@@ -11,11 +11,11 @@ import '../../helpers/test_constants.dart';
 void main() {
   group('CheckLicenseUseCase', () {
     late LicenseValidator validator;
-    late CheckLicenseUseCase sut;
+    late LicenseValidateUseCase sut;
 
     setUp(() {
       validator = LicenseValidator(publicKey: TestConstants.testPublicKey);
-      sut = CheckLicenseUseCase(validator: validator);
+      sut = LicenseValidateUseCase(validator: validator);
     });
 
     test('сообщает_что_лицензия_отсутствует', () async {

@@ -1,3 +1,10 @@
+## 1.6.1 - 2024-08-05
+- Fixed validation logic in LicenseSchema for proper error handling
+- Improved ValidationResult mechanism for returning validation results
+- Fixed license schema validation tests
+- Added LicenseSchema support in LicenseValidator
+- Added validateLicenseWithSchema method for comprehensive validation
+
 ## 1.6.0 - 2024-08-01
 - Added license schema validation system
 - Support for feature and metadata structure validation

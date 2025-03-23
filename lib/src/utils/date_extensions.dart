@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /// Extension methods for DateTime to support license operations
-extension DateTimeExtensions on DateTime {
+extension LicensifyDateTimeExtensions on DateTime {
   /// Rounds the datetime to minutes (removing seconds and milliseconds)
   /// and converts to UTC
   ///
