@@ -4,3 +4,5 @@ justfile
 REUSE.toml
 coverage/
 docs/
+example/
+LICENSES/

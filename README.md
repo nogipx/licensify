@@ -37,38 +37,91 @@ final license = generator.generateLicense(
   appId: 'com.your.app',
   expirationDate: DateTime.now().add(const Duration(days: 365)),
   type: LicenseType.pro,  // Or custom: LicenseType('enterprise')
-  features: {'maxUsers': 10, 'modules': ['reporting', 'export']},
-  // Optional device binding
-  metadata: {'deviceHash': 'unique-device-identifier'},
+  features: {
+    'maxUsers': 50,
+    'modules': ['reporting', 'analytics', 'export'],
+    'premium': true,
+  },
+  // Optional metadata and device binding
+  metadata: {
+    'clientName': 'Example Corp',
+    'deviceHash': 'unique-device-identifier',
+  },
 );
 
-// Export license to bytes for distribution
-final licenseBytes = generator.licenseToBytes(license);
+// Convert to JSON for distribution
+final licenseModel = LicenseModel.fromDomain(license);
+final licenseJson = licenseModel.toJson();
+print(jsonEncode(licenseJson)); // For displaying or distributing as JSON string
+
+// Or convert to binary format for storage
+final licenseBytes = LicenseEncoder.encodeToBytes(licenseJson);
 ```
 
 ### Verify Licenses in Your App
 
 ```dart
-// Setup (do once at app startup)
-// Use your own storage mechanism or use built-in InMemoryLicenseStorage for testing
-final storage = InMemoryLicenseStorage();
+// Setup license validation (do once at app startup)
+final storage = InMemoryLicenseStorage(); // Or your own storage implementation
 final repository = LicenseRepository(storage: storage);
 final validator = LicenseValidator(publicKey: yourPublicKey); 
-final licenseChecker = CheckLicenseUseCase(
-  repository: repository,
-  validator: validator,
+
+// Define schema for validation (optional)
+final schema = LicenseSchema(
+  featureSchema: {
+    'maxUsers': SchemaField(
+      type: FieldType.integer,
+      required: true,
+      validators: [NumberValidator(minimum: 5, maximum: 1000)],
+    ),
+    'modules': SchemaField(
+      type: FieldType.array,
+      required: true,
+    ),
+    'premium': SchemaField(type: FieldType.boolean),
+  },
+  allowUnknownFeatures: false,
 );
 
-// Check license
-final status = await licenseChecker.checkCurrentLicense();
+// Check and store a license
+final licenseString = '{"id":"...","appId":"...","features":{},...}'; // From user input
+final jsonData = jsonDecode(licenseString); // Parse JSON string
+final licenseModel = LicenseModel.fromJson(jsonData);
+final license = licenseModel.toDomain();
+
+// Save license to storage
+final licenseJson = licenseModel.toJson();
+final licenseBytes = LicenseEncoder.encodeToBytes(licenseJson);
+await storage.saveLicenseData(licenseBytes);
+
+// Check current license
+final validateUseCase = LicenseValidateUseCase(
+  validator: validator,
+  schema: schema, // Optional schema validation
+);
+
+// Get current license from repository
+final currentLicense = await repository.getCurrentLicense();
+
+// Validate license
+final status = await validateUseCase(currentLicense);
+
 if (status.isActive) {
   final license = (status as ActiveLicenseStatus).license;
-  // Enable features based on license type and features
-  if (license.type == LicenseType.pro || license.type.name == 'enterprise') {
-    enableProFeatures();
+  
+  // Enable features based on license
+  if (license.type == LicenseType.pro) {
+    final maxUsers = license.features['maxUsers'] as int;
+    final modules = license.features['modules'] as List;
+    print('Pro license active with $maxUsers users and modules: $modules');
   }
+} else if (status is ExpiredLicenseStatus) {
+  print('License has expired on ${status.license.expirationDate}');
+} else if (status is InvalidLicenseSchemaStatus) {
+  print('License schema invalid: ${status.errors}');
 } else {
-  // Handle invalid/expired/missing license
+  print('License is invalid: ${status.runtimeType}');
+  // Show license input screen to user
 }
 ```
 
@@ -121,37 +174,129 @@ final enterpriseSchema = LicenseSchema(
     'maxUsers': SchemaField(
       type: FieldType.integer,
       required: true,
-      validators: [NumberValidator(minimum: 1, maximum: 1000)],
+      validators: [NumberValidator(minimum: 5, maximum: 1000)],
     ),
     'modules': SchemaField(
       type: FieldType.array,
       required: true,
-      validators: [ArrayValidator(minItems: 1)],
+      validators: [
+        ArrayValidator(
+          minItems: 1, 
+          itemValidator: StringValidator(),
+        ),
+      ],
     ),
+    'premium': SchemaField(type: FieldType.boolean),
   },
   // Metadata fields schema
   metadataSchema: {
     'clientName': SchemaField(
       type: FieldType.string,
       required: true,
+      validators: [StringValidator(minLength: 3)],
     ),
     'deviceHash': SchemaField(type: FieldType.string),
   },
-  // Don't allow unknown feature fields
+  // Control whether unknown fields are allowed
   allowUnknownFeatures: false,
+  allowUnknownMetadata: true,
 );
 
-// Validate a license against the schema
-final validationResult = validator.validateSchema(license, enterpriseSchema);
-if (validationResult.isValid) {
+// Validate license features against the schema
+final featureResult = enterpriseSchema.validateFeatures(license.features);
+if (!featureResult.isValid) {
+  print('Feature validation failed: ${featureResult.errors}');
+}
+
+// Validate license metadata against the schema
+final metadataResult = enterpriseSchema.validateMetadata(license.metadata);
+if (!metadataResult.isValid) {
+  print('Metadata validation failed: ${metadataResult.errors}');
+}
+
+// Validate the entire license against the schema
+final licenseResult = enterpriseSchema.validateLicense(license);
+if (licenseResult.isValid) {
   print('License schema valid!');
 } else {
+  print('Schema validation failed: ${licenseResult.errors}');
+}
+
+// Use with LicenseValidator for comprehensive validation
+final validator = LicenseValidator(publicKey: yourPublicKey);
+
+// Validate just the schema (signature and expiration not checked)
+final validationResult = validator.validateSchema(license, enterpriseSchema);
+if (!validationResult.isValid) {
   print('Schema validation failed: ${validationResult.errors}');
 }
 
-// Validate everything at once (signature, expiration, schema)
+// Validate everything at once (signature, expiration, and schema)
 final isValid = validator.validateLicenseWithSchema(license, enterpriseSchema);
+if (isValid) {
+  print('License is completely valid!');
+} else {
+  print('License validation failed');
+}
 ```
+
+## Advanced Schema Validation
+
+For more complex validation needs, Licensify offers robust schema validation with nested objects:
+
+```dart
+// Define a more complex schema
+final advancedSchema = LicenseSchema(
+  featureSchema: {
+    'maxUsers': SchemaField(
+      type: FieldType.integer,
+      required: true,
+      validators: [NumberValidator(minimum: 1, maximum: 1000)],
+    ),
+    'modules': SchemaField(
+      type: FieldType.array,
+      required: true,
+      validators: [
+        ArrayValidator(minItems: 1, itemValidator: StringValidator()),
+      ],
+    ),
+    'settings': SchemaField(
+      type: FieldType.object,
+      validators: [
+        ObjectValidator(
+          schema: {
+            'theme': SchemaField(type: FieldType.string),
+            'notifications': SchemaField(type: FieldType.boolean),
+          },
+        ),
+      ],
+    ),
+  },
+  metadataSchema: {
+    'purchaseDate': SchemaField(
+      type: FieldType.string,
+      required: true,
+      validators: [
+        StringValidator(
+          pattern: r'^\d{4}-\d{2}-\d{2}$', // ISO date format
+        ),
+      ],
+    ),
+    'contactEmail': SchemaField(
+      type: FieldType.string,
+      validators: [
+        StringValidator(
+          pattern: r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+        ),
+      ],
+    ),
+  },
+  allowUnknownFeatures: false,
+  allowUnknownMetadata: true,
+);
+```
+
+See [example/schema_validation_example.dart](https://github.com/nogipx/licensify/blob/main/example/schema_validation_example.dart) for a complete example of schema validation.
 
 ## Custom License Types
 
