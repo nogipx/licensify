@@ -22,9 +22,7 @@ void main() {
       );
 
       // Генерируем лицензии для повторного использования в тестах
-      validLicense = LicenseGenerateUseCase(
-        privateKey: TestConstants.testKeyPair.privateKey,
-      ).generateLicense(
+      validLicense = TestConstants.testKeyPair.privateKey.licenseGenerator(
         appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
         type: LicenseType.trial,
@@ -32,9 +30,7 @@ void main() {
         metadata: {'owner': 'Test Corp', 'email': 'test@example.com'},
       );
 
-      expiredLicense = LicenseGenerateUseCase(
-        privateKey: TestConstants.testKeyPair.privateKey,
-      ).generateLicense(
+      expiredLicense = TestConstants.testKeyPair.privateKey.licenseGenerator(
         appId: TestConstants.testAppId,
         expirationDate: DateTime.now().subtract(Duration(days: 1)),
         type: LicenseType.trial,
@@ -143,12 +139,11 @@ void main() {
 
       test('отклоняет_лицензию_с_неправильным_ключом', () {
         // Создаем лицензию с другим ключом
-        final licenseWithDifferentKey = LicenseGenerateUseCase(
-          privateKey: differentKeys.privateKey,
-        ).generateLicense(
-          appId: TestConstants.testAppId,
-          expirationDate: DateTime.now().add(Duration(days: 30)),
-        );
+        final licenseWithDifferentKey = differentKeys.privateKey
+            .licenseGenerator(
+              appId: TestConstants.testAppId,
+              expirationDate: DateTime.now().add(Duration(days: 30)),
+            );
 
         // Act
         final result = validatorWithKey.validateSignature(

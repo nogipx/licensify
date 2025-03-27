@@ -6,7 +6,7 @@ import 'dart:convert';
 import 'package:test/test.dart';
 
 import 'package:licensify/licensify.dart';
-import '../../helpers/test_constants.dart';
+import '../helpers/test_constants.dart';
 
 void main() {
   group('LicenseValidator with RSA keys', () {

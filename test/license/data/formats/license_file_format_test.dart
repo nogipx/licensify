@@ -13,9 +13,7 @@ void main() {
   group('LicenseEncoder', () {
     test('encodeToBytes adds header and version', () {
       // Arrange
-      final license = LicenseGenerateUseCase(
-        privateKey: TestConstants.testKeyPair.privateKey,
-      ).generateLicense(
+      final license = TestConstants.testKeyPair.privateKey.licenseGenerator(
         appId: 'com.test.app',
         type: LicenseType.standard,
         expirationDate: DateTime.now().add(const Duration(days: 365)),

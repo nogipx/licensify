@@ -6,3 +6,4 @@ export 'generators/ecdsa_key_generator.dart';
 export 'generators/rsa_key_generator.dart';
 export 'crypto_consts.dart';
 export 'licensify_key.dart';
+export 'licensify_key_importer.dart';

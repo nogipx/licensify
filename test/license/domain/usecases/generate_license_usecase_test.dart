@@ -12,9 +12,7 @@ void main() {
   group('GenerateLicenseUseCase', () {
     test('creates valid license with specified parameters', () {
       // Arrange
-      final sut = LicenseGenerateUseCase(
-        privateKey: TestConstants.testKeyPair.privateKey,
-      );
+      final sut = TestConstants.testKeyPair.privateKey.licenseGenerator;
       final expirationDate =
           DateTime.now()
               .add(Duration(days: TestConstants.defaultLicenseDuration))
@@ -23,7 +21,7 @@ void main() {
       final features = {'maxUsers': 10, 'canExport': true};
 
       // Act
-      final license = sut.generateLicense(
+      final license = sut(
         appId: TestConstants.testAppId,
         expirationDate: expirationDate,
         type: LicenseType.pro,
@@ -42,9 +40,7 @@ void main() {
 
     test('creates valid RSA signature', () {
       // Arrange
-      final sut = LicenseGenerateUseCase(
-        privateKey: TestConstants.testKeyPair.privateKey,
-      );
+      final sut = TestConstants.testKeyPair.privateKey.licenseGenerator;
       final expirationDate =
           DateTime.now()
               .add(Duration(days: TestConstants.defaultLicenseDuration))
@@ -52,7 +48,7 @@ void main() {
               .roundToMinutes();
 
       // Act
-      final license = sut.generateLicense(
+      final license = sut(
         appId: TestConstants.testAppId,
         expirationDate: expirationDate,
       );
@@ -69,9 +65,7 @@ void main() {
 
     test('signature is valid only with correct key pair', () {
       // Arrange
-      final sut = LicenseGenerateUseCase(
-        privateKey: TestConstants.testKeyPair.privateKey,
-      );
+      final sut = TestConstants.testKeyPair.privateKey.licenseGenerator;
       final expirationDate =
           DateTime.now()
               .add(Duration(days: TestConstants.defaultLicenseDuration))
@@ -82,7 +76,7 @@ void main() {
       final differentKeys = TestConstants.generateTestKeyPair();
 
       // Act
-      final license = sut.generateLicense(
+      final license = sut(
         appId: TestConstants.testAppId,
         expirationDate: expirationDate,
       );
@@ -114,12 +108,10 @@ void main() {
 
     test('creates trial license by default', () {
       // Arrange
-      final sut = LicenseGenerateUseCase(
-        privateKey: TestConstants.testKeyPair.privateKey,
-      );
+      final sut = TestConstants.testKeyPair.privateKey.licenseGenerator;
 
       // Act
-      final license = sut.generateLicense(
+      final license = sut(
         appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(
           Duration(days: TestConstants.defaultLicenseDuration),
@@ -132,10 +124,8 @@ void main() {
 
     test('serializes license to binary format with header', () {
       // Arrange
-      final sut = LicenseGenerateUseCase(
-        privateKey: TestConstants.testKeyPair.privateKey,
-      );
-      final license = sut.generateLicense(
+      final sut = TestConstants.testKeyPair.privateKey.licenseGenerator;
+      final license = sut(
         appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(
           Duration(days: TestConstants.defaultLicenseDuration),

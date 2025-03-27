@@ -24,7 +24,7 @@ enum LicensifyKeyType {
 ///
 /// This class is responsible for creating cryptographically signed licenses.
 /// It should only be used on the license issuer side, not in the client application.
-class LicenseGenerateUseCase {
+class LicenseGenerator {
   /// Private key for signing licenses
   final LicensifyPrivateKey _privateKey;
 
@@ -38,12 +38,10 @@ class LicenseGenerateUseCase {
   ///
   /// [privateKey] - PEM-encoded private key (RSA or ECDSA)
   /// [digest] - Hash algorithm used for signature (default: SHA-512)
-  LicenseGenerateUseCase({
-    required LicensifyPrivateKey privateKey,
-    Digest? digest,
-  }) : _privateKey = privateKey,
-       _keyType = privateKey.keyType,
-       _digest = digest ?? SHA512Digest();
+  LicenseGenerator({required LicensifyPrivateKey privateKey, Digest? digest})
+    : _privateKey = privateKey,
+      _keyType = privateKey.keyType,
+      _digest = digest ?? SHA512Digest();
 
   /// Generates a new license with cryptographic signature
   ///
@@ -55,7 +53,7 @@ class LicenseGenerateUseCase {
   /// [includeSecurityInfo] - Whether to include security algorithm info in metadata (not recommended in production)
   ///
   /// Returns a cryptographically signed License object
-  License generateLicense({
+  License call({
     required String appId,
     required DateTime expirationDate,
     LicenseType type = LicenseType.trial,

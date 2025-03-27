@@ -1,188 +1,178 @@
 # Licensify
 
+![Licensify](https://img.shields.io/pub/v/licensify.svg) ![Flutter](https://img.shields.io/badge/Platform-Flutter%20%7C%20Dart-blue)
+
 Advanced licensing solution for Flutter/Dart applications with cryptographic protection.
 
-## Features
+**Licensify** transforms complex license management into a simple process, providing maximum security and flexibility.
 
-- 🔐 **Cryptography**: RSA and ECDSA with SHA-256, SHA-384, SHA-512 algorithms
-- ⏰ **Expiration**: Automatic expiration verification
-- 🏷️ **Custom Types**: Built-in and custom license types
-- 🧩 **Flexible Parameters**: Add metadata and features
-- 💾 **Storage Independence**: Bring your own storage solution
-- 🌐 **Cross-Platform**: Works on all platforms including web (WASM)
-- 📋 **Schema Validation**: Validate structure with customizable schemas
+## 🚀 Contents
 
-## Installation
+- [Features](#-features)
+- [Installation](#-installation)
+- [Quick Start](#-quick-start)
+- [Usage Examples](#-usage-examples)
+- [Documentation](#-documentation)
+- [Security](#-security)
+- [License](#-license)
+
+## 🔥 Features
+
+- **Powerful Cryptography**: RSA and ECDSA with SHA-512 for robust protection
+- **Flexible Licenses**: Built-in and custom types, metadata, and features
+- **Expiration**: Automatic expiration verification
+- **Schema Validation**: Validate license structures with custom schemas
+- **Storage Independence**: Bring your own storage implementation
+- **Cross-Platform**: Works on all platforms including web (WASM)
+- **High Performance**: ECDSA up to 10x faster with 72% smaller key sizes
+
+## 📦 Installation
 
 ```yaml
 dependencies:
   licensify: ^1.7.0
 ```
 
-## Quick Start
+## 🏁 Quick Start
 
-### Key Generation
-
-```dart
-// RSA keys
-final rsaKeyPair = await RsaKeyGenerator.generateKeyPairAsPem(bitLength: 2048);
-
-// ECDSA keys (91% smaller, 10x faster generation)
-final ecdsaKeyPair = await EcdsaKeyGenerator.generateKeyPairAsPem(
-  curve: EcCurve.p256, 
-  randomAlgorithm: SecureRandomAlgorithm.fortuna,
-);
-```
-
-### License Creation
+### ECDSA (recommended)
 
 ```dart
-// Create license generator
-final generator = LicenseGenerateUseCase(
-  privateKey: keyPair.privateKey,
-);
+// 1. Generate key pair (server-side/developer only)
+final keyPair = EcdsaKeyGenerator.generateKeyPairAsPem(curve: EcCurve.p256);
 
-// Generate license
-final license = generator.generateLicense(
-  appId: 'your-app-id',
+// 2. Create license (for your user)
+final license = keyPair.privateKey.licenseGenerator(
+  appId: 'com.example.app',
   expirationDate: DateTime.now().add(Duration(days: 365)),
   type: LicenseType.pro,
-  metadata: {'user': 'John Doe', 'plan': 'premium'},
 );
 
-// License in JSON format for distribution to users
-String licenseJson = license.toJson();
-
-// Convert to binary format for storage
-Uint8List licenseBytes = LicenseEncoder.encodeToBytes(license.toJson());
-```
-
-### License Encoding/Decoding
-
-The `LicenseEncoder` class provides utilities for working with the binary license format:
-
-```dart
-// Convert license JSON to binary format
-final licenseBytes = LicenseEncoder.encodeToBytes(license.toJson());
-
-// Decode license from binary data
-final licenseData = LicenseEncoder.decodeFromBytes(licenseBytes);
-if (licenseData != null) {
-  // Create license instance from decoded data
-  final license = License(
-    id: licenseData['id'],
-    appId: licenseData['appId'],
-    expirationDate: DateTime.parse(licenseData['expirationDate']),
-    createdAt: DateTime.parse(licenseData['createdAt']),
-    signature: licenseData['signature'],
-    type: LicenseType(licenseData['type']),
-    features: Map<String, dynamic>.from(licenseData['features']),
-    metadata: licenseData['metadata'] != null 
-        ? Map<String, dynamic>.from(licenseData['metadata']) 
-        : null,
-  );
+// 3. Validate license (client-side)
+final validator = keyPair.publicKey.licenseValidator;
+final result = validator.validateLicense(license);
+if (result.isValid) {
+  print('✅ License is valid');
+} else {
+  print('❌ License is invalid: ${result.message}');
 }
-
-// Check if bytes have valid license format
-final isValidFormat = LicenseEncoder.isValidLicenseFile(bytes);
 ```
 
-### License Validation
+### RSA (traditional approach)
 
 ```dart
-// Create validator
-final validator = LicenseValidator(
-  publicKey: keyPair.publicKey,
-);
+// 1. Generate key pair
+final keyPair = RsaKeyGenerator.generateKeyPairAsPem(bitLength: 2048);
 
-// Optional: Create schema for validation
-final schema = LicenseSchema(
-  featureSchema: {
-    'maxUsers': SchemaField(
-      type: FieldType.integer,
-      required: true,
-    ),
+// 2 and 3 - same as with ECDSA
+```
+
+## 📚 Usage Examples
+
+### Complete License Workflow
+
+```dart
+// SERVER: generating a license
+// Import private key with automatic type detection
+final privateKey = LicensifyKeyImporter.importPrivateKeyFromString(privateKeyPem);
+final generator = privateKey.licenseGenerator;
+
+final license = generator(
+  appId: 'com.example.app',
+  expirationDate: DateTime.now().add(Duration(days: 365)),
+  type: LicenseType.pro,
+  features: {
+    'maxUsers': 50,
+    'modules': ['reporting', 'analytics', 'export'],
+    'premium': true,
+  },
+  metadata: {
+    'customerName': 'Acme Corp',
+    'contactEmail': 'support@acme.com',
   },
 );
 
-// Create validation use case
-final licenseValidator = LicenseValidateUseCase(
-  validator: validator,
-  schema: schema, // Optional
-);
+// Convert to bytes for transmission/storage
+final bytes = LicenseEncoder.encodeToBytes(license);
 
-// Read license from binary data
-final licenseData = LicenseEncoder.decodeFromBytes(licenseBytes);
-if (licenseData == null) {
-  print('Invalid license format');
-  return;
+// CLIENT: validating the received license
+// Import public key with automatic type detection
+final publicKey = LicensifyKeyImporter.importPublicKeyFromString(publicKeyPem);
+final validator = publicKey.licenseValidator;
+
+// Read from bytes
+final decodedData = LicenseEncoder.decodeFromBytes(bytes);
+final receivedLicense = License.fromMap(decodedData!);
+
+// Validate
+final result = validator.validateLicense(receivedLicense);
+if (result.isValid && !receivedLicense.isExpired) {
+  print('✅ License is valid - available level: ${receivedLicense.type.name}');
+} else {
+  print('❌ License is invalid or expired');
 }
 
-// Create license instance from decoded data
-final license = License(
-  id: licenseData['id'],
-  appId: licenseData['appId'],
-  expirationDate: DateTime.parse(licenseData['expirationDate']),
-  createdAt: DateTime.parse(licenseData['createdAt']),
-  signature: licenseData['signature'],
-  type: LicenseType(licenseData['type']),
-  features: Map<String, dynamic>.from(licenseData['features']),
-  metadata: licenseData['metadata'] != null 
-      ? Map<String, dynamic>.from(licenseData['metadata']) 
-      : null,
-);
-
-// Validate license
-final result = await licenseValidator(license);
-
-// Check result status
-if (result.status is ActiveLicenseStatus) {
-  // License is valid and active
-  final activeLicense = (result.status as ActiveLicenseStatus).license;
-  print('Active license: ${activeLicense.type}');
-} else if (result.status is ExpiredLicenseStatus) {
-  // License has expired
-  print('License expired');
-} else if (result.status is InvalidLicenseSignatureStatus) {
-  // Invalid signature
-  print('Invalid license signature');
-} else if (result.status is InvalidLicenseSchemaStatus) {
-  // Schema validation failed
-  final schemaErrors = (result.status as InvalidLicenseSchemaStatus).result.errors;
-  print('Schema validation failed: $schemaErrors');
+// Check license features
+if (receivedLicense.features?['premium'] == true) {
+  print('Premium features activated');
 }
 ```
 
-## Storage
-
-Implement the `ILicenseStorage` interface to create your own storage mechanism:
+### License Storage
 
 ```dart
-class MyCustomStorage implements ILicenseStorage {
-  @override
-  Future<bool> deleteLicenseData() async { /* implementation */ }
+// Built-in In-Memory storage
+final storage = InMemoryLicenseStorage();
+final repository = LicenseRepository(storage: storage);
+
+// Save license
+await repository.saveLicense(license);
+
+// Retrieve current license
+final savedLicense = await repository.getCurrentLicense();
+
+// Custom storage implementation
+class FileSystemLicenseStorage implements ILicenseStorage {
+  final String filePath;
+  
+  FileSystemLicenseStorage(this.filePath);
   
   @override
-  Future<bool> hasLicense() async { /* implementation */ }
+  Future<bool> deleteLicenseData() async {
+    // Implementation to delete file
+    return true;
+  }
   
   @override
-  Future<Uint8List?> loadLicenseData() async { /* implementation */ }
+  Future<bool> hasLicense() async {
+    // Implementation to check if file exists
+    return true;
+  }
   
   @override
-  Future<bool> saveLicenseData(Uint8List data) async { /* implementation */ }
+  Future<Uint8List?> loadLicenseData() async {
+    // Implementation to read file
+    return null;
+  }
+  
+  @override
+  Future<bool> saveLicenseData(Uint8List data) async {
+    // Implementation to write to file
+    return true;
+  }
 }
 ```
 
-## Schema Validation
+### Schema Validation
 
 ```dart
-// Define schema for enterprise licenses
+// Define license schema
 final schema = LicenseSchema(
   featureSchema: {
     'maxUsers': SchemaField(
       type: FieldType.integer,
       required: true,
-      validators: [NumberValidator(minimum: 5, maximum: 1000)],
+      validators: [NumberValidator(minimum: 1, maximum: 1000)],
     ),
     'modules': SchemaField(
       type: FieldType.array,
@@ -193,86 +183,125 @@ final schema = LicenseSchema(
     ),
   },
   metadataSchema: {
-    'clientName': SchemaField(
+    'customerName': SchemaField(
       type: FieldType.string,
       required: true,
     ),
   },
+  allowUnknownFeatures: false,
+  allowUnknownMetadata: true,
 );
 
 // Validate license against schema
+final schemaResult = validator.validateSchema(license, schema);
+if (schemaResult.isValid) {
+  print('✅ License schema is valid');
+} else {
+  print('❌ License schema is invalid:');
+  for (final entry in schemaResult.errors.entries) {
+    print('  - ${entry.key}: ${entry.value}');
+  }
+}
+
+// Comprehensive validation of signature, expiration, and schema
 final isValid = validator.validateLicenseWithSchema(license, schema);
 ```
 
-## Custom License Types
+### ECDSA vs RSA: Advantages
 
 ```dart
-// Standard types
+// Key generation comparison
+final rsaStartTime = DateTime.now();
+final rsaKeyPair = RsaKeyGenerator.generateKeyPairAsPem(bitLength: 2048);
+final rsaEndTime = DateTime.now();
+
+final ecdsaStartTime = DateTime.now();
+final ecdsaKeyPair = EcdsaKeyGenerator.generateKeyPairAsPem(curve: EcCurve.p256);
+final ecdsaEndTime = DateTime.now();
+
+print('ECDSA advantages:');
+print('- Generation is ${rsaEndTime.difference(rsaStartTime).inMilliseconds / 
+       ecdsaEndTime.difference(ecdsaStartTime).inMilliseconds}x faster');
+print('- Private key size: ${rsaKeyPair.privateKey.content.length / 
+       ecdsaKeyPair.privateKey.content.length}x smaller');
+print('- Public key size: ${rsaKeyPair.publicKey.content.length / 
+       ecdsaKeyPair.publicKey.content.length}x smaller');
+print('- ECDSA P-256: ~128-bit security level (vs RSA-2048: ~112-bit)');
+```
+
+## 📖 Documentation
+
+### Key Formats and Importing
+
+```dart
+// Generate keys
+final ecdsaKeyPair = EcdsaKeyGenerator.generateKeyPairAsPem();
+
+// Create keys with explicit type specification
+final privateKey = LicensifyPrivateKey.rsa(privateKeyPemString);
+final publicKey = LicensifyPublicKey.ecdsa(publicKeyPemString);
+
+// Import keys with automatic type detection
+final privateKey = LicensifyKeyImporter.importPrivateKeyFromString(pemPrivateKey);
+final publicKey = LicensifyKeyImporter.importPublicKeyFromString(pemPublicKey);
+
+// Import keys from bytes
+final privateKeyBytes = Uint8List.fromList(utf8.encode(privateKeyPem));
+final privateKey = LicensifyKeyImporter.importPrivateKeyFromBytes(privateKeyBytes);
+
+// Import key pair with auto type detection and compatibility check
+final keyPair = LicensifyKeyImporter.importKeyPairFromStrings(
+  privateKeyPem: privatePemString, 
+  publicKeyPem: publicPemString,
+);
+
+// The importer automatically:
+// 1. Detects key type (RSA or ECDSA)
+// 2. Verifies key format correctness
+// 3. Ensures key pair consistency (matching types)
+```
+
+### License Types
+
+```dart
+// Built-in types
 final trial = LicenseType.trial;
 final standard = LicenseType.standard;
 final pro = LicenseType.pro;
 
 // Custom types
 final enterprise = LicenseType('enterprise');
-final education = LicenseType('education');
+final premium = LicenseType('premium');
 ```
 
-## License Format
+### License Format
 
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
-  "appId": "com.example.myapp",
+  "appId": "com.example.app",
   "createdAt": "2024-07-25T14:30:00Z",
   "expirationDate": "2025-07-25T14:30:00Z",
-  "type": "enterprise",
+  "type": "pro",
   "features": {
     "maxUsers": 50,
     "modules": ["analytics", "reporting"]
   },
   "metadata": {
-    "clientName": "Example Corp"
+    "customerName": "Example Corp"
   },
   "signature": "Base64EncodedSignature..."
 }
 ```
 
-## Security
+## 🔒 Security
 
-- Store private keys securely, never in your app
-- Public key is safe to embed in your application
-- Consider using code obfuscation in release builds
+1. **Private key** should be stored only on the server or licensing authority side
+2. **Public key** can be safely embedded in your application
+3. Code obfuscation is recommended in release builds
+4. ECDSA with P-256 curve provides high security level with smaller key sizes
 
-## Key Types
-
-### RSA
-
-```dart
-final rsaKeyPair = RsaKeyGenerator.generateKeyPairAsPem(bitLength: 2048);
-```
-
-### ECDSA (more efficient)
-
-```dart
-// NIST P-256
-final ecdsaKeyPair = EcdsaKeyGenerator.generateKeyPairAsPem(
-  curve: EcCurve.p256,
-  randomAlgorithm: SecureRandomAlgorithm.fortuna,
-);
-
-// Bitcoin/Ethereum compatible
-final bitcoinKeyPair = EcdsaKeyGenerator.generateKeyPairAsPem(
-  curve: EcCurve.secp256k1,
-);
-```
-
-### ECDSA Advantages
-- Smaller key sizes (256-bit ECDSA ≈ 3072-bit RSA)
-- Up to 10x faster generation
-- Significantly lower CPU and memory usage
-- Signatures are 72% smaller than RSA
-
-## License
+## 📝 License
 
 ```
 SPDX-License-Identifier: LGPL-3.0-or-later

@@ -49,11 +49,27 @@ class LicenseValidator implements ILicenseValidator {
       final dataToVerify =
           '${license.id}:${license.appId}:${roundedExpirationDate.toIso8601String()}:${license.type.name}:$featuresJson:$metadataJson';
 
-      // Verify signature based on key type
-      final isValid =
-          _keyType == LicensifyKeyType.rsa
-              ? _verifyRsaSignature(dataToVerify, license.signature)
-              : _verifyEcdsaSignature(dataToVerify, license.signature);
+      // Определяем, с какой сигнатурой имеем дело: пробуем разные методы проверки
+      bool isValid;
+
+      // Сначала пробуем метод, соответствующий типу ключа
+      try {
+        isValid =
+            _keyType == LicensifyKeyType.rsa
+                ? _verifyRsaSignature(dataToVerify, license.signature)
+                : _verifyEcdsaSignature(dataToVerify, license.signature);
+      } catch (e) {
+        // Если не получилось, пробуем альтернативный метод
+        try {
+          isValid =
+              _keyType == LicensifyKeyType.rsa
+                  ? _verifyEcdsaSignature(dataToVerify, license.signature)
+                  : _verifyRsaSignature(dataToVerify, license.signature);
+        } catch (_) {
+          // Если и это не получилось, значит подпись действительно неверная
+          isValid = false;
+        }
+      }
 
       return ValidationResult(
         isValid: isValid,
@@ -120,7 +136,7 @@ class LicenseValidator implements ILicenseValidator {
       return verifier.verifySignature(hashedData, ecSignature);
     } catch (e) {
       print('ECDSA verification error: $e');
-      return false;
+      rethrow; // Пробрасываем ошибку дальше, чтобы попробовать другой метод
     }
   }
 

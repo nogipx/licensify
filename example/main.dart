@@ -101,11 +101,9 @@ class LicensifyExamples {
 
     // Create RSA license
     print('\n1. Creating license with RSA:');
-    final rsaGenerator = LicenseGenerateUseCase(
-      privateKey: rsaKeyPair.privateKey,
-    );
+    final rsaGenerator = LicenseGenerator(privateKey: rsaKeyPair.privateKey);
 
-    rsaLicense = rsaGenerator.generateLicense(
+    rsaLicense = rsaGenerator(
       appId: 'com.example.app',
       expirationDate: DateTime.now().add(Duration(days: 365)),
       type: LicenseType.pro,
@@ -124,13 +122,13 @@ class LicensifyExamples {
 
     // Create ECDSA license
     print('\n2. Creating license with ECDSA:');
-    final ecdsaGenerator = LicenseGenerateUseCase(
+    final ecdsaGenerator = LicenseGenerator(
       privateKey: ecdsaKeyPair.privateKey,
       // Optionally specify hash algorithm (defaults to SHA-512)
       digest: SHA512Digest(),
     );
 
-    ecdsaLicense = ecdsaGenerator.generateLicense(
+    ecdsaLicense = ecdsaGenerator(
       appId: 'com.example.app',
       expirationDate: DateTime.now().add(Duration(days: 365)),
       type: LicenseType.pro,
@@ -149,7 +147,7 @@ class LicensifyExamples {
 
     // Create a license with custom type
     print('\n3. Creating license with custom type:');
-    final customLicense = rsaGenerator.generateLicense(
+    final customLicense = rsaGenerator(
       appId: 'com.example.app',
       expirationDate: DateTime.now().add(Duration(days: 365)),
       type: LicenseType('enterprise'), // Custom license type
@@ -193,24 +191,58 @@ class LicensifyExamples {
       print('❌ ECDSA license is invalid: ${ecdsaValidationResult.message}');
     }
 
-    // Using LicenseValidateUseCase for more comprehensive validation
-    print('\n3. Using LicenseValidateUseCase (async):');
+    // Comprehensive license validation
+    print('\n3. Comprehensive license validation:');
 
-    print(
-      'The LicenseValidateUseCase returns a Future<LicenseValidateUseCaseResult>',
-    );
-    print('In a real app, you would use await or .then() to handle the result');
-    print('Example usage with async/await:');
+    // First check the license expiration separately
+    final license = rsaLicense; // Using our sample license
+
+    if (license.isExpired) {
+      print(
+        '❌ License has expired - expiration date: ${license.expirationDate}',
+      );
+    } else {
+      print(
+        '✅ License is not expired - valid until: ${license.expirationDate}',
+      );
+      print('   Days remaining: ${license.remainingDays}');
+    }
+
+    // Then check the signature
+    final signatureResult = rsaValidator.validateSignature(license);
+    if (signatureResult.isValid) {
+      print('✅ Signature is valid');
+    } else {
+      print('❌ Invalid signature: ${signatureResult.message}');
+    }
+
+    // Combined validation
+    final validationResult = rsaValidator.validateLicense(license);
+    if (validationResult.isValid) {
+      print('✅ License is completely valid (signature and expiration)');
+    } else {
+      print('❌ License validation failed: ${validationResult.message}');
+    }
+
+    // Example of validating with schema
+    print('\nExample of schema validation:');
     print('''
-Future<void> validateLicense(License license) async {
-  final result = await licenseValidator(license);
-  
-  if (result.status is ActiveLicenseStatus) {
-    final activeLicense = (result.status as ActiveLicenseStatus).license;
-    print('License is active: \${activeLicense.type.name}');
-  } else if (result.status is ExpiredLicenseStatus) {
-    print('License has expired');
+// Define schema
+final schema = LicenseSchema(
+  featureSchema: {
+    'maxUsers': SchemaField(type: FieldType.integer, required: true),
+  },
+  metadataSchema: {
+    'customerName': SchemaField(type: FieldType.string, required: true),
   }
+);
+
+// Validate against schema
+final schemaResult = validator.validateSchema(license, schema);
+final isFullyValid = validator.validateLicenseWithSchema(license, schema);
+
+if (isFullyValid) {
+  print('License is valid with all checks (signature, expiration, schema)');
 }
 ''');
 
@@ -309,9 +341,7 @@ Future<void> validateLicense(License license) async {
 
     // Create invalid license to demonstrate schema validation failure
     print('\n4. Validating license with invalid schema:');
-    final invalidLicense = LicenseGenerateUseCase(
-      privateKey: rsaKeyPair.privateKey,
-    ).generateLicense(
+    final invalidLicense = LicenseGenerator(privateKey: rsaKeyPair.privateKey)(
       appId: 'com.example.app',
       expirationDate: DateTime.now().add(Duration(days: 365)),
       type: LicenseType.pro,
@@ -414,17 +444,15 @@ class FileSystemLicenseStorage implements ILicenseStorage {
 
     // Compare license generation performance
     print('\n1. License generation performance:');
-    final rsaGenerator = LicenseGenerateUseCase(
-      privateKey: rsaKeyPair.privateKey,
-    );
-    final ecdsaGenerator = LicenseGenerateUseCase(
+    final rsaGenerator = LicenseGenerator(privateKey: rsaKeyPair.privateKey);
+    final ecdsaGenerator = LicenseGenerator(
       privateKey: ecdsaKeyPair.privateKey,
     );
 
     // RSA license generation time
     final rsaStartTime = DateTime.now();
     for (var i = 0; i < 10; i++) {
-      rsaGenerator.generateLicense(
+      rsaGenerator(
         appId: 'com.example.app',
         expirationDate: DateTime.now().add(Duration(days: 365)),
         type: LicenseType.standard,
@@ -436,7 +464,7 @@ class FileSystemLicenseStorage implements ILicenseStorage {
     // ECDSA license generation time
     final ecdsaStartTime = DateTime.now();
     for (var i = 0; i < 10; i++) {
-      ecdsaGenerator.generateLicense(
+      ecdsaGenerator(
         appId: 'com.example.app',
         expirationDate: DateTime.now().add(Duration(days: 365)),
         type: LicenseType.standard,

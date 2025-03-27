@@ -12,14 +12,12 @@ void main() {
   group('LicenseRepository', () {
     late InMemoryLicenseStorage storage;
     late LicenseRepository sut;
-    late LicenseGenerateUseCase licenseGenerator;
+    late LicenseGenerator licenseGenerator;
 
     setUp(() {
       storage = InMemoryLicenseStorage();
       sut = LicenseRepository(storage: storage);
-      licenseGenerator = LicenseGenerateUseCase(
-        privateKey: TestConstants.testKeyPair.privateKey,
-      );
+      licenseGenerator = TestConstants.testKeyPair.privateKey.licenseGenerator;
     });
 
     test('returns null when license is missing', () async {
@@ -34,7 +32,7 @@ void main() {
 
     test('loads valid license from storage', () async {
       // Arrange
-      final license = licenseGenerator.generateLicense(
+      final license = licenseGenerator(
         appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
       );
@@ -55,7 +53,7 @@ void main() {
 
     test('returns null for corrupted data', () async {
       // Arrange - first save a valid license
-      final license = licenseGenerator.generateLicense(
+      final license = licenseGenerator(
         appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
       );
@@ -77,7 +75,7 @@ void main() {
 
     test('successfully saves license', () async {
       // Arrange
-      final license = licenseGenerator.generateLicense(
+      final license = licenseGenerator(
         appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
       );
@@ -96,7 +94,7 @@ void main() {
 
     test('successfully removes existing license', () async {
       // Arrange - save a license to be removed
-      final license = licenseGenerator.generateLicense(
+      final license = licenseGenerator(
         appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
       );

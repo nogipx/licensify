@@ -33,6 +33,9 @@ final class LicensifyPrivateKey extends LicensifyKey {
   /// Creates an ECDSA private key
   factory LicensifyPrivateKey.ecdsa(String content) =>
       LicensifyPrivateKey._(content: content, keyType: LicensifyKeyType.ecdsa);
+
+  /// Creates a license generator for the private key
+  LicenseGenerator get licenseGenerator => LicenseGenerator(privateKey: this);
 }
 
 /// Represents a public key used for validating licenses
@@ -50,6 +53,9 @@ final class LicensifyPublicKey extends LicensifyKey {
   /// Creates an ECDSA public key
   factory LicensifyPublicKey.ecdsa(String content) =>
       LicensifyPublicKey._(content: content, keyType: LicensifyKeyType.ecdsa);
+
+  /// Creates a license validator for the public key
+  LicenseValidator get licenseValidator => LicenseValidator(publicKey: this);
 }
 
 /// Represents a cryptographic key pair (private and public keys)
