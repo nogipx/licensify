@@ -5,12 +5,13 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:licensify/licensify.dart';
+
 /// Utilities for working with the binary license file format
 class LicenseEncoder {
   /// Magic sequence for identifying license files
   static const String magicHeader = 'LCSF';
 
-  /// Current file format version
   static const int formatVersion = 1;
 
   /// Converts license data to binary file format
@@ -19,9 +20,11 @@ class LicenseEncoder {
   /// - [0-3] Magic sequence 'LCSF'
   /// - [4-7] Format version (uint32)
   /// - [8+]  Serialized JSON with license data
-  static Uint8List encodeToBytes(Map<String, dynamic> licenseData) {
+  static Uint8List encodeToBytes(License licenseData) {
+    final licenseDto = LicenseMapper.toDto(licenseData);
+
     // Serialize license data to JSON
-    final jsonData = utf8.encode(jsonEncode(licenseData));
+    final jsonData = utf8.encode(jsonEncode(licenseDto.toJson()));
 
     // Create buffer for binary data
     final result = BytesBuilder();
@@ -44,7 +47,7 @@ class LicenseEncoder {
   /// Decodes binary license file data and verifies the format
   ///
   /// Returns null if the file format is invalid
-  static Map<String, dynamic>? decodeFromBytes(Uint8List bytes) {
+  static License? decodeFromBytes(Uint8List bytes) {
     try {
       // Check minimum file length (8 bytes for header)
       if (bytes.length < 8) {
@@ -76,14 +79,16 @@ class LicenseEncoder {
       final jsonString = utf8.decode(jsonBytes);
 
       // Parse JSON
-      return jsonDecode(jsonString);
+      final licenseDto = LicenseDto.fromJson(jsonDecode(jsonString));
+      return licenseDto.toDomain();
     } catch (e) {
-      return null;
+      print('Error decoding license: $e');
+      rethrow;
     }
   }
 
   /// Checks if the file has a valid license format
-  static bool isValidLicenseFile(Uint8List bytes) {
+  static bool isValidLicenseBytes(Uint8List bytes) {
     if (bytes.length < 8) {
       return false;
     }

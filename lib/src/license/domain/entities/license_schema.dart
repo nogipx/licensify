@@ -27,7 +27,7 @@ class LicenseSchema {
   });
 
   /// Validates features against schema
-  ValidationResult validateFeatures(Map<String, dynamic> features) {
+  SchemaValidationResult validateFeatures(Map<String, dynamic> features) {
     return _validateFields(
       features,
       featureSchema,
@@ -36,9 +36,9 @@ class LicenseSchema {
   }
 
   /// Validates metadata against schema
-  ValidationResult validateMetadata(Map<String, dynamic>? metadata) {
+  SchemaValidationResult validateMetadata(Map<String, dynamic>? metadata) {
     if (metadata == null) {
-      return ValidationResult.success();
+      return SchemaValidationResult.success();
     }
     return _validateFields(
       metadata,
@@ -48,27 +48,21 @@ class LicenseSchema {
   }
 
   /// Validates a license object against this schema
-  ValidationResult validateLicense(License license) {
+  SchemaValidationResult validateLicense(License license) {
     final featureResult = validateFeatures(license.features);
-    if (!featureResult.isValid) {
-      return ValidationResult(
-        isValid: false,
-        errors: {'features': featureResult.errors ?? {}},
-      );
-    }
-
     final metadataResult = validateMetadata(license.metadata);
-    if (!metadataResult.isValid) {
-      return ValidationResult(
-        isValid: false,
-        errors: {'metadata': metadataResult.errors ?? {}},
-      );
+
+    if (!metadataResult.isValid || !featureResult.isValid) {
+      return SchemaValidationResult.failure({
+        'metadata': metadataResult.errors,
+        'features': featureResult.errors,
+      });
     }
 
-    return ValidationResult.success();
+    return SchemaValidationResult.success();
   }
 
-  ValidationResult _validateFields(
+  SchemaValidationResult _validateFields(
     Map<String, dynamic> data,
     Map<String, SchemaField> schema, {
     required bool allowUnknownFields,
@@ -107,9 +101,9 @@ class LicenseSchema {
     }
 
     if (errors.isEmpty) {
-      return ValidationResult.success();
+      return SchemaValidationResult.success();
     } else {
-      return ValidationResult(isValid: false, errors: errors);
+      return SchemaValidationResult.failure(errors);
     }
   }
 }
@@ -133,10 +127,10 @@ class SchemaField {
   });
 
   /// Validates a value against this field schema
-  ValidationResult validate(dynamic value) {
+  SchemaValidationResult validate(dynamic value) {
     // Check type
     if (!_checkType(value, type)) {
-      return ValidationResult.failure(
+      return SchemaValidationResult.failureMessage(
         'Expected $type but got ${value.runtimeType}',
       );
     }
@@ -149,7 +143,7 @@ class SchemaField {
       }
     }
 
-    return ValidationResult.success();
+    return SchemaValidationResult.success();
   }
 
   bool _checkType(dynamic value, FieldType type) {
@@ -199,37 +193,49 @@ enum FieldType {
 /// Interface for field validators
 abstract class FieldValidator {
   /// Validates a field value
-  ValidationResult validate(dynamic value);
+  SchemaValidationResult validate(dynamic value);
 }
 
 /// Result of a validation operation
-class ValidationResult {
+class SchemaValidationResult {
   /// Whether validation passed
   final bool isValid;
 
   /// Validation errors by field
-  final Map<String, dynamic>? errors;
+  final Map<String, dynamic> errors;
 
   /// Creates a validation result
-  const ValidationResult({required this.isValid, this.errors});
+  const SchemaValidationResult._({
+    required this.isValid,
+    this.errors = const {},
+  });
 
   /// Creates a successful validation result
-  factory ValidationResult.success() => const ValidationResult(isValid: true);
+  factory SchemaValidationResult.success() =>
+      const SchemaValidationResult._(isValid: true);
 
   /// Creates a failed validation result with error message
-  factory ValidationResult.failure(dynamic errorMessage) =>
-      ValidationResult(isValid: false, errors: {'error': errorMessage});
+  factory SchemaValidationResult.failure(Map<String, dynamic> errors) =>
+      SchemaValidationResult._(isValid: false, errors: errors);
+
+  /// Creates a failed validation result with error message
+  factory SchemaValidationResult.failureMessage(String message) =>
+      SchemaValidationResult._(isValid: false, errors: {'error': message});
 
   /// Gets a human-readable error message
   String? get errorMessage {
-    if (errors == null || errors!.isEmpty) return null;
+    if (errors.isEmpty) return null;
 
-    if (errors!.length == 1 && errors!.containsKey('error')) {
-      return errors!['error'].toString();
+    if (errors.length == 1 && errors.containsKey('error')) {
+      return errors['error'].toString();
     }
 
     return errors.toString();
   }
+
+  @override
+  String toString() =>
+      'SchemaValidationResult(isValid: $isValid, errors: $errors)';
 }
 
 /// Validator for string values
@@ -247,19 +253,19 @@ class StringValidator implements FieldValidator {
   const StringValidator({this.minLength, this.maxLength, this.pattern});
 
   @override
-  ValidationResult validate(dynamic value) {
+  SchemaValidationResult validate(dynamic value) {
     if (value is! String) {
-      return ValidationResult.failure('Value is not a string');
+      return SchemaValidationResult.failureMessage('Value is not a string');
     }
 
     if (minLength != null && value.length < minLength!) {
-      return ValidationResult.failure(
+      return SchemaValidationResult.failureMessage(
         'String length must be at least $minLength characters',
       );
     }
 
     if (maxLength != null && value.length > maxLength!) {
-      return ValidationResult.failure(
+      return SchemaValidationResult.failureMessage(
         'String length must not exceed $maxLength characters',
       );
     }
@@ -267,11 +273,13 @@ class StringValidator implements FieldValidator {
     if (pattern != null) {
       final regex = RegExp(pattern!);
       if (!regex.hasMatch(value)) {
-        return ValidationResult.failure('String must match pattern: $pattern');
+        return SchemaValidationResult.failureMessage(
+          'String must match pattern: $pattern',
+        );
       }
     }
 
-    return ValidationResult.success();
+    return SchemaValidationResult.success();
   }
 }
 
@@ -298,21 +306,21 @@ class NumberValidator implements FieldValidator {
   });
 
   @override
-  ValidationResult validate(dynamic value) {
+  SchemaValidationResult validate(dynamic value) {
     if (value is! num) {
-      return ValidationResult.failure('Value is not a number');
+      return SchemaValidationResult.failureMessage('Value is not a number');
     }
 
     if (minimum != null) {
       if (exclusiveMinimum) {
         if (value <= minimum!) {
-          return ValidationResult.failure(
+          return SchemaValidationResult.failureMessage(
             'Value must be greater than $minimum',
           );
         }
       } else {
         if (value < minimum!) {
-          return ValidationResult.failure(
+          return SchemaValidationResult.failureMessage(
             'Value must be greater than or equal to $minimum',
           );
         }
@@ -322,18 +330,20 @@ class NumberValidator implements FieldValidator {
     if (maximum != null) {
       if (exclusiveMaximum) {
         if (value >= maximum!) {
-          return ValidationResult.failure('Value must be less than $maximum');
+          return SchemaValidationResult.failureMessage(
+            'Value must be less than $maximum',
+          );
         }
       } else {
         if (value > maximum!) {
-          return ValidationResult.failure(
+          return SchemaValidationResult.failureMessage(
             'Value must be less than or equal to $maximum',
           );
         }
       }
     }
 
-    return ValidationResult.success();
+    return SchemaValidationResult.success();
   }
 }
 
@@ -352,19 +362,19 @@ class ArrayValidator implements FieldValidator {
   const ArrayValidator({this.minItems, this.maxItems, this.itemValidator});
 
   @override
-  ValidationResult validate(dynamic value) {
+  SchemaValidationResult validate(dynamic value) {
     if (value is! List) {
-      return ValidationResult.failure('Value is not an array');
+      return SchemaValidationResult.failureMessage('Value is not an array');
     }
 
     if (minItems != null && value.length < minItems!) {
-      return ValidationResult.failure(
+      return SchemaValidationResult.failureMessage(
         'Array must contain at least $minItems items',
       );
     }
 
     if (maxItems != null && value.length > maxItems!) {
-      return ValidationResult.failure(
+      return SchemaValidationResult.failureMessage(
         'Array must not contain more than $maxItems items',
       );
     }
@@ -373,14 +383,14 @@ class ArrayValidator implements FieldValidator {
       for (var i = 0; i < value.length; i++) {
         final itemResult = itemValidator!.validate(value[i]);
         if (!itemResult.isValid) {
-          return ValidationResult.failure(
+          return SchemaValidationResult.failureMessage(
             'Item at index $i is invalid: ${itemResult.errorMessage}',
           );
         }
       }
     }
 
-    return ValidationResult.success();
+    return SchemaValidationResult.success();
   }
 }
 
@@ -399,9 +409,9 @@ class ObjectValidator implements FieldValidator {
   });
 
   @override
-  ValidationResult validate(dynamic value) {
+  SchemaValidationResult validate(dynamic value) {
     if (value is! Map) {
-      return ValidationResult.failure('Value is not an object');
+      return SchemaValidationResult.failureMessage('Value is not an object');
     }
 
     final errors = <String, dynamic>{};
@@ -439,9 +449,9 @@ class ObjectValidator implements FieldValidator {
     }
 
     if (errors.isEmpty) {
-      return ValidationResult.success();
+      return SchemaValidationResult.success();
     } else {
-      return ValidationResult(isValid: false, errors: errors);
+      return SchemaValidationResult.failure(errors);
     }
   }
 }

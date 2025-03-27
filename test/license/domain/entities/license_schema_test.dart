@@ -87,7 +87,7 @@ void main() {
 
       // Assert
       expect(result.isValid, isTrue);
-      expect(result.errors, isNull);
+      expect(result.errors, isEmpty);
     });
 
     test('схема отклоняет поля features с неправильным типом данных', () {
@@ -103,8 +103,8 @@ void main() {
 
       // Assert
       expect(result.isValid, isFalse); // Данные невалидны, ожидаем false
-      expect(result.errors, isNotNull);
-      expect(result.errors!.containsKey('maxUsers'), isTrue);
+      expect(result.errors, isNotEmpty);
+      expect(result.errors.containsKey('maxUsers'), isTrue);
     });
 
     test('схема отклоняет числовые значения ниже минимума', () {
@@ -120,8 +120,8 @@ void main() {
 
       // Assert
       expect(result.isValid, isFalse); // Данные невалидны, ожидаем false
-      expect(result.errors, isNotNull);
-      expect(result.errors!.containsKey('maxUsers'), isTrue);
+      expect(result.errors, isNotEmpty);
+      expect(result.errors.containsKey('maxUsers'), isTrue);
     });
 
     test('схема отклоняет числовые значения выше максимума', () {
@@ -137,8 +137,8 @@ void main() {
 
       // Assert
       expect(result.isValid, isFalse); // Данные невалидны, ожидаем false
-      expect(result.errors, isNotNull);
-      expect(result.errors!.containsKey('maxUsers'), isTrue);
+      expect(result.errors, isNotEmpty);
+      expect(result.errors.containsKey('maxUsers'), isTrue);
     });
 
     test('схема отклоняет пустые массивы, если установлен minItems', () {
@@ -154,8 +154,8 @@ void main() {
 
       // Assert
       expect(result.isValid, isFalse); // Данные невалидны, ожидаем false
-      expect(result.errors, isNotNull);
-      expect(result.errors!.containsKey('modules'), isTrue);
+      expect(result.errors, isNotEmpty);
+      expect(result.errors.containsKey('modules'), isTrue);
     });
 
     test(
@@ -174,8 +174,8 @@ void main() {
 
         // Assert
         expect(result.isValid, isFalse); // Данные невалидны, ожидаем false
-        expect(result.errors, isNotNull);
-        expect(result.errors!.containsKey('unknownFeature'), isTrue);
+        expect(result.errors, isNotEmpty);
+        expect(result.errors.containsKey('unknownFeature'), isTrue);
       },
     );
 
@@ -196,7 +196,7 @@ void main() {
 
         // Assert
         expect(result.isValid, isTrue);
-        expect(result.errors, isNull);
+        expect(result.errors, isEmpty);
       },
     );
 
@@ -213,8 +213,8 @@ void main() {
 
       // Assert
       expect(result.isValid, isFalse); // Данные невалидны, ожидаем false
-      expect(result.errors, isNotNull);
-      expect(result.errors!.containsKey('maxUsers'), isTrue);
+      expect(result.errors, isNotEmpty);
+      expect(result.errors.containsKey('maxUsers'), isTrue);
     });
 
     test('схема подтверждает корректные metadata', () {
@@ -226,7 +226,7 @@ void main() {
 
       // Assert
       expect(result.isValid, isTrue);
-      expect(result.errors, isNull);
+      expect(result.errors, isEmpty);
     });
 
     test('схема отклоняет слишком короткие строки в metadata', () {
@@ -241,8 +241,8 @@ void main() {
 
       // Assert
       expect(result.isValid, isFalse); // Данные невалидны, ожидаем false
-      expect(result.errors, isNotNull);
-      expect(result.errors!.containsKey('clientName'), isTrue);
+      expect(result.errors, isNotEmpty);
+      expect(result.errors.containsKey('clientName'), isTrue);
     });
 
     test('схема по умолчанию разрешает неизвестные поля в metadata', () {
@@ -258,7 +258,7 @@ void main() {
 
       // Assert
       expect(result.isValid, isTrue);
-      expect(result.errors, isNull);
+      expect(result.errors, isEmpty);
     });
 
     test(
@@ -277,8 +277,8 @@ void main() {
 
         // Assert
         expect(result.isValid, isFalse); // Данные невалидны, ожидаем false
-        expect(result.errors, isNotNull);
-        expect(result.errors!.containsKey('unknownField'), isTrue);
+        expect(result.errors, isNotEmpty);
+        expect(result.errors.containsKey('unknownField'), isTrue);
       },
     );
 
@@ -290,7 +290,7 @@ void main() {
 
       // Assert
       expect(result.isValid, isTrue);
-      expect(result.errors, isNull);
+      expect(result.errors, isEmpty);
     });
 
     test('validateLicense подтверждает лицензию с валидными полями', () {
@@ -302,7 +302,7 @@ void main() {
 
       // Assert
       expect(result.isValid, isTrue);
-      expect(result.errors, isNull);
+      expect(result.errors, isEmpty);
     });
 
     test('validateLicense отклоняет лицензию с невалидными features', () {
@@ -319,8 +319,8 @@ void main() {
 
       // Assert
       expect(result.isValid, isFalse);
-      expect(result.errors, isNotNull);
-      expect(result.errors!.containsKey('features'), isTrue);
+      expect(result.errors, isNotEmpty);
+      expect(result.errors.containsKey('features'), isTrue);
     });
 
     test('validateLicense отклоняет лицензию с невалидными metadata', () {
@@ -336,8 +336,8 @@ void main() {
 
       // Assert
       expect(result.isValid, isFalse);
-      expect(result.errors, isNotNull);
-      expect(result.errors!.containsKey('metadata'), isTrue);
+      expect(result.errors, isNotEmpty);
+      expect(result.errors.containsKey('metadata'), isTrue);
     });
   });
 }

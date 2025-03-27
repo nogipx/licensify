@@ -2,5 +2,5 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+export 'license_generate_usecase.dart';
 export 'license_validate_usecase.dart';
-export 'generate_license_usecase.dart';

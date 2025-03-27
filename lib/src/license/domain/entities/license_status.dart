@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-import 'license.dart';
+import 'package:licensify/licensify.dart';
 
 /// Base class for license status
 ///
@@ -20,20 +20,22 @@ abstract class LicenseStatus {
   /// Returns true if no license is installed
   bool get isNoLicense => this is NoLicenseStatus;
 
-  /// Returns true if the license is invalid (e.g., tampered with)
-  bool get isInvalid => this is InvalidLicenseStatus;
+  /// Returns true if the license signature is invalid
+  bool get isInvalidSignature => this is InvalidLicenseSignatureStatus;
+
+  /// Returns true if the license schema is invalid
+  bool get isInvalidSchema => this is InvalidLicenseSchemaStatus;
 
   /// Returns true if an error occurred during license validation
   bool get isError => this is ErrorLicenseStatus;
 
   /// Returns the license object if available (for Active or Expired status)
   /// Returns null for other status types
-  License? get license =>
-      this is ActiveLicenseStatus
-          ? (this as ActiveLicenseStatus).license
-          : this is ExpiredLicenseStatus
-          ? (this as ExpiredLicenseStatus).license
-          : null;
+  License? get license => switch (this) {
+    ActiveLicenseStatus(:final license) => license,
+    ExpiredLicenseStatus(:final license) => license,
+    _ => null,
+  };
 }
 
 /// Status indicating no license is installed
@@ -61,25 +63,19 @@ class ExpiredLicenseStatus extends LicenseStatus {
   const ExpiredLicenseStatus(this.license);
 }
 
-/// Status indicating the license is invalid (tampered with or incorrect)
-class InvalidLicenseStatus extends LicenseStatus {
-  /// Optional message describing why the license is invalid
-  final String? message;
-
-  /// Creates an invalid license status with an optional error message
-  const InvalidLicenseStatus({this.message});
+/// Status indicating the license signature is invalid
+class InvalidLicenseSignatureStatus extends LicenseStatus {
+  /// Creates an invalid license signature status
+  const InvalidLicenseSignatureStatus();
 }
 
-/// Status indicating the license is invalid (tampered with or incorrect)
+/// Status indicating the license schema is invalid
 class InvalidLicenseSchemaStatus extends LicenseStatus {
-  /// Optional message describing why the license is invalid
-  final String? message;
+  /// The schema validation result
+  final SchemaValidationResult schemaValidationResult;
 
-  /// Errors in the license schema
-  final Map<String, dynamic>? errors;
-
-  /// Creates an invalid license status with an optional error message
-  const InvalidLicenseSchemaStatus({this.message, this.errors});
+  /// Creates an invalid license schema status with the specified schema validation result
+  const InvalidLicenseSchemaStatus(this.schemaValidationResult);
 }
 
 /// Status indicating an error occurred during license checking

@@ -2,48 +2,7 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-import 'dart:typed_data';
-
 import 'package:licensify/licensify.dart';
-
-/// License type representation
-///
-/// This class allows both using predefined license types and
-/// creating custom types for specific business needs.
-class LicenseType {
-  /// The name identifier of the license type
-  final String name;
-
-  /// Creates a license type with the specified name
-  ///
-  /// Use this constructor to create custom license types:
-  /// ```dart
-  /// final enterpriseType = LicenseType('enterprise');
-  /// ```
-  const LicenseType(this.name);
-
-  /// Trial license with limited functionality or time period
-  static const trial = LicenseType('trial');
-
-  /// Standard license with basic functionality
-  static const standard = LicenseType('standard');
-
-  /// Professional license with all features enabled
-  static const pro = LicenseType('pro');
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is LicenseType &&
-          runtimeType == other.runtimeType &&
-          name == other.name;
-
-  @override
-  int get hashCode => name.hashCode;
-
-  @override
-  String toString() => 'LicenseType($name)';
-}
 
 /// License domain entity
 ///
@@ -100,18 +59,34 @@ class License {
   int get remainingDays =>
       expirationDate.difference(DateTime.now().toUtc()).inDays;
 
-  /// Converts the license to a byte array using formatted header
-  Uint8List get bytes => LicenseEncoder.encodeToBytes(toJson());
+  /// Creates a copy of this instance with optional changes
+  License copyWith({
+    String? id,
+    String? appId,
+    DateTime? expirationDate,
+    DateTime? createdAt,
+    String? signature,
+    LicenseType? type,
+    Map<String, dynamic>? features,
+    Object? metadata = const _Unset(),
+  }) {
+    return License(
+      id: id ?? this.id,
+      appId: appId ?? this.appId,
+      expirationDate: expirationDate ?? this.expirationDate,
+      createdAt: createdAt ?? this.createdAt,
+      signature: signature ?? this.signature,
+      type: type ?? this.type,
+      features: features ?? this.features,
+      metadata:
+          metadata is _Unset
+              ? this.metadata
+              : metadata as Map<String, dynamic>?,
+    );
+  }
+}
 
-  /// Converts the license to JSON representation
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'appId': appId,
-    'expirationDate': expirationDate.toIso8601String(),
-    'createdAt': createdAt.toIso8601String(),
-    'signature': signature,
-    'type': type.name,
-    'features': features,
-    'metadata': metadata,
-  };
+/// Internal class for handling nullable field in copyWith
+class _Unset {
+  const _Unset();
 }

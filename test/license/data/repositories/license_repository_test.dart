@@ -12,18 +12,18 @@ void main() {
   group('LicenseRepository', () {
     late InMemoryLicenseStorage storage;
     late LicenseRepository sut;
-    late GenerateLicenseUseCase licenseGenerator;
+    late LicenseGenerateUseCase licenseGenerator;
 
     setUp(() {
       storage = InMemoryLicenseStorage();
       sut = LicenseRepository(storage: storage);
-      licenseGenerator = GenerateLicenseUseCase(
-        privateKey: TestConstants.testPrivateKey,
+      licenseGenerator = LicenseGenerateUseCase(
+        privateKey: TestConstants.testKeyPair.privateKey,
       );
     });
 
-    test('возвращает_null_если_лицензия_отсутствует', () async {
-      // Arrange - хранилище пустое по умолчанию
+    test('returns null when license is missing', () async {
+      // Arrange - storage is empty by default
 
       // Act
       final result = await sut.getCurrentLicense();
@@ -32,15 +32,15 @@ void main() {
       expect(result, isNull);
     });
 
-    test('загружает_валидную_лицензию_из_хранилища', () async {
+    test('loads valid license from storage', () async {
       // Arrange
       final license = licenseGenerator.generateLicense(
         appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
       );
-      final licenseData = license.bytes;
+      final licenseData = LicenseEncoder.encodeToBytes(license);
 
-      // Сохраняем лицензию в хранилище
+      // Save license to storage
       await storage.saveLicenseData(licenseData);
 
       // Act
@@ -53,17 +53,17 @@ void main() {
       expect(result.type, equals(license.type));
     });
 
-    test('возвращает_null_при_повреждении_данных', () async {
-      // Arrange - сохраняем невалидные данные
-      await storage.saveLicenseData(
-        licenseGenerator
-            .generateLicense(
-              appId: TestConstants.testAppId,
-              expirationDate: DateTime.now().add(Duration(days: 30)),
-            )
-            .bytes,
+    test('returns null for corrupted data', () async {
+      // Arrange - first save a valid license
+      final license = licenseGenerator.generateLicense(
+        appId: TestConstants.testAppId,
+        expirationDate: DateTime.now().add(Duration(days: 30)),
       );
-      // Портим данные
+      // Encode to bytes first
+      final validBytes = LicenseEncoder.encodeToBytes(license);
+      await storage.saveLicenseData(validBytes);
+
+      // Then corrupt the data
       await storage.saveLicenseData(
         Uint8List.fromList('invalid json'.codeUnits),
       );
@@ -75,7 +75,7 @@ void main() {
       expect(result, isNull);
     });
 
-    test('успешно_сохраняет_лицензию', () async {
+    test('successfully saves license', () async {
       // Arrange
       final license = licenseGenerator.generateLicense(
         appId: TestConstants.testAppId,
@@ -88,14 +88,14 @@ void main() {
       // Assert
       expect(result, isTrue);
 
-      // Дополнительно проверяем, что лицензия действительно сохранена
+      // Additionally verify the license was actually saved
       final savedLicense = await sut.getCurrentLicense();
       expect(savedLicense, isNotNull);
       expect(savedLicense!.id, equals(license.id));
     });
 
-    test('успешно_удаляет_существующую_лицензию', () async {
-      // Arrange - сохраняем лицензию, чтобы было что удалять
+    test('successfully removes existing license', () async {
+      // Arrange - save a license to be removed
       final license = licenseGenerator.generateLicense(
         appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
@@ -108,7 +108,7 @@ void main() {
       // Assert
       expect(result, isTrue);
 
-      // Дополнительно проверяем, что лицензия действительно удалена
+      // Additionally verify the license was actually removed
       final savedLicense = await sut.getCurrentLicense();
       expect(savedLicense, isNull);
     });

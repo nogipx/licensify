@@ -1,6 +1,6 @@
 name: licensify
 description: A lightweight yet powerful license management solution for Flutter and Dart applications with cryptographically secure signatures
-version: 1.6.2
+version: 1.7.0
 homepage: https://github.com/nogipx/licensify
 repository: https://github.com/nogipx/licensify
 issue_tracker: https://github.com/nogipx/licensify/issues

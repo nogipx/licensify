@@ -36,5 +36,5 @@ extension LicensifyDateTimeExtensions on DateTime {
   /// Checks if this date is in the past
   ///
   /// Returns true if the date has passed, false otherwise
-  bool get isPast => isAfter(DateTime.now());
+  bool get isPast => isBefore(DateTime.now());
 }

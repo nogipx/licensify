@@ -1,8 +1,8 @@
+licensify_tool/
 test/
 .vscode/
 justfile
 REUSE.toml
 coverage/
 docs/
-example/
 LICENSES/

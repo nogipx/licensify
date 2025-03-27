@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+- вся документация в dart docs *.dart и *.md файлах должна быть на техническом английском

@@ -32,35 +32,23 @@ class LicenseRepository implements ILicenseRepository {
 
   @override
   Future<bool> saveLicense(License license) async {
-    // Преобразуем доменную сущность в модель данных
-    final licenseModel = LicenseModel.fromDomain(license);
-
     // Сериализуем в JSON и кодируем в бинарный формат
-    final jsonData = licenseModel.toJson();
-    final binaryData = LicenseEncoder.encodeToBytes(jsonData);
-
+    final binaryData = LicenseEncoder.encodeToBytes(license);
     // Сохраняем данные
     return await _storage.saveLicenseData(binaryData);
   }
 
   @override
   Future<License?> getLicenseFromBytes(Uint8List licenseData) async {
-    final licenseJson = LicenseEncoder.decodeFromBytes(licenseData);
-    if (licenseJson == null) {
+    final license = LicenseEncoder.decodeFromBytes(licenseData);
+    if (license == null) {
       return null;
     }
-
-    return _createLicenseFromJson(licenseJson);
+    return license;
   }
 
   @override
   Future<bool> removeLicense() async {
     return await _storage.deleteLicenseData();
-  }
-
-  /// Создает объект лицензии из JSON-данных
-  License _createLicenseFromJson(Map<String, dynamic> json) {
-    final licenseModel = LicenseModel.fromJson(json);
-    return licenseModel.toDomain();
   }
 }

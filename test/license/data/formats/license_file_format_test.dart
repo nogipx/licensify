@@ -7,30 +7,28 @@ import 'dart:typed_data';
 import 'package:test/test.dart';
 import 'package:licensify/licensify.dart';
 
+import '../../helpers/test_constants.dart';
+
 void main() {
-  group('LicenseFileFormat', () {
-    test('encodeToBytes_добавляет_заголовок_и_версию', () {
+  group('LicenseEncoder', () {
+    test('encodeToBytes adds header and version', () {
       // Arrange
-      final jsonData = {
-        'id': '12345',
-        'appId': 'com.test.app',
-        'type': 'standard',
-      };
+      final license = LicenseGenerateUseCase(
+        privateKey: TestConstants.testKeyPair.privateKey,
+      ).generateLicense(
+        appId: 'com.test.app',
+        type: LicenseType.standard,
+        expirationDate: DateTime.now().add(const Duration(days: 365)),
+      );
 
       // Act
-      final result = LicenseEncoder.encodeToBytes(jsonData);
+      final result = LicenseEncoder.encodeToBytes(license);
 
       // Assert
-      expect(
-        result.length,
-        greaterThan(8),
-      ); // Минимальная длина: заголовок + версия
-      expect(
-        utf8.decode(result.sublist(0, 4)),
-        equals('LCSF'),
-      ); // Проверка заголовка
+      expect(result.length, greaterThan(8)); // Minimum length: header + version
+      expect(utf8.decode(result.sublist(0, 4)), equals('LCSF')); // Check header
 
-      // Проверка версии
+      // Check version
       final versionData = ByteData.view(
         result.buffer,
         result.offsetInBytes + 4,
@@ -40,72 +38,56 @@ void main() {
       expect(version, equals(LicenseEncoder.formatVersion));
     });
 
-    test('decodeFromBytes_возвращает_корректные_данные', () {
+    test('decodeFromBytes returns correct data', () {
       // Arrange
-      final originalData = {
-        'id': '12345',
-        'appId': 'com.test.app',
-        'signature': 'test-signature',
-        'type': 'pro',
-        'features': <String, dynamic>{'maxUsers': 10},
-      };
-      final encodedData = LicenseEncoder.encodeToBytes(originalData);
+      final originalLicense = License(
+        id: '12345',
+        appId: 'com.test.app',
+        expirationDate: DateTime.now(),
+        createdAt: DateTime.now(),
+        signature: 'test-signature',
+        type: LicenseType.pro,
+        features: {'maxUsers': 10},
+      );
+
+      final encodedData = LicenseEncoder.encodeToBytes(originalLicense);
 
       // Act
-      final decodedData = LicenseEncoder.decodeFromBytes(encodedData);
+      final decodedLicense = LicenseEncoder.decodeFromBytes(encodedData);
 
       // Assert
-      expect(decodedData, isNotNull);
-      expect(decodedData!['id'], equals(originalData['id']));
-      expect(decodedData['appId'], equals(originalData['appId']));
-      expect(decodedData['signature'], equals(originalData['signature']));
-      expect(decodedData['type'], equals(originalData['type']));
+      expect(decodedLicense, isNotNull);
+      expect(decodedLicense!.id, equals(originalLicense.id));
+      expect(decodedLicense.appId, equals(originalLicense.appId));
+      expect(decodedLicense.signature, equals(originalLicense.signature));
+      expect(decodedLicense.type.name, equals(originalLicense.type.name));
       expect(
-        (decodedData['features'] as Map<String, dynamic>)['maxUsers'],
-        equals((originalData['features'] as Map<String, dynamic>)['maxUsers']),
+        decodedLicense.features['maxUsers'],
+        equals(originalLicense.features['maxUsers']),
       );
     });
 
-    test('decodeFromBytes_возвращает_null_при_неверном_заголовке', () {
-      // Arrange: создаем данные с неправильным заголовком
-      final jsonData = utf8.encode(jsonEncode({'id': '12345'}));
-      final invalidHeader = utf8.encode('XXXX'); // Неправильный заголовок
+    test('decodeFromBytes returns null with invalid header', () {
+      // Create a license and encode it
+      final license = License(
+        id: '12345',
+        appId: 'test.app',
+        expirationDate: DateTime.now(),
+        createdAt: DateTime.now(),
+        signature: 'test-signature',
+      );
+      final validBytes = LicenseEncoder.encodeToBytes(license);
 
-      final versionBytes = Uint8List(4);
-      final versionData = ByteData.view(versionBytes.buffer);
-      versionData.setUint32(0, LicenseEncoder.formatVersion, Endian.little);
-
-      final result =
-          BytesBuilder()
-            ..add(invalidHeader)
-            ..add(versionBytes)
-            ..add(jsonData);
-
-      final invalidData = result.toBytes();
-
-      // Act
-      final decodedData = LicenseEncoder.decodeFromBytes(invalidData);
-
-      // Assert
-      expect(decodedData, isNull);
-    });
-
-    test('decodeFromBytes_возвращает_null_при_неверной_версии', () {
-      // Arrange: создаем данные с неправильной версией
-      final jsonData = utf8.encode(jsonEncode({'id': '12345'}));
-      final header = utf8.encode(LicenseEncoder.magicHeader);
-
-      final versionBytes = Uint8List(4);
-      final versionData = ByteData.view(versionBytes.buffer);
-      versionData.setUint32(0, 999, Endian.little); // Неправильная версия
-
-      final result =
-          BytesBuilder()
-            ..add(header)
-            ..add(versionBytes)
-            ..add(jsonData);
-
-      final invalidData = result.toBytes();
+      // Create corrupted data with invalid header
+      final invalidData = Uint8List.fromList([
+        // Incorrect magic header
+        'X'.codeUnitAt(0),
+        'X'.codeUnitAt(0),
+        'X'.codeUnitAt(0),
+        'X'.codeUnitAt(0),
+        // Rest of the data from valid encoding (version and json)
+        ...validBytes.sublist(4),
+      ]);
 
       // Act
       final decodedData = LicenseEncoder.decodeFromBytes(invalidData);
@@ -114,8 +96,36 @@ void main() {
       expect(decodedData, isNull);
     });
 
-    test('decodeFromBytes_возвращает_null_при_неверном_размере', () {
-      // Arrange: создаем данные с недостаточной длиной
+    test('decodeFromBytes returns null with invalid version', () {
+      // Create a license and encode it
+      final license = License(
+        id: '12345',
+        appId: 'test.app',
+        expirationDate: DateTime.now(),
+        createdAt: DateTime.now(),
+        signature: 'test-signature',
+      );
+      final validBytes = LicenseEncoder.encodeToBytes(license);
+
+      // Create corrupted data with invalid version
+      final invalidData = Uint8List.fromList([
+        // Keep correct magic header
+        ...validBytes.sublist(0, 4),
+        // Wrong version (999 in little endian)
+        231, 3, 0, 0,
+        // Rest of the data from valid encoding (json)
+        ...validBytes.sublist(8),
+      ]);
+
+      // Act
+      final decodedData = LicenseEncoder.decodeFromBytes(invalidData);
+
+      // Assert
+      expect(decodedData, isNull);
+    });
+
+    test('decodeFromBytes returns null with invalid size', () {
+      // Arrange: create data with insufficient length
       final tooShortData = Uint8List(4);
 
       // Act
@@ -125,64 +135,80 @@ void main() {
       expect(decodedData, isNull);
     });
 
-    test('decodeFromBytes_возвращает_null_при_некорректном_JSON', () {
-      // Arrange: создаем данные с неправильным JSON
+    test('decodeFromBytes returns null with invalid JSON', () {
+      // Create a license and encode it to get valid header and version
+      final license = License(
+        id: '12345',
+        appId: 'test.app',
+        expirationDate: DateTime.now(),
+        createdAt: DateTime.now(),
+        signature: 'test-signature',
+      );
+      final validBytes = LicenseEncoder.encodeToBytes(license);
+
+      // Create corrupted data with invalid JSON
       final invalidJson = utf8.encode('{ this is not valid json');
-      final header = utf8.encode(LicenseEncoder.magicHeader);
-
-      final versionBytes = Uint8List(4);
-      final versionData = ByteData.view(versionBytes.buffer);
-      versionData.setUint32(0, LicenseEncoder.formatVersion, Endian.little);
-
-      final result =
-          BytesBuilder()
-            ..add(header)
-            ..add(versionBytes)
-            ..add(invalidJson);
-
-      final invalidData = result.toBytes();
-
-      // Act
-      final decodedData = LicenseEncoder.decodeFromBytes(invalidData);
+      final invalidData = Uint8List.fromList([
+        // Keep correct header and version
+        ...validBytes.sublist(0, 8),
+        // Invalid JSON data
+        ...invalidJson,
+      ]);
 
       // Assert
-      expect(decodedData, isNull);
+      expect(
+        () => LicenseEncoder.decodeFromBytes(invalidData),
+        throwsA(isA<FormatException>()),
+      );
     });
 
-    test('isValidLicenseFile_возвращает_true_для_корректных_данных', () {
+    test('isValidLicenseFile returns true for valid data', () {
       // Arrange
-      final jsonData = {'id': '12345'};
-      final encodedData = LicenseEncoder.encodeToBytes(jsonData);
+      final license = License(
+        id: '12345',
+        appId: 'test.app',
+        expirationDate: DateTime.now(),
+        createdAt: DateTime.now(),
+        signature: 'test-signature',
+      );
+      final encodedData = LicenseEncoder.encodeToBytes(license);
 
       // Act
-      final isValid = LicenseEncoder.isValidLicenseFile(encodedData);
+      final isValid = LicenseEncoder.isValidLicenseBytes(encodedData);
 
       // Assert
       expect(isValid, isTrue);
     });
 
-    test('isValidLicenseFile_возвращает_false_для_некорректных_данных', () {
-      // Arrange: случай 1 - слишком короткие данные
+    test('isValidLicenseFile returns false for invalid data', () {
+      // Arrange: case 1 - too short data
       final tooShortData = Uint8List(4);
 
-      // Arrange: случай 2 - неправильный заголовок
-      final jsonData = utf8.encode(jsonEncode({'id': '12345'}));
-      final invalidHeader = utf8.encode('XXXX');
+      // Arrange: case 2 - invalid header
+      final license = License(
+        id: '12345',
+        appId: 'test.app',
+        expirationDate: DateTime.now(),
+        createdAt: DateTime.now(),
+        signature: 'test-signature',
+      );
+      final validBytes = LicenseEncoder.encodeToBytes(license);
 
-      final versionBytes = Uint8List(4);
-      final versionData = ByteData.view(versionBytes.buffer);
-      versionData.setUint32(0, LicenseEncoder.formatVersion, Endian.little);
-
-      final invalidHeaderData =
-          BytesBuilder()
-            ..add(invalidHeader)
-            ..add(versionBytes)
-            ..add(jsonData);
+      // Create data with invalid header
+      final invalidHeaderData = Uint8List.fromList([
+        // Incorrect magic header
+        'X'.codeUnitAt(0),
+        'X'.codeUnitAt(0),
+        'X'.codeUnitAt(0),
+        'X'.codeUnitAt(0),
+        // Rest of the data from valid encoding
+        ...validBytes.sublist(4),
+      ]);
 
       // Act
-      final isValidShort = LicenseEncoder.isValidLicenseFile(tooShortData);
-      final isValidWrongHeader = LicenseEncoder.isValidLicenseFile(
-        invalidHeaderData.toBytes(),
+      final isValidShort = LicenseEncoder.isValidLicenseBytes(tooShortData);
+      final isValidWrongHeader = LicenseEncoder.isValidLicenseBytes(
+        invalidHeaderData,
       );
 
       // Assert

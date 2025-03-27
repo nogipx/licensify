@@ -10,10 +10,10 @@ import '../../helpers/test_constants.dart';
 
 void main() {
   group('GenerateLicenseUseCase', () {
-    test('создает_валидную_лицензию_с_заданными_параметрами', () {
+    test('creates valid license with specified parameters', () {
       // Arrange
-      final sut = GenerateLicenseUseCase(
-        privateKey: TestConstants.testPrivateKey,
+      final sut = LicenseGenerateUseCase(
+        privateKey: TestConstants.testKeyPair.privateKey,
       );
       final expirationDate =
           DateTime.now()
@@ -40,10 +40,10 @@ void main() {
       expect(license.createdAt.isUtc, isTrue);
     });
 
-    test('создает_действительную_подпись_RSA', () {
+    test('creates valid RSA signature', () {
       // Arrange
-      final sut = GenerateLicenseUseCase(
-        privateKey: TestConstants.testPrivateKey,
+      final sut = LicenseGenerateUseCase(
+        privateKey: TestConstants.testKeyPair.privateKey,
       );
       final expirationDate =
           DateTime.now()
@@ -59,18 +59,18 @@ void main() {
 
       // Verify the signature using the validator
       final validator = LicenseValidator(
-        publicKey: TestConstants.testPublicKey,
+        publicKey: TestConstants.testKeyPair.publicKey,
       );
       final isValid = validator.validateSignature(license);
 
       // Assert
-      expect(isValid, isTrue);
+      expect(isValid.isValid, isTrue);
     });
 
-    test('подпись_валидна_только_для_правильной_пары_ключей', () {
+    test('signature is valid only with correct key pair', () {
       // Arrange
-      final sut = GenerateLicenseUseCase(
-        privateKey: TestConstants.testPrivateKey,
+      final sut = LicenseGenerateUseCase(
+        privateKey: TestConstants.testKeyPair.privateKey,
       );
       final expirationDate =
           DateTime.now()
@@ -78,10 +78,8 @@ void main() {
               .toUtc()
               .roundToMinutes();
 
-      // Генерируем новую пару ключей
-      final differentKeys = RsaKeyGenerator.generateKeyPairAsPem(
-        bitLength: 2048,
-      );
+      // Generate a new key pair
+      final differentKeys = TestConstants.generateTestKeyPair();
 
       // Act
       final license = sut.generateLicense(
@@ -97,28 +95,27 @@ void main() {
 
       // Verify with correct public key
       final correctValidator = LicenseValidator(
-        publicKey: TestConstants.testPublicKey,
+        publicKey: TestConstants.testKeyPair.publicKey,
       );
       final isValidWithCorrectKey = correctValidator.validateSignature(license);
 
       // Assert
       expect(
-        isValidWithWrongKey,
+        isValidWithWrongKey.isValid,
         isFalse,
-        reason:
-            'Подпись не должна быть валидна с неправильным публичным ключом',
+        reason: 'Signature should not be valid with incorrect public key',
       );
       expect(
-        isValidWithCorrectKey,
+        isValidWithCorrectKey.isValid,
         isTrue,
-        reason: 'Подпись должна быть валидна с правильным публичным ключом',
+        reason: 'Signature should be valid with correct public key',
       );
     });
 
-    test('по_умолчанию_создает_пробную_лицензию', () {
+    test('creates trial license by default', () {
       // Arrange
-      final sut = GenerateLicenseUseCase(
-        privateKey: TestConstants.testPrivateKey,
+      final sut = LicenseGenerateUseCase(
+        privateKey: TestConstants.testKeyPair.privateKey,
       );
 
       // Act
@@ -133,10 +130,10 @@ void main() {
       expect(license.type, equals(LicenseType.trial));
     });
 
-    test('сериализует_лицензию_в_бинарный_формат_с_заголовком', () {
+    test('serializes license to binary format with header', () {
       // Arrange
-      final sut = GenerateLicenseUseCase(
-        privateKey: TestConstants.testPrivateKey,
+      final sut = LicenseGenerateUseCase(
+        privateKey: TestConstants.testKeyPair.privateKey,
       );
       final license = sut.generateLicense(
         appId: TestConstants.testAppId,
@@ -148,16 +145,16 @@ void main() {
       );
 
       // Act
-      final bytes = license.bytes;
+      final bytes = LicenseEncoder.encodeToBytes(license);
 
       // Assert
-      // Проверяем магический заголовок
+      // Check magic header
       expect(
         utf8.decode(bytes.sublist(0, 4)),
         equals(LicenseEncoder.magicHeader),
       );
 
-      // Проверяем версию формата
+      // Check format version
       final versionData = ByteData.view(
         bytes.buffer,
         bytes.offsetInBytes + 4,
@@ -166,14 +163,14 @@ void main() {
       final version = versionData.getUint32(0, Endian.little);
       expect(version, equals(LicenseEncoder.formatVersion));
 
-      // Декодируем данные лицензии
-      final jsonData = LicenseEncoder.decodeFromBytes(bytes);
-      expect(jsonData, isNotNull);
-      expect(jsonData!['id'], equals(license.id));
-      expect(jsonData['appId'], equals(license.appId));
-      expect(jsonData['signature'], equals(license.signature));
-      expect(jsonData['type'], equals(license.type.name));
-      expect(jsonData['features']['maxUsers'], equals(5));
+      // Decode license data
+      final decodedLicense = LicenseEncoder.decodeFromBytes(bytes);
+      expect(decodedLicense, isNotNull);
+      expect(decodedLicense!.id, equals(license.id));
+      expect(decodedLicense.appId, equals(license.appId));
+      expect(decodedLicense.signature, equals(license.signature));
+      expect(decodedLicense.type.name, equals(license.type.name));
+      expect(decodedLicense.features['maxUsers'], equals(5));
     });
   });
 }

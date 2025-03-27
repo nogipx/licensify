@@ -6,10 +6,11 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:basic_utils/basic_utils.dart';
+import 'package:licensify/licensify.dart';
 import 'package:pointycastle/export.dart';
 
 /// Utility for generating RSA key pairs
-class RsaKeyGenerator {
+abstract interface class RsaKeyGenerator {
   /// Generates an RSA key pair with the specified bit length
   ///
   /// [bitLength] - The length of the key in bits (default: 2048)
@@ -54,10 +55,8 @@ class RsaKeyGenerator {
   ///
   /// [bitLength] - The length of the key in bits (default: 2048)
   ///
-  /// Returns a record containing public and private keys as PEM strings
-  static ({String publicKey, String privateKey}) generateKeyPairAsPem({
-    int bitLength = 2048,
-  }) {
+  /// Returns a CryptoKeyPair object containing public and private keys
+  static LicensifyKeyPair generateKeyPairAsPem({int bitLength = 2048}) {
     final keyPair = generateKeyPair(bitLength: bitLength);
 
     // Convert keys to PEM format
@@ -66,6 +65,10 @@ class RsaKeyGenerator {
       keyPair.privateKey,
     );
 
-    return (publicKey: publicKeyPem, privateKey: privateKeyPem);
+    // Create key objects with proper type
+    final privateKey = LicensifyPrivateKey.rsa(privateKeyPem);
+    final publicKey = LicensifyPublicKey.rsa(publicKeyPem);
+
+    return LicensifyKeyPair(privateKey: privateKey, publicKey: publicKey);
   }
 }

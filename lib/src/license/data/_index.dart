@@ -4,6 +4,5 @@
 
 export 'in_memory_license_storage.dart';
 export 'license_encoder.dart';
-export 'license_model.dart';
 export 'license_repository.dart';
 export 'license_validator.dart';

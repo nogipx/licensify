@@ -4,6 +4,46 @@
 
 import 'package:licensify/licensify.dart';
 
+class LicenseValidateUseCaseResult {
+  final LicenseStatus status;
+
+  const LicenseValidateUseCaseResult({required this.status});
+
+  /// Returns true if the license is active and valid
+  bool get isActive => status.isActive;
+
+  /// Returns true if the license has expired
+  bool get isExpired => status.isExpired;
+
+  /// Returns true if no license is installed
+  bool get isNoLicense => status.isNoLicense;
+
+  /// Returns true if the license signature is invalid
+  bool get isInvalidSignature => status.isInvalidSignature;
+
+  /// Returns true if the license schema is invalid
+  bool get isInvalidSchema => status.isInvalidSchema;
+
+  /// Returns true if an error occurred during license validation
+  bool get isError => status.isError;
+
+  /// Returns the license object if available (for Active or Expired status)
+  /// Returns null for other status types
+  License? get license => status.license;
+
+  /// Returns the schema validation result if available (for InvalidSchema status)
+  /// Returns null for other status types
+  SchemaValidationResult? get schemaValidationResult => switch (status) {
+    InvalidLicenseSchemaStatus(:final schemaValidationResult) =>
+      schemaValidationResult,
+    _ => null,
+  };
+
+  @override
+  String toString() =>
+      'LicenseValidateUseCaseResult(status: $status, schemaValidationResult: $schemaValidationResult)';
+}
+
 /// Use case for checking license validity
 ///
 /// This class handles verification of license status including signature
@@ -31,35 +71,46 @@ class LicenseValidateUseCase {
   /// [licenseData] - The raw bytes of the license file
   ///
   /// Returns a LicenseStatus indicating the license state
-  Future<LicenseStatus> call(License? license) async {
+  Future<LicenseValidateUseCaseResult> call(License? license) async {
     try {
       if (license == null) {
-        return const NoLicenseStatus();
+        return const LicenseValidateUseCaseResult(status: NoLicenseStatus());
       }
 
-      if (!_validator.validateSignature(license)) {
-        return const InvalidLicenseStatus(message: 'Invalid license signature');
-      }
-
-      if (!_validator.validateExpiration(license)) {
-        return ExpiredLicenseStatus(license);
-      }
-
-      if (_schema != null) {
-        final result = _schema.validateLicense(license);
-        if (!result.isValid) {
-          return InvalidLicenseSchemaStatus(
-            message: 'Invalid license schema',
-            errors: result.errors,
+      final validationResult = _validator.validateLicense(license);
+      if (!validationResult.isValid) {
+        // Проверяем, истёк ли срок действия лицензии
+        if (license.isExpired) {
+          return LicenseValidateUseCaseResult(
+            status: ExpiredLicenseStatus(license),
+          );
+        } else {
+          // Если лицензия не истекла, значит проблема с подписью
+          return LicenseValidateUseCaseResult(
+            status: InvalidLicenseSignatureStatus(),
           );
         }
       }
 
-      return ActiveLicenseStatus(license);
+      if (_schema != null) {
+        final schemaValidationResult = _validator.validateSchema(
+          license,
+          _schema,
+        );
+        if (!schemaValidationResult.isValid) {
+          return LicenseValidateUseCaseResult(
+            status: InvalidLicenseSchemaStatus(schemaValidationResult),
+          );
+        }
+      }
+
+      return LicenseValidateUseCaseResult(status: ActiveLicenseStatus(license));
     } catch (e) {
-      return ErrorLicenseStatus(
-        message: 'Error checking license from binary data',
-        exception: e,
+      return LicenseValidateUseCaseResult(
+        status: ErrorLicenseStatus(
+          message: 'Error checking license from binary data',
+          exception: e,
+        ),
       );
     }
   }
