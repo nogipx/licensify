@@ -1,6 +1,10 @@
-# Licensify
+![Licensify](https://img.shields.io/pub/v/licensify?label=Licensify&labelColor=1A365D&color=1A365D&style=for-the-badge&logo=dart)
+![More Projects](https://img.shields.io/badge/More_Projects-nogipx-FF6B35?style=for-the-badge&labelColor=1A365D&link=https://github.com/nogipx?tab=repositories)
 
-![Licensify](https://img.shields.io/pub/v/licensify.svg) ![Flutter](https://img.shields.io/badge/Platform-Flutter%20%7C%20Dart-blue)
+![GitHub stars](https://img.shields.io/github/stars/nogipx/licensify?style=flat-square&labelColor=1A365D&color=00A67E)
+![GitHub last commit](https://img.shields.io/github/last-commit/nogipx/licensify?style=flat-square&labelColor=1A365D&color=00A67E)
+![License](https://img.shields.io/badge/license-LPGL-blue.svg?style=flat-square&labelColor=1A365D&color=00A67E&link=https://pub.dev/packages/licensify/license)
+
 
 Advanced licensing solution for Flutter/Dart applications with cryptographic protection.
 
@@ -87,8 +91,8 @@ final license = generator(
     'premium': true,
   },
   metadata: {
-    'customerName': 'Acme Corp',
-    'contactEmail': 'support@acme.com',
+    'customerName': 'My Company',
+    'contactEmail': 'support@mycompany.com',
   },
 );
 
@@ -101,8 +105,7 @@ final publicKey = LicensifyKeyImporter.importPublicKeyFromString(publicKeyPem);
 final validator = publicKey.licenseValidator;
 
 // Read from bytes
-final decodedData = LicenseEncoder.decodeFromBytes(bytes);
-final receivedLicense = License.fromMap(decodedData!);
+final receivedLicense = LicenseEncoder.decodeFromBytes(bytes);
 
 // Validate
 final result = validator.validateLicense(receivedLicense);
@@ -207,28 +210,6 @@ if (schemaResult.isValid) {
 final isValid = validator.validateLicenseWithSchema(license, schema);
 ```
 
-### ECDSA vs RSA: Advantages
-
-```dart
-// Key generation comparison
-final rsaStartTime = DateTime.now();
-final rsaKeyPair = RsaKeyGenerator.generateKeyPairAsPem(bitLength: 2048);
-final rsaEndTime = DateTime.now();
-
-final ecdsaStartTime = DateTime.now();
-final ecdsaKeyPair = EcdsaKeyGenerator.generateKeyPairAsPem(curve: EcCurve.p256);
-final ecdsaEndTime = DateTime.now();
-
-print('ECDSA advantages:');
-print('- Generation is ${rsaEndTime.difference(rsaStartTime).inMilliseconds / 
-       ecdsaEndTime.difference(ecdsaStartTime).inMilliseconds}x faster');
-print('- Private key size: ${rsaKeyPair.privateKey.content.length / 
-       ecdsaKeyPair.privateKey.content.length}x smaller');
-print('- Public key size: ${rsaKeyPair.publicKey.content.length / 
-       ecdsaKeyPair.publicKey.content.length}x smaller');
-print('- ECDSA P-256: ~128-bit security level (vs RSA-2048: ~112-bit)');
-```
-
 ## 📖 Documentation
 
 ### Key Formats and Importing
@@ -288,7 +269,7 @@ final premium = LicenseType('premium');
     "modules": ["analytics", "reporting"]
   },
   "metadata": {
-    "customerName": "Example Corp"
+    "customerName": "My Company"
   },
   "signature": "Base64EncodedSignature..."
 }

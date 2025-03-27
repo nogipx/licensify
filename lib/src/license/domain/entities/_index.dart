@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 export 'license_dto.dart';
+export 'license_exception.dart';
 export 'license_schema.dart';
 export 'license_status.dart';
 export 'license_type.dart';

@@ -28,7 +28,7 @@ abstract interface class ILicenseRepository {
   /// [licenseData] - The raw license file data as bytes
   ///
   /// Returns the license object or null if the data is invalid
-  Future<License?> getLicenseFromBytes(Uint8List licenseData);
+  Future<License> getLicenseFromBytes(Uint8List licenseData);
 
   /// Removes the current license from storage
   ///

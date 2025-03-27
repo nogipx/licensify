@@ -55,7 +55,7 @@ void main() {
 
       // Assert
       expect(decodedLicense, isNotNull);
-      expect(decodedLicense!.id, equals(originalLicense.id));
+      expect(decodedLicense.id, equals(originalLicense.id));
       expect(decodedLicense.appId, equals(originalLicense.appId));
       expect(decodedLicense.signature, equals(originalLicense.signature));
       expect(decodedLicense.type.name, equals(originalLicense.type.name));
@@ -65,75 +65,81 @@ void main() {
       );
     });
 
-    test('decodeFromBytes returns null with invalid header', () {
-      // Create a license and encode it
-      final license = License(
-        id: '12345',
-        appId: 'test.app',
-        expirationDate: DateTime.now(),
-        createdAt: DateTime.now(),
-        signature: 'test-signature',
-      );
-      final validBytes = LicenseEncoder.encodeToBytes(license);
+    test(
+      'decodeFromBytes throws LicenseFormatException with invalid header',
+      () {
+        // Create a license and encode it
+        final license = License(
+          id: '12345',
+          appId: 'test.app',
+          expirationDate: DateTime.now(),
+          createdAt: DateTime.now(),
+          signature: 'test-signature',
+        );
+        final validBytes = LicenseEncoder.encodeToBytes(license);
 
-      // Create corrupted data with invalid header
-      final invalidData = Uint8List.fromList([
-        // Incorrect magic header
-        'X'.codeUnitAt(0),
-        'X'.codeUnitAt(0),
-        'X'.codeUnitAt(0),
-        'X'.codeUnitAt(0),
-        // Rest of the data from valid encoding (version and json)
-        ...validBytes.sublist(4),
-      ]);
+        // Create corrupted data with invalid header
+        final invalidData = Uint8List.fromList([
+          // Incorrect magic header
+          'X'.codeUnitAt(0),
+          'X'.codeUnitAt(0),
+          'X'.codeUnitAt(0),
+          'X'.codeUnitAt(0),
+          // Rest of the data from valid encoding (version and json)
+          ...validBytes.sublist(4),
+        ]);
 
-      // Act
-      final decodedData = LicenseEncoder.decodeFromBytes(invalidData);
+        // Act
+        expect(
+          () => LicenseEncoder.decodeFromBytes(invalidData),
+          throwsA(isA<LicenseFormatException>()),
+        );
+      },
+    );
 
-      // Assert
-      expect(decodedData, isNull);
-    });
+    test(
+      'decodeFromBytes throws LicenseFormatException with invalid version',
+      () {
+        // Create a license and encode it
+        final license = License(
+          id: '12345',
+          appId: 'test.app',
+          expirationDate: DateTime.now(),
+          createdAt: DateTime.now(),
+          signature: 'test-signature',
+        );
+        final validBytes = LicenseEncoder.encodeToBytes(license);
 
-    test('decodeFromBytes returns null with invalid version', () {
-      // Create a license and encode it
-      final license = License(
-        id: '12345',
-        appId: 'test.app',
-        expirationDate: DateTime.now(),
-        createdAt: DateTime.now(),
-        signature: 'test-signature',
-      );
-      final validBytes = LicenseEncoder.encodeToBytes(license);
+        // Create corrupted data with invalid version
+        final invalidData = Uint8List.fromList([
+          // Keep correct magic header
+          ...validBytes.sublist(0, 4),
+          // Wrong version (999 in little endian)
+          231, 3, 0, 0,
+          // Rest of the data from valid encoding (json)
+          ...validBytes.sublist(8),
+        ]);
 
-      // Create corrupted data with invalid version
-      final invalidData = Uint8List.fromList([
-        // Keep correct magic header
-        ...validBytes.sublist(0, 4),
-        // Wrong version (999 in little endian)
-        231, 3, 0, 0,
-        // Rest of the data from valid encoding (json)
-        ...validBytes.sublist(8),
-      ]);
+        // Act
+        expect(
+          () => LicenseEncoder.decodeFromBytes(invalidData),
+          throwsA(isA<LicenseFormatException>()),
+        );
+      },
+    );
 
-      // Act
-      final decodedData = LicenseEncoder.decodeFromBytes(invalidData);
-
-      // Assert
-      expect(decodedData, isNull);
-    });
-
-    test('decodeFromBytes returns null with invalid size', () {
+    test('decodeFromBytes throws LicenseFormatException with invalid size', () {
       // Arrange: create data with insufficient length
       final tooShortData = Uint8List(4);
 
       // Act
-      final decodedData = LicenseEncoder.decodeFromBytes(tooShortData);
-
-      // Assert
-      expect(decodedData, isNull);
+      expect(
+        () => LicenseEncoder.decodeFromBytes(tooShortData),
+        throwsA(isA<LicenseFormatException>()),
+      );
     });
 
-    test('decodeFromBytes returns null with invalid JSON', () {
+    test('decodeFromBytes throws FormatException with invalid JSON', () {
       // Create a license and encode it to get valid header and version
       final license = License(
         id: '12345',
@@ -156,7 +162,7 @@ void main() {
       // Assert
       expect(
         () => LicenseEncoder.decodeFromBytes(invalidData),
-        throwsA(isA<FormatException>()),
+        throwsA(isA<LicenseFormatException>()),
       );
     });
 

@@ -6,44 +6,40 @@ import 'dart:typed_data';
 
 import 'package:licensify/licensify.dart';
 
-/// Реализация репозитория лицензий
+/// Implementation of the license repository
 class LicenseRepository implements ILicenseRepository {
   final ILicenseStorage _storage;
 
-  /// Конструктор
   const LicenseRepository({required ILicenseStorage storage})
     : _storage = storage;
 
   @override
   Future<License?> getCurrentLicense() async {
-    // Проверяем наличие лицензии
-    if (!await _storage.hasLicense()) {
+    try {
+      if (!await _storage.hasLicense()) {
+        return null;
+      }
+
+      final licenseData = await _storage.loadLicenseData();
+      if (licenseData == null) {
+        return null;
+      }
+
+      return getLicenseFromBytes(licenseData);
+    } catch (e) {
       return null;
     }
-
-    // Загружаем данные лицензии
-    final licenseData = await _storage.loadLicenseData();
-    if (licenseData == null) {
-      return null;
-    }
-
-    return getLicenseFromBytes(licenseData);
   }
 
   @override
   Future<bool> saveLicense(License license) async {
-    // Сериализуем в JSON и кодируем в бинарный формат
     final binaryData = LicenseEncoder.encodeToBytes(license);
-    // Сохраняем данные
     return await _storage.saveLicenseData(binaryData);
   }
 
   @override
-  Future<License?> getLicenseFromBytes(Uint8List licenseData) async {
+  Future<License> getLicenseFromBytes(Uint8List licenseData) async {
     final license = LicenseEncoder.decodeFromBytes(licenseData);
-    if (license == null) {
-      return null;
-    }
     return license;
   }
 

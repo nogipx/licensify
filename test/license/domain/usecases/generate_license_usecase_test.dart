@@ -156,7 +156,7 @@ void main() {
       // Decode license data
       final decodedLicense = LicenseEncoder.decodeFromBytes(bytes);
       expect(decodedLicense, isNotNull);
-      expect(decodedLicense!.id, equals(license.id));
+      expect(decodedLicense.id, equals(license.id));
       expect(decodedLicense.appId, equals(license.appId));
       expect(decodedLicense.signature, equals(license.signature));
       expect(decodedLicense.type.name, equals(license.type.name));

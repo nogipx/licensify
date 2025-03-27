@@ -67,10 +67,10 @@ void main() {
       );
 
       // Act
-      final result = await sut.getCurrentLicense();
-
-      // Assert
-      expect(result, isNull);
+      expect(
+        () => sut.getCurrentLicense(),
+        throwsA(isA<LicenseFormatException>()),
+      );
     });
 
     test('successfully saves license', () async {

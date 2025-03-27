@@ -21,44 +21,47 @@ class LicenseEncoder {
   /// - [4-7] Format version (uint32)
   /// - [8+]  Serialized JSON with license data
   static Uint8List encodeToBytes(License licenseData) {
-    final licenseDto = LicenseMapper.toDto(licenseData);
+    try {
+      final licenseDto = LicenseMapper.toDto(licenseData);
 
-    // Serialize license data to JSON
-    final jsonData = utf8.encode(jsonEncode(licenseDto.toJson()));
+      // Serialize license data to JSON
+      final jsonData = utf8.encode(jsonEncode(licenseDto.toJson()));
 
-    // Create buffer for binary data
-    final result = BytesBuilder();
+      // Create buffer for binary data
+      final result = BytesBuilder();
 
-    // Add magic sequence
-    result.add(utf8.encode(magicHeader));
+      // Add magic sequence
+      result.add(utf8.encode(magicHeader));
 
-    // Add format version (4 bytes, little-endian)
-    final versionBytes = Uint8List(4);
-    final versionData = ByteData.view(versionBytes.buffer);
-    versionData.setUint32(0, formatVersion, Endian.little);
-    result.add(versionBytes);
+      // Add format version (4 bytes, little-endian)
+      final versionBytes = Uint8List(4);
+      final versionData = ByteData.view(versionBytes.buffer);
+      versionData.setUint32(0, formatVersion, Endian.little);
+      result.add(versionBytes);
 
-    // Add license data
-    result.add(jsonData);
+      // Add license data
+      result.add(jsonData);
 
-    return result.toBytes();
+      return result.toBytes();
+    } on Object catch (e, trace) {
+      throw LicenseFormatException('Failed to encode license: $e', trace);
+    }
   }
 
   /// Decodes binary license file data and verifies the format
-  ///
-  /// Returns null if the file format is invalid
-  static License? decodeFromBytes(Uint8List bytes) {
+  /// Throws [LicenseFormatException] if the file format is invalid
+  static License decodeFromBytes(Uint8List bytes) {
     try {
       // Check minimum file length (8 bytes for header)
       if (bytes.length < 8) {
-        return null;
+        throw LicenseFormatException('Invalid license file format');
       }
 
       // Check magic sequence
       final headerBytes = bytes.sublist(0, 4);
       final header = utf8.decode(headerBytes);
       if (header != magicHeader) {
-        return null;
+        throw LicenseFormatException('Invalid license file format');
       }
 
       // Get format version
@@ -71,7 +74,7 @@ class LicenseEncoder {
 
       // Check version (currently we only support version 1)
       if (version != formatVersion) {
-        return null;
+        throw LicenseFormatException('Unsupported license file format version');
       }
 
       // Extract JSON data
@@ -81,9 +84,8 @@ class LicenseEncoder {
       // Parse JSON
       final licenseDto = LicenseDto.fromJson(jsonDecode(jsonString));
       return licenseDto.toDomain();
-    } catch (e) {
-      print('Error decoding license: $e');
-      rethrow;
+    } on Object catch (e, trace) {
+      throw LicenseFormatException('Failed to decode license: $e', trace);
     }
   }
 
