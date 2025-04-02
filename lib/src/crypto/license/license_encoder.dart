@@ -7,11 +7,26 @@ import 'dart:typed_data';
 
 import 'package:licensify/licensify.dart';
 
-/// Utilities for working with the binary license file format
-class LicenseEncoder {
+/// Encoder for license data
+///
+/// Encodes and decodes license data to and from binary format.
+abstract class LicenseEncoder implements ILicenseEncoder {
+  static const _instance = LicenseEncoderImpl(
+    magicHeader: magicHeader,
+    formatVersion: formatVersion,
+  );
+  static Uint8List encode(License licenseData) =>
+      _instance.encodeToBytes(licenseData);
+
+  static License decode(Uint8List bytes) => _instance.decodeFromBytes(bytes);
+
+  static bool isValidLicense(Uint8List bytes) =>
+      _instance.isValidLicenseBytes(bytes);
+
   /// Magic sequence for identifying license files
   static const String magicHeader = 'LCSF';
 
+  /// Format version
   static const int formatVersion = 1;
 
   /// Converts license data to binary file format
@@ -20,7 +35,28 @@ class LicenseEncoder {
   /// - [0-3] Magic sequence 'LCSF'
   /// - [4-7] Format version (uint32)
   /// - [8+]  Serialized JSON with license data
-  static Uint8List encodeToBytes(License licenseData) {
+  @override
+  Uint8List encodeToBytes(License licenseData) =>
+      _instance.encodeToBytes(licenseData);
+
+  /// Decodes binary license file data and verifies the format
+  /// Throws [LicenseFormatException] if the file format is invalid
+  @override
+  License decodeFromBytes(Uint8List bytes) => _instance.decodeFromBytes(bytes);
+}
+
+/// Utilities for working with the binary license file format
+class LicenseEncoderImpl implements ILicenseEncoder {
+  /// Magic sequence for identifying license files
+  final String magicHeader;
+
+  /// Format version
+  final int formatVersion;
+
+  const LicenseEncoderImpl({this.magicHeader = 'LCSF', this.formatVersion = 1});
+
+  @override
+  Uint8List encodeToBytes(License licenseData) {
     try {
       final licenseDto = LicenseMapper.toDto(licenseData);
 
@@ -48,9 +84,8 @@ class LicenseEncoder {
     }
   }
 
-  /// Decodes binary license file data and verifies the format
-  /// Throws [LicenseFormatException] if the file format is invalid
-  static License decodeFromBytes(Uint8List bytes) {
+  @override
+  License decodeFromBytes(Uint8List bytes) {
     try {
       // Check minimum file length (8 bytes for header)
       if (bytes.length < 8) {
@@ -90,7 +125,8 @@ class LicenseEncoder {
   }
 
   /// Checks if the file has a valid license format
-  static bool isValidLicenseBytes(Uint8List bytes) {
+  @override
+  bool isValidLicenseBytes(Uint8List bytes) {
     if (bytes.length < 8) {
       return false;
     }

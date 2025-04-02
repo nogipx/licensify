@@ -170,7 +170,7 @@ class LicensifyExamples {
     print('\n1. Validating RSA license:');
     final rsaValidator = LicenseValidator(publicKey: rsaKeyPair.publicKey);
 
-    final rsaValidationResult = rsaValidator.validateLicense(rsaLicense);
+    final rsaValidationResult = rsaValidator(rsaLicense);
     if (rsaValidationResult.isValid) {
       print('✅ RSA license is valid');
     } else {
@@ -184,7 +184,7 @@ class LicensifyExamples {
       digest: SHA512Digest(), // Must match the digest used for signing
     );
 
-    final ecdsaValidationResult = ecdsaValidator.validateLicense(ecdsaLicense);
+    final ecdsaValidationResult = ecdsaValidator(ecdsaLicense);
     if (ecdsaValidationResult.isValid) {
       print('✅ ECDSA license is valid');
     } else {
@@ -217,34 +217,12 @@ class LicensifyExamples {
     }
 
     // Combined validation
-    final validationResult = rsaValidator.validateLicense(license);
+    final validationResult = rsaValidator(license);
     if (validationResult.isValid) {
       print('✅ License is completely valid (signature and expiration)');
     } else {
       print('❌ License validation failed: ${validationResult.message}');
     }
-
-    // Example of validating with schema
-    print('\nExample of schema validation:');
-    print('''
-// Define schema
-final schema = LicenseSchema(
-  featureSchema: {
-    'maxUsers': SchemaField(type: FieldType.integer, required: true),
-  },
-  metadataSchema: {
-    'customerName': SchemaField(type: FieldType.string, required: true),
-  }
-);
-
-// Validate against schema
-final schemaResult = validator.validateSchema(license, schema);
-final isFullyValid = validator.validateLicenseWithSchema(license, schema);
-
-if (isFullyValid) {
-  print('License is valid with all checks (signature, expiration, schema)');
-}
-''');
 
     // Demonstrate tampered license validation
     print('\n4. Validating tampered license:');
@@ -262,7 +240,7 @@ if (isFullyValid) {
       metadata: rsaLicense.metadata,
     );
 
-    final tamperedResult = rsaValidator.validateLicense(tamperedLicense);
+    final tamperedResult = rsaValidator(tamperedLicense);
     if (tamperedResult.isValid) {
       print('❌ SECURITY ISSUE: Tampered license validated as valid!');
     } else {
@@ -333,10 +311,7 @@ if (isFullyValid) {
 
     // Comprehensive validation with schema
     print('\n3. Comprehensive validation with schema:');
-    final completeResult = rsaValidator.validateLicenseWithSchema(
-      rsaLicense,
-      schema,
-    );
+    final completeResult = rsaValidator(rsaLicense, schema: schema);
     print('License valid: $completeResult');
 
     // Create invalid license to demonstrate schema validation failure
@@ -488,7 +463,7 @@ class FileSystemLicenseStorage implements ILicenseStorage {
     // RSA validation time
     final rsaValidationStart = DateTime.now();
     for (var i = 0; i < 100; i++) {
-      rsaValidator.validateLicense(rsaLicense);
+      rsaValidator(rsaLicense);
     }
     final rsaValidationDuration = DateTime.now().difference(rsaValidationStart);
     print(
@@ -498,7 +473,7 @@ class FileSystemLicenseStorage implements ILicenseStorage {
     // ECDSA validation time
     final ecdsaValidationStart = DateTime.now();
     for (var i = 0; i < 100; i++) {
-      ecdsaValidator.validateLicense(ecdsaLicense);
+      ecdsaValidator(ecdsaLicense);
     }
     final ecdsaValidationDuration = DateTime.now().difference(
       ecdsaValidationStart,

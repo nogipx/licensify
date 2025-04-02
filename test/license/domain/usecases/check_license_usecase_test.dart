@@ -30,7 +30,7 @@ void main() {
       );
 
       // Act - we'll test the validator's behavior with an invalid license
-      final result = validator.validateLicense(dummyLicense);
+      final result = validator(dummyLicense);
 
       // Assert
       expect(result.isValid, isFalse);
@@ -49,7 +49,7 @@ void main() {
       );
 
       // Act
-      final result = validator.validateLicense(license);
+      final result = validator(license);
 
       // Assert
       expect(result.isValid, isFalse);
@@ -92,7 +92,7 @@ void main() {
       );
 
       // Act - check combined validation
-      final result = validator.validateLicense(expiredLicense);
+      final result = validator(expiredLicense);
 
       // Assert
       expect(
@@ -116,7 +116,7 @@ void main() {
           );
 
       // Act
-      final result = validator.validateLicense(validLicense);
+      final result = validator(validLicense);
 
       // Assert
       expect(result.isValid, isTrue);
@@ -159,7 +159,7 @@ void main() {
       expect(expirationResult.isValid, isFalse);
 
       // Act
-      final result = validator.validateLicense(expiredLicense);
+      final result = validator(expiredLicense);
 
       // Assert
       expect(result.isValid, isFalse);
@@ -175,7 +175,7 @@ void main() {
           );
 
       // Act
-      final result = validator.validateLicense(validLicense);
+      final result = validator(validLicense);
 
       // Assert
       expect(result.isValid, isTrue);

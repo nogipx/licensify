@@ -8,23 +8,23 @@ import 'dart:convert';
 import 'package:basic_utils/basic_utils.dart';
 import 'package:licensify/licensify.dart';
 
-/// Утилита для импорта криптографических ключей из PEM формата
+/// Utility for importing cryptographic keys from PEM format
 ///
-/// Предоставляет удобные методы для создания объектов [LicensifyPrivateKey],
-/// [LicensifyPublicKey] и [LicensifyKeyPair] из PEM строк или байтов.
+/// Provides convenient methods for creating [LicensifyPrivateKey],
+/// [LicensifyPublicKey] and [LicensifyKeyPair] objects from PEM strings or bytes.
 abstract final class LicensifyKeyImporter {
-  /// Создает приватный ключ из PEM-строки
+  /// Creates a private key from a PEM string
   ///
-  /// Автоматически определяет тип ключа (RSA или ECDSA) на основе заголовка.
+  /// Automatically determines the key type (RSA or ECDSA) based on the header.
   ///
-  /// [pemContent] - содержимое ключа в формате PEM
+  /// [pemContent] - PEM content of the key
   ///
-  /// Возвращает [LicensifyPrivateKey] с соответствующим типом
+  /// Returns [LicensifyPrivateKey] with the corresponding type
   static LicensifyPrivateKey importPrivateKeyFromString(String pemContent) {
-    // Проверка содержимого ключа
+    // Check key content
     _validatePemContent(pemContent);
 
-    // Определение типа ключа
+    // Determine key type
     if (_isRsaPrivateKey(pemContent)) {
       return LicensifyPrivateKey.rsa(pemContent);
     } else if (_isEcdsaPrivateKey(pemContent)) {
@@ -32,22 +32,22 @@ abstract final class LicensifyKeyImporter {
     }
 
     throw FormatException(
-      'Неподдерживаемый формат приватного ключа. Поддерживаются только RSA и ECDSA ключи',
+      'Unsupported private key format. Only RSA and ECDSA keys are supported',
     );
   }
 
-  /// Создает публичный ключ из PEM-строки
+  /// Creates a public key from a PEM string
   ///
-  /// Автоматически определяет тип ключа (RSA или ECDSA) на основе заголовка.
+  /// Automatically determines the key type (RSA or ECDSA) based on the header.
   ///
-  /// [pemContent] - содержимое ключа в формате PEM
+  /// [pemContent] - PEM content of the key
   ///
-  /// Возвращает [LicensifyPublicKey] с соответствующим типом
+  /// Returns [LicensifyPublicKey] with the corresponding type
   static LicensifyPublicKey importPublicKeyFromString(String pemContent) {
-    // Проверка содержимого ключа
+    // Check key content
     _validatePemContent(pemContent);
 
-    // Определение типа ключа
+    // Determine key type
     if (_isRsaPublicKey(pemContent)) {
       return LicensifyPublicKey.rsa(pemContent);
     } else if (_isEcdsaPublicKey(pemContent)) {
@@ -55,40 +55,40 @@ abstract final class LicensifyKeyImporter {
     }
 
     throw FormatException(
-      'Неподдерживаемый формат публичного ключа. Поддерживаются только RSA и ECDSA ключи',
+      'Unsupported public key format. Only RSA and ECDSA keys are supported',
     );
   }
 
-  /// Создает приватный ключ из байтов в формате PEM
+  /// Creates a private key from bytes in PEM format
   ///
-  /// Автоматически определяет тип ключа (RSA или ECDSA)
+  /// Automatically determines the key type (RSA or ECDSA)
   ///
-  /// [bytes] - байты содержимого ключа в формате PEM (UTF-8)
+  /// [bytes] - PEM content of the key (UTF-8)
   ///
-  /// Возвращает [LicensifyPrivateKey] с соответствующим типом
+  /// Returns [LicensifyPrivateKey] with the corresponding type
   static LicensifyPrivateKey importPrivateKeyFromBytes(Uint8List bytes) {
     final pemContent = utf8.decode(bytes);
     return importPrivateKeyFromString(pemContent);
   }
 
-  /// Создает публичный ключ из байтов в формате PEM
+  /// Creates a public key from bytes in PEM format
   ///
-  /// Автоматически определяет тип ключа (RSA или ECDSA)
+  /// Automatically determines the key type (RSA or ECDSA)
   ///
-  /// [bytes] - байты содержимого ключа в формате PEM (UTF-8)
+  /// [bytes] - PEM content of the key (UTF-8)
   ///
-  /// Возвращает [LicensifyPublicKey] с соответствующим типом
+  /// Returns [LicensifyPublicKey] with the corresponding type
   static LicensifyPublicKey importPublicKeyFromBytes(Uint8List bytes) {
     final pemContent = utf8.decode(bytes);
     return importPublicKeyFromString(pemContent);
   }
 
-  /// Импортирует пару ключей из PEM строк
+  /// Imports a key pair from PEM strings
   ///
-  /// [privateKeyPem] - содержимое приватного ключа в формате PEM
-  /// [publicKeyPem] - содержимое публичного ключа в формате PEM
+  /// [privateKeyPem] - PEM content of the private key
+  /// [publicKeyPem] - PEM content of the public key
   ///
-  /// Возвращает [LicensifyKeyPair] с соответствующим типом
+  /// Returns [LicensifyKeyPair] with the corresponding type
   static LicensifyKeyPair importKeyPairFromStrings({
     required String privateKeyPem,
     required String publicKeyPem,
@@ -101,23 +101,23 @@ abstract final class LicensifyKeyImporter {
       publicKey: publicKey,
     );
 
-    // Проверка совместимости ключей
+    // Check key consistency
     if (!keyPair.isConsistent) {
       throw FormatException(
-        'Несовместимые типы ключей. Приватный ключ: ${privateKey.keyType}, '
-        'публичный ключ: ${publicKey.keyType}',
+        'Inconsistent key types. Private key: ${privateKey.keyType}, '
+        'public key: ${publicKey.keyType}',
       );
     }
 
     return keyPair;
   }
 
-  /// Импортирует пару ключей из байтов в формате PEM
+  /// Imports a key pair from bytes in PEM format
   ///
-  /// [privateKeyBytes] - байты приватного ключа в формате PEM (UTF-8)
-  /// [publicKeyBytes] - байты публичного ключа в формате PEM (UTF-8)
+  /// [privateKeyBytes] - PEM content of the private key (UTF-8)
+  /// [publicKeyBytes] - PEM content of the public key (UTF-8)
   ///
-  /// Возвращает [LicensifyKeyPair] с соответствующим типом
+  /// Returns [LicensifyKeyPair] with the corresponding type
   static LicensifyKeyPair importKeyPairFromBytes({
     required Uint8List privateKeyBytes,
     required Uint8List publicKeyBytes,
@@ -130,52 +130,50 @@ abstract final class LicensifyKeyImporter {
       publicKey: publicKey,
     );
 
-    // Проверка совместимости ключей
+    // Check key consistency
     if (!keyPair.isConsistent) {
       throw FormatException(
-        'Несовместимые типы ключей. Приватный ключ: ${privateKey.keyType}, '
-        'публичный ключ: ${publicKey.keyType}',
+        'Inconsistent key types. Private key: ${privateKey.keyType}, '
+        'public key: ${publicKey.keyType}',
       );
     }
 
     return keyPair;
   }
 
-  /// Проверяет корректность PEM-содержимого
+  /// Checks the correctness of PEM content
   static void _validatePemContent(String pemContent) {
     if (pemContent.trim().isEmpty) {
-      throw FormatException('Пустое содержимое PEM');
+      throw FormatException('Empty PEM content');
     }
 
     if (!pemContent.contains('-----BEGIN') ||
         !pemContent.contains('-----END')) {
-      throw FormatException(
-        'Неверный формат PEM. Отсутствует заголовок или концовка PEM',
-      );
+      throw FormatException('Invalid PEM format. Missing header or footer');
     }
   }
 
-  /// Проверяет, является ли ключ RSA приватным ключом
+  /// Checks if the key is a private RSA key
   static bool _isRsaPrivateKey(String pemContent) {
-    // Сначала проверяем по заголовку
+    // First check by header
     if (pemContent.contains('-----BEGIN RSA PRIVATE KEY-----')) {
       return true;
     }
 
-    // Проверяем обычный PKCS#8 приватный ключ
+    // Check regular PKCS#8 private key
     if (pemContent.contains('-----BEGIN PRIVATE KEY-----')) {
       try {
-        // Пытаемся расшифровать как RSA ключ - если получается, это RSA
+        // Try to decrypt as RSA key - if successful, this is RSA
         CryptoUtils.rsaPrivateKeyFromPem(pemContent);
         return true;
       } catch (_) {
-        // Если ошибка, пробуем ECDSA
+        // If error, try ECDSA
         try {
           CryptoUtils.ecPrivateKeyFromPem(pemContent);
-          return false; // Это ECDSA ключ
+          return false; // This is ECDSA key
         } catch (_) {
-          // Не смогли определить тип, предполагаем RSA
-          // (так как это более распространенный формат)
+          // Couldn't determine type, assume RSA
+          // (since this is more common format)
           return true;
         }
       }
@@ -184,21 +182,21 @@ abstract final class LicensifyKeyImporter {
     return false;
   }
 
-  /// Проверяет, является ли ключ ECDSA приватным ключом
+  /// Checks if the key is a private ECDSA key
   static bool _isEcdsaPrivateKey(String pemContent) {
-    // Сначала проверяем по заголовку
+    // First check by header
     if (pemContent.contains('-----BEGIN EC PRIVATE KEY-----')) {
       return true;
     }
 
-    // Проверяем обычный PKCS#8 приватный ключ
+    // Check regular PKCS#8 private key
     if (pemContent.contains('-----BEGIN PRIVATE KEY-----')) {
       try {
-        // Пытаемся расшифровать как ECDSA ключ - если получается, это ECDSA
+        // Try to decrypt as ECDSA key - if successful, this is ECDSA
         CryptoUtils.ecPrivateKeyFromPem(pemContent);
         return true;
       } catch (_) {
-        // Если ошибка, это не ECDSA ключ
+        // If error, this is not ECDSA key
         return false;
       }
     }
@@ -206,26 +204,26 @@ abstract final class LicensifyKeyImporter {
     return false;
   }
 
-  /// Проверяет, является ли ключ RSA публичным ключом
+  /// Checks if the key is a public RSA key
   static bool _isRsaPublicKey(String pemContent) {
-    // Сначала проверяем по заголовку
+    // First check by header
     if (pemContent.contains('-----BEGIN RSA PUBLIC KEY-----')) {
       return true;
     }
 
-    // Проверяем обычный PKCS#8 публичный ключ
+    // Check regular PKCS#8 public key
     if (pemContent.contains('-----BEGIN PUBLIC KEY-----')) {
       try {
-        // Пытаемся расшифровать как RSA ключ - если получается, это RSA
+        // Try to decrypt as RSA key - if successful, this is RSA
         CryptoUtils.rsaPublicKeyFromPem(pemContent);
         return true;
       } catch (_) {
-        // Если ошибка, пробуем ECDSA
+        // If error, try ECDSA
         try {
           CryptoUtils.ecPublicKeyFromPem(pemContent);
-          return false; // Это ECDSA ключ
+          return false; // This is ECDSA key
         } catch (_) {
-          // Не смогли определить тип, предполагаем RSA
+          // Couldn't determine type, assume RSA
           return true;
         }
       }
@@ -234,21 +232,21 @@ abstract final class LicensifyKeyImporter {
     return false;
   }
 
-  /// Проверяет, является ли ключ ECDSA публичным ключом
+  /// Checks if the key is a public ECDSA key
   static bool _isEcdsaPublicKey(String pemContent) {
-    // Сначала проверяем по заголовку
+    // First check by header
     if (pemContent.contains('-----BEGIN EC PUBLIC KEY-----')) {
       return true;
     }
 
-    // Проверяем обычный PKCS#8 публичный ключ
+    // Check regular PKCS#8 public key
     if (pemContent.contains('-----BEGIN PUBLIC KEY-----')) {
       try {
-        // Пытаемся расшифровать как ECDSA ключ - если получается, это ECDSA
+        // Try to decrypt as ECDSA key - if successful, this is ECDSA
         CryptoUtils.ecPublicKeyFromPem(pemContent);
         return true;
       } catch (_) {
-        // Если ошибка, это не ECDSA ключ
+        // If error, this is not ECDSA key
         return false;
       }
     }

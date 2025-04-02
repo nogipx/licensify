@@ -8,13 +8,13 @@ class ValidationResult {
   final bool isValid;
 
   /// Сообщение об ошибке (null если лицензия валидна)
-  final String? message;
+  final String message;
 
   /// Создает новый результат валидации
   ///
   /// [isValid] - Валидна ли лицензия
   /// [message] - Сообщение об ошибке (null если лицензия валидна)
-  const ValidationResult({required this.isValid, this.message});
+  const ValidationResult({required this.isValid, this.message = ''});
 
   /// Создает результат успешной валидации
   factory ValidationResult.valid() {

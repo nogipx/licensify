@@ -119,7 +119,7 @@ void main() {
       );
 
       // Assert
-      expect(license.type, equals(LicenseType.trial));
+      expect(license.type, equals(LicenseType.standard));
     });
 
     test('serializes license to binary format with header', () {
@@ -135,7 +135,7 @@ void main() {
       );
 
       // Act
-      final bytes = LicenseEncoder.encodeToBytes(license);
+      final bytes = LicenseEncoder.encode(license);
 
       // Assert
       // Check magic header
@@ -154,7 +154,7 @@ void main() {
       expect(version, equals(LicenseEncoder.formatVersion));
 
       // Decode license data
-      final decodedLicense = LicenseEncoder.decodeFromBytes(bytes);
+      final decodedLicense = LicenseEncoder.decode(bytes);
       expect(decodedLicense, isNotNull);
       expect(decodedLicense.id, equals(license.id));
       expect(decodedLicense.appId, equals(license.appId));

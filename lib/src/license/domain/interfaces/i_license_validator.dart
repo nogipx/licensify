@@ -6,6 +6,15 @@ import 'package:licensify/licensify.dart';
 
 /// Interface for license validator
 abstract class ILicenseValidator {
+  /// Complete license validation including schema validation
+  ///
+  /// [license] - The license to validate
+  /// [schema] - The schema to validate against
+  ///
+  /// Returns true if the license passes all validations
+  /// Returns true if both the signature is valid and the license has not expired
+  ValidationResult call(License license, {LicenseSchema? schema});
+
   /// Validates the license signature
   ///
   /// Returns true if the signature is valid, false otherwise
@@ -23,20 +32,4 @@ abstract class ILicenseValidator {
   ///
   /// Returns a schema validation result with detailed information
   SchemaValidationResult validateSchema(License license, LicenseSchema schema);
-
-  /// Complete license validation
-  ///
-  /// Returns true if both the signature is valid and the license has not expired
-  ValidationResult validateLicense(License license);
-
-  /// Complete license validation including schema validation
-  ///
-  /// [license] - The license to validate
-  /// [schema] - The schema to validate against
-  ///
-  /// Returns true if the license passes all validations
-  ValidationResult validateLicenseWithSchema(
-    License license,
-    LicenseSchema schema,
-  );
 }

@@ -20,7 +20,7 @@ void main() {
       );
 
       // Act
-      final result = LicenseEncoder.encodeToBytes(license);
+      final result = LicenseEncoder.encode(license);
 
       // Assert
       expect(result.length, greaterThan(8)); // Minimum length: header + version
@@ -48,10 +48,10 @@ void main() {
         features: {'maxUsers': 10},
       );
 
-      final encodedData = LicenseEncoder.encodeToBytes(originalLicense);
+      final encodedData = LicenseEncoder.encode(originalLicense);
 
       // Act
-      final decodedLicense = LicenseEncoder.decodeFromBytes(encodedData);
+      final decodedLicense = LicenseEncoder.decode(encodedData);
 
       // Assert
       expect(decodedLicense, isNotNull);
@@ -76,7 +76,7 @@ void main() {
           createdAt: DateTime.now(),
           signature: 'test-signature',
         );
-        final validBytes = LicenseEncoder.encodeToBytes(license);
+        final validBytes = LicenseEncoder.encode(license);
 
         // Create corrupted data with invalid header
         final invalidData = Uint8List.fromList([
@@ -91,7 +91,7 @@ void main() {
 
         // Act
         expect(
-          () => LicenseEncoder.decodeFromBytes(invalidData),
+          () => LicenseEncoder.decode(invalidData),
           throwsA(isA<LicenseFormatException>()),
         );
       },
@@ -108,7 +108,7 @@ void main() {
           createdAt: DateTime.now(),
           signature: 'test-signature',
         );
-        final validBytes = LicenseEncoder.encodeToBytes(license);
+        final validBytes = LicenseEncoder.encode(license);
 
         // Create corrupted data with invalid version
         final invalidData = Uint8List.fromList([
@@ -122,7 +122,7 @@ void main() {
 
         // Act
         expect(
-          () => LicenseEncoder.decodeFromBytes(invalidData),
+          () => LicenseEncoder.decode(invalidData),
           throwsA(isA<LicenseFormatException>()),
         );
       },
@@ -134,7 +134,7 @@ void main() {
 
       // Act
       expect(
-        () => LicenseEncoder.decodeFromBytes(tooShortData),
+        () => LicenseEncoder.decode(tooShortData),
         throwsA(isA<LicenseFormatException>()),
       );
     });
@@ -148,7 +148,7 @@ void main() {
         createdAt: DateTime.now(),
         signature: 'test-signature',
       );
-      final validBytes = LicenseEncoder.encodeToBytes(license);
+      final validBytes = LicenseEncoder.encode(license);
 
       // Create corrupted data with invalid JSON
       final invalidJson = utf8.encode('{ this is not valid json');
@@ -161,7 +161,7 @@ void main() {
 
       // Assert
       expect(
-        () => LicenseEncoder.decodeFromBytes(invalidData),
+        () => LicenseEncoder.decode(invalidData),
         throwsA(isA<LicenseFormatException>()),
       );
     });
@@ -175,10 +175,10 @@ void main() {
         createdAt: DateTime.now(),
         signature: 'test-signature',
       );
-      final encodedData = LicenseEncoder.encodeToBytes(license);
+      final encodedData = LicenseEncoder.encode(license);
 
       // Act
-      final isValid = LicenseEncoder.isValidLicenseBytes(encodedData);
+      final isValid = LicenseEncoder.isValidLicense(encodedData);
 
       // Assert
       expect(isValid, isTrue);
@@ -196,7 +196,7 @@ void main() {
         createdAt: DateTime.now(),
         signature: 'test-signature',
       );
-      final validBytes = LicenseEncoder.encodeToBytes(license);
+      final validBytes = LicenseEncoder.encode(license);
 
       // Create data with invalid header
       final invalidHeaderData = Uint8List.fromList([
@@ -210,8 +210,8 @@ void main() {
       ]);
 
       // Act
-      final isValidShort = LicenseEncoder.isValidLicenseBytes(tooShortData);
-      final isValidWrongHeader = LicenseEncoder.isValidLicenseBytes(
+      final isValidShort = LicenseEncoder.isValidLicense(tooShortData);
+      final isValidWrongHeader = LicenseEncoder.isValidLicense(
         invalidHeaderData,
       );
 

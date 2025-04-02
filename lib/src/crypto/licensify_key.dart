@@ -4,7 +4,16 @@
 
 import 'package:licensify/licensify.dart';
 
-/// Базовый класс для всех криптографических ключей
+/// Cryptographic key type
+enum LicensifyKeyType {
+  /// RSA algorithm (traditional)
+  rsa,
+
+  /// ECDSA algorithm (elliptic curves)
+  ecdsa,
+}
+
+/// Base class for all cryptographic keys
 sealed class LicensifyKey {
   /// PEM-encoded key content
   final String content;
@@ -36,6 +45,10 @@ final class LicensifyPrivateKey extends LicensifyKey {
 
   /// Creates a license generator for the private key
   LicenseGenerator get licenseGenerator => LicenseGenerator(privateKey: this);
+
+  /// Creates a license request decoder for the private key
+  LicenseRequestDecrypter licenseRequestDecoder() =>
+      LicenseRequestDecrypter(privateKey: this);
 }
 
 /// Represents a public key used for validating licenses
@@ -56,6 +69,17 @@ final class LicensifyPublicKey extends LicensifyKey {
 
   /// Creates a license validator for the public key
   LicenseValidator get licenseValidator => LicenseValidator(publicKey: this);
+
+  /// Creates a license request generator for the public key with custom parameters
+  /// It used for generating license requests and encrypt to transport to the license issuer
+  LicenseRequestGenerator licenseRequestGenerator({
+    String magicHeader = 'MLRQ',
+    int formatVersion = 1,
+  }) => LicenseRequestGenerator(
+    publicKey: this,
+    magicHeader: magicHeader,
+    formatVersion: formatVersion,
+  );
 }
 
 /// Represents a cryptographic key pair (private and public keys)

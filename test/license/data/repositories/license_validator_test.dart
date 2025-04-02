@@ -72,7 +72,7 @@ void main() {
     group('validateLicense', () {
       test('should return true for valid license', () {
         // Act
-        final result = validatorWithKey.validateLicense(validLicense);
+        final result = validatorWithKey(validLicense);
 
         // Assert
         expect(result.isValid, isTrue);
@@ -80,7 +80,7 @@ void main() {
 
       test('should return false for expired license', () {
         // Act
-        final result = validatorWithKey.validateLicense(expiredLicense);
+        final result = validatorWithKey(expiredLicense);
 
         // Assert
         expect(result.isValid, isFalse);
@@ -88,9 +88,7 @@ void main() {
 
       test('should return false for invalid signature', () {
         // Act
-        final result = validatorWithKey.validateLicense(
-          invalidSignatureLicense,
-        );
+        final result = validatorWithKey(invalidSignatureLicense);
 
         // Assert
         expect(result.isValid, isFalse);
@@ -164,7 +162,7 @@ void main() {
 
       test('validateLicense должен отклонять просроченную лицензию', () {
         // Act
-        final result = validatorWithKey.validateLicense(expiredLicense);
+        final result = validatorWithKey(expiredLicense);
 
         // Assert
         expect(result.isValid, isFalse);
@@ -172,7 +170,7 @@ void main() {
 
       test('validateLicense должен подтверждать корректную лицензию', () {
         // Act
-        final result = validatorWithKey.validateLicense(validLicense);
+        final result = validatorWithKey(validLicense);
 
         // Assert
         expect(result.isValid, isTrue);
@@ -180,9 +178,7 @@ void main() {
 
       test('validateLicense должен отклонять лицензию с неверной подписью', () {
         // Act
-        final result = validatorWithKey.validateLicense(
-          invalidSignatureLicense,
-        );
+        final result = validatorWithKey(invalidSignatureLicense);
 
         // Assert
         expect(result.isValid, isFalse);
@@ -437,19 +433,13 @@ void main() {
         'validateLicenseWithSchema combines signature and schema validation',
         () {
           // Even with valid schema, overall validation fails because signature is invalid
-          final isValid = validatorWithKey.validateLicenseWithSchema(
-            validSchemaLicense,
-            schema,
-          );
+          final isValid = validatorWithKey(validSchemaLicense, schema: schema);
           expect(isValid.isValid, isFalse); // Signature validation fails
         },
       );
 
       test('validateLicenseWithSchema returns false for invalid schema', () {
-        final isValid = validatorWithKey.validateLicenseWithSchema(
-          invalidSchemaLicense,
-          schema,
-        );
+        final isValid = validatorWithKey(invalidSchemaLicense, schema: schema);
         expect(isValid.isValid, isFalse);
       });
 
@@ -459,10 +449,7 @@ void main() {
           // Create a mock validator that always returns true for signature validation
           final mockValidator = _MockAlwaysValidValidator();
 
-          final isValid = mockValidator.validateLicenseWithSchema(
-            validSchemaLicense,
-            schema,
-          );
+          final isValid = mockValidator(validSchemaLicense, schema: schema);
           expect(isValid.isValid, isTrue);
         },
       );
@@ -506,10 +493,7 @@ void main() {
         );
 
         // Act
-        final result = validatorWithKey.validateLicenseWithSchema(
-          validLicense,
-          schema,
-        );
+        final result = validatorWithKey(validLicense, schema: schema);
 
         // Assert
         expect(result.isValid, isTrue);
@@ -517,7 +501,7 @@ void main() {
 
       test('should validate expirationDate and return false if expired', () {
         // Act
-        final result = validatorWithKey.validateLicense(expiredLicense);
+        final result = validatorWithKey(expiredLicense);
 
         // Assert
         expect(result.isValid, isFalse);
@@ -525,7 +509,7 @@ void main() {
 
       test('should validate all together and return true if all valid', () {
         // Act
-        final result = validatorWithKey.validateLicense(validLicense);
+        final result = validatorWithKey(validLicense);
 
         // Assert
         expect(result.isValid, isTrue);
@@ -533,9 +517,7 @@ void main() {
 
       test('should validate all together and return false if any invalid', () {
         // Act
-        final result = validatorWithKey.validateLicense(
-          invalidSignatureLicense,
-        );
+        final result = validatorWithKey(invalidSignatureLicense);
 
         // Assert
         expect(result.isValid, isFalse);
@@ -555,6 +537,10 @@ void main() {
 /// Mock validator that always returns true for signature validation
 class _MockAlwaysValidValidator implements ILicenseValidator {
   @override
+  ValidationResult call(License license, {LicenseSchema? schema}) =>
+      ValidationResult.valid();
+
+  @override
   ValidationResult validateSignature(License license) =>
       ValidationResult.valid();
 
@@ -563,27 +549,7 @@ class _MockAlwaysValidValidator implements ILicenseValidator {
       ValidationResult.valid();
 
   @override
-  ValidationResult validateLicense(License license) => ValidationResult.valid();
-
-  @override
   SchemaValidationResult validateSchema(License license, LicenseSchema schema) {
     return schema.validateLicense(license);
-  }
-
-  @override
-  ValidationResult validateLicenseWithSchema(
-    License license,
-    LicenseSchema schema,
-  ) {
-    final licenseValid = validateLicense(license);
-    if (!licenseValid.isValid) {
-      return licenseValid;
-    }
-
-    final schemaResult = validateSchema(license, schema);
-    return ValidationResult(
-      isValid: schemaResult.isValid,
-      message: schemaResult.errorMessage,
-    );
   }
 }

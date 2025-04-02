@@ -36,7 +36,7 @@ void main() {
         appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
       );
-      final licenseData = LicenseEncoder.encodeToBytes(license);
+      final licenseData = LicenseEncoder.encode(license);
 
       // Save license to storage
       await storage.saveLicenseData(licenseData);
@@ -58,7 +58,7 @@ void main() {
         expirationDate: DateTime.now().add(Duration(days: 30)),
       );
       // Encode to bytes first
-      final validBytes = LicenseEncoder.encodeToBytes(license);
+      final validBytes = LicenseEncoder.encode(license);
       await storage.saveLicenseData(validBytes);
 
       // Then corrupt the data

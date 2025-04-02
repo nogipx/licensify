@@ -11,20 +11,11 @@ import 'package:licensify/licensify.dart';
 import 'package:pointycastle/export.dart';
 import 'package:uuid/uuid.dart';
 
-/// Cryptographic key type
-enum LicensifyKeyType {
-  /// RSA algorithm (traditional)
-  rsa,
-
-  /// ECDSA algorithm (elliptic curves)
-  ecdsa,
-}
-
 /// Use case for generating a new license
 ///
 /// This class is responsible for creating cryptographically signed licenses.
 /// It should only be used on the license issuer side, not in the client application.
-class LicenseGenerator {
+class LicenseGenerator implements ILicenseGenerator {
   /// Private key for signing licenses
   final LicensifyPrivateKey _privateKey;
 
@@ -53,10 +44,11 @@ class LicenseGenerator {
   /// [includeSecurityInfo] - Whether to include security algorithm info in metadata (not recommended in production)
   ///
   /// Returns a cryptographically signed License object
+  @override
   License call({
     required String appId,
     required DateTime expirationDate,
-    LicenseType type = LicenseType.trial,
+    LicenseType type = LicenseType.standard,
     Map<String, dynamic> features = const {},
     Map<String, dynamic>? metadata,
   }) {

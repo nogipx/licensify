@@ -33,13 +33,13 @@ class LicenseRepository implements ILicenseRepository {
 
   @override
   Future<bool> saveLicense(License license) async {
-    final binaryData = LicenseEncoder.encodeToBytes(license);
+    final binaryData = LicenseEncoder.encode(license);
     return await _storage.saveLicenseData(binaryData);
   }
 
   @override
   Future<License> getLicenseFromBytes(Uint8List licenseData) async {
-    final license = LicenseEncoder.decodeFromBytes(licenseData);
+    final license = LicenseEncoder.decode(licenseData);
     return license;
   }
 

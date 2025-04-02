@@ -6,9 +6,18 @@
 ![License](https://img.shields.io/badge/license-LPGL-blue.svg?style=flat-square&labelColor=1A365D&color=00A67E&link=https://pub.dev/packages/licensify/license)
 
 
-Advanced licensing solution for Flutter/Dart applications with cryptographic protection.
+# Licensify
 
-**Licensify** transforms complex license management into a simple process, providing maximum security and flexibility.
+A lightweight yet powerful license management solution for Dart applications with cryptographically secure signatures.
+
+## Overview
+
+Licensify is a Dart library for license validation, signing, and management. It provides:
+
+- Cryptographically secure license validation
+- RSA and ECDSA signature support
+- License request generation and sharing
+- Platform-independent implementation
 
 ## 🚀 Contents
 
@@ -34,7 +43,7 @@ Advanced licensing solution for Flutter/Dart applications with cryptographic pro
 
 ```yaml
 dependencies:
-  licensify: ^1.7.0
+  licensify: ^1.7.1
 ```
 
 ## 🏁 Quick Start
@@ -289,3 +298,131 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 ```
 
 Created by Karim "nogipx" Mamatkazin
+
+## License Request Generation
+
+Licensify provides a platform-independent way to generate license requests. This is useful for implementing license activation in your applications.
+
+### Basic Usage
+
+```dart
+import 'package:licensify/licensify.dart';
+
+// Load your public key
+final publicKeyString = '''
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvtV2y6EHoHsQNH8v5hZG
+5YlZOepxQ/xCh5IY5O7OYg+xEoSLgQ24MGkY7QnePxQiFpNJUwyQyQmEEp4XUZh5
+NgXJKSiYLOaLMYh2AXNomR/CKn/8W2hp8qMGbpGxgJJRxR0I/pMSu/jEyGgeXOVt
+R6r0UeM9Y52zu+qM0f8rXpGHVlk9Yvh5jFjIRRJjzAY6qNOZYGXwFvEkXRxBC16y
+k/iuUfyPV3J0YoW+v2SgLemCCLFkBM0toIDFIw4PNRh7oyj/KLmvJ3OqUOGwUyVE
+bllZnYPLFfqFXojKVOYHfUNVtWfWm6PWRxQ1XpOQvRgAD10EIxnQN5mJUBk24QCK
+3QIDAQAB
+-----END PUBLIC KEY-----
+''';
+final publicKey = LicensifyKeyImporter.importPublicKeyFromString(publicKeyString);
+
+// Create the request generator usecase
+final useCase = GenerateLicenseRequestUseCase(
+  publicKey: publicKey,
+  // Optional: custom device info service
+  // deviceInfoService: YourCustomDeviceInfoService(),
+  // Optional: custom storage implementation
+  // storage: YourCustomLicenseRequestStorage(),
+);
+
+// Generate binary license request
+final requestBytes = await useCase.generateRequest(
+  appId: 'com.example.app',
+  expirationHours: 48, // default is 48 hours
+);
+
+// Generate and save the request (requires a storage implementation)
+final filePath = await useCase.generateAndSaveRequest(
+  appId: 'com.example.app',
+);
+
+// Generate, save and share the request (requires a storage implementation)
+await useCase.generateAndShareRequest(
+  appId: 'com.example.app',
+);
+```
+
+### Custom Device Information Service
+
+For platform-specific device information, implement the `IDeviceInfoService` interface:
+
+```dart
+import 'package:licensify/licensify.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+
+class FlutterDeviceInfoService implements IDeviceInfoService {
+  final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
+  
+  @override
+  Future<String> getDeviceHash() async {
+    // Implement platform-specific device info collection
+    final Map<String, dynamic> deviceData = await _collectDeviceData();
+    
+    // Use the built-in hash generation method
+    final hashGenerator = BasicDeviceInfoService();
+    return hashGenerator._generateHash(deviceData);
+  }
+  
+  Future<Map<String, dynamic>> _collectDeviceData() async {
+    // Implement your platform-specific data collection
+    // Example for Android:
+    if (Platform.isAndroid) {
+      final info = await _deviceInfo.androidInfo;
+      return {
+        'id': info.id,
+        'brand': info.brand,
+        'model': info.model,
+        // Add more identifiers
+      };
+    }
+    
+    // Add implementations for other platforms
+    
+    // Fallback
+    return {'platform': Platform.operatingSystem};
+  }
+}
+```
+
+### Custom License Request Storage
+
+For platform-specific file handling, implement the `ILicenseRequestStorage` interface:
+
+```dart
+import 'dart:io';
+import 'package:licensify/licensify.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+
+class FlutterLicenseRequestStorage implements ILicenseRequestStorage {
+  @override
+  Future<String> saveLicenseRequest(Uint8List bytes, String appId) async {
+    // Get a temporary directory
+    final tempDir = await getTemporaryDirectory();
+    
+    // Create a file name
+    final fileName = '${appId.replaceAll('.', '_')}_license_request${LicenseRequestGenerator.fileExtension}';
+    
+    // Create and write to the file
+    final file = File('${tempDir.path}/$fileName');
+    await file.writeAsBytes(bytes);
+    
+    return file.path;
+  }
+  
+  @override
+  Future<void> shareLicenseRequest(String filePath, String appId) async {
+    // Use the share_plus package to share the file
+    await Share.shareXFiles(
+      [XFile(filePath)],
+      text: 'License request for $appId',
+    );
+  }
+}
+```

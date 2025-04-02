@@ -33,6 +33,49 @@ class LicenseValidator implements ILicenseValidator {
       _digest = digest ?? SHA512Digest();
 
   @override
+  ValidationResult call(License license, {LicenseSchema? schema}) {
+    // First validate signature and expiration
+    // Validate signature
+    final signatureResult = validateSignature(license);
+    if (!signatureResult.isValid) {
+      return signatureResult;
+    }
+
+    // If signature is valid, validate expiration
+    final expirationResult = validateExpiration(license);
+    if (!expirationResult.isValid) {
+      return expirationResult;
+    }
+
+    if (schema != null) {
+      // Then validate against the schema
+      final schemaResult = validateSchema(license, schema);
+      return ValidationResult(
+        isValid: schemaResult.isValid,
+        message: schemaResult.errorMessage ?? '',
+      );
+    }
+
+    return ValidationResult(isValid: true);
+  }
+
+  @override
+  ValidationResult validateExpiration(License license) {
+    // License is valid if expiration date hasn't passed
+    final isValid = !license.isExpired;
+    return ValidationResult(
+      isValid: isValid,
+      message: isValid ? '' : 'License expired ${license.expirationDate}',
+    );
+  }
+
+  @override
+  SchemaValidationResult validateSchema(License license, LicenseSchema schema) {
+    // Use the schema's validateLicense method to validate the license
+    return schema.validateLicense(license);
+  }
+
+  @override
   ValidationResult validateSignature(License license) {
     try {
       // Get rounded expiration date - this should trim to minutes only
@@ -73,7 +116,7 @@ class LicenseValidator implements ILicenseValidator {
 
       return ValidationResult(
         isValid: isValid,
-        message: isValid ? null : 'Invalid signature',
+        message: isValid ? '' : 'Invalid signature',
       );
     } catch (e) {
       return ValidationResult(
@@ -207,52 +250,5 @@ class LicenseValidator implements ILicenseValidator {
       result = (result << 8) | BigInt.from(bytes[i]);
     }
     return result;
-  }
-
-  @override
-  ValidationResult validateExpiration(License license) {
-    // License is valid if expiration date hasn't passed
-    final isValid = !license.isExpired;
-    return ValidationResult(
-      isValid: isValid,
-      message: isValid ? null : 'License expired ${license.expirationDate}',
-    );
-  }
-
-  @override
-  SchemaValidationResult validateSchema(License license, LicenseSchema schema) {
-    // Use the schema's validateLicense method to validate the license
-    return schema.validateLicense(license);
-  }
-
-  @override
-  ValidationResult validateLicense(License license) {
-    // Validate signature
-    final signatureResult = validateSignature(license);
-    if (!signatureResult.isValid) {
-      return signatureResult;
-    }
-
-    // If signature is valid, validate expiration
-    return validateExpiration(license);
-  }
-
-  @override
-  ValidationResult validateLicenseWithSchema(
-    License license,
-    LicenseSchema schema,
-  ) {
-    // First validate signature and expiration
-    final licenseValid = validateLicense(license);
-    if (!licenseValid.isValid) {
-      return licenseValid;
-    }
-
-    // Then validate against the schema
-    final schemaResult = validateSchema(license, schema);
-    return ValidationResult(
-      isValid: schemaResult.isValid,
-      message: schemaResult.errorMessage ?? '',
-    );
   }
 }
