@@ -5,7 +5,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:basic_utils/basic_utils.dart';
 import 'package:licensify/licensify.dart';
 import 'package:pointycastle/export.dart';
 
@@ -60,6 +59,10 @@ class LicenseRequestDecrypter implements ILicenseRequestDecrypter {
   /// Throws an exception if the request is in the wrong format or cannot be decrypted.
   @override
   LicenseRequest call(Uint8List requestBytes) {
+    if (_keyType == LicensifyKeyType.rsa) {
+      throw UnsupportedError('RSA is deprecated');
+    }
+
     // Check and extract header
     _validateRequestFormat(requestBytes);
 
@@ -67,7 +70,7 @@ class LicenseRequestDecrypter implements ILicenseRequestDecrypter {
     final encryptedData = requestBytes.sublist(9);
 
     // Decrypt data
-    final jsonString = _decryptRequestData(encryptedData);
+    final jsonString = _decryptWithEcdh(encryptedData);
 
     // Convert JSON to license request object
     return LicenseRequest.fromJsonString(jsonString);
@@ -101,76 +104,6 @@ class LicenseRequestDecrypter implements ILicenseRequestDecrypter {
       throw FormatException(
         'Key type mismatch: request is for ${keyType.name}, but decrypter uses ${_keyType.name}',
       );
-    }
-  }
-
-  /// Decrypts the request data
-  String _decryptRequestData(Uint8List encryptedData) {
-    if (_keyType == LicensifyKeyType.rsa) {
-      return _decryptWithRsa(encryptedData);
-    } else {
-      return _decryptWithEcdh(encryptedData);
-    }
-  }
-
-  /// Decrypts using RSA
-  String _decryptWithRsa(Uint8List encryptedData) {
-    final privateKey = CryptoUtils.rsaPrivateKeyFromPem(_privateKey.content);
-
-    // Check if it's direct RSA encryption or hybrid scheme with AES
-    final isHybrid =
-        encryptedData.length > 2 &&
-        (encryptedData[0] > 0 || encryptedData[1] > 0);
-
-    if (!isHybrid) {
-      // Direct RSA decryption
-      final decrypter = OAEPEncoding(RSAEngine())
-        ..init(false, PrivateKeyParameter<RSAPrivateKey>(privateKey));
-      final decryptedBytes = decrypter.process(encryptedData);
-      return utf8.decode(decryptedBytes);
-    } else {
-      // Hybrid RSA + AES decryption
-      final keyLength = (encryptedData[0] << 8) + encryptedData[1];
-      final encryptedKey = encryptedData.sublist(2, 2 + keyLength);
-      final encryptedContent = encryptedData.sublist(2 + keyLength);
-
-      // Decrypt AES key
-      final decrypter = OAEPEncoding(RSAEngine())
-        ..init(false, PrivateKeyParameter<RSAPrivateKey>(privateKey));
-      final keyData = decrypter.process(encryptedKey);
-
-      // Extract AES key and IV
-      final aesKey = keyData.sublist(0, 32);
-      final aesIv = keyData.sublist(32, 48);
-
-      // Decrypt content with AES
-      final aesKeyParam = KeyParameter(aesKey);
-      final params = ParametersWithIV(aesKeyParam, aesIv);
-      final aesCipher = CBCBlockCipher(AESEngine())..init(false, params);
-
-      // Decryption
-      final decryptedContent = Uint8List(encryptedContent.length);
-      for (
-        var offset = 0;
-        offset < encryptedContent.length;
-        offset += aesCipher.blockSize
-      ) {
-        aesCipher.processBlock(
-          encryptedContent,
-          offset,
-          decryptedContent,
-          offset,
-        );
-      }
-
-      // Remove PKCS7 padding
-      final padLength = decryptedContent[decryptedContent.length - 1];
-      if (padLength > 0 && padLength <= aesCipher.blockSize) {
-        final unpaddedLength = decryptedContent.length - padLength;
-        return utf8.decode(decryptedContent.sublist(0, unpaddedLength));
-      }
-
-      return utf8.decode(decryptedContent);
     }
   }
 

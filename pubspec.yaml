@@ -1,6 +1,6 @@
 name: licensify
-description: A lightweight yet powerful license management solution for Flutter and Dart applications with cryptographically secure signatures and customizable encryption parameters, supporting RSA and multiple ECDSA curves (p256, p384, p521, secp256k1)
-version: 1.7.1
+description: Secure license management for Dart/Flutter with ECDSA signatures, configurable encryption, and cross-platform support.
+version: 2.0.0
 homepage: https://github.com/nogipx/licensify
 repository: https://github.com/nogipx/licensify
 issue_tracker: https://github.com/nogipx/licensify/issues

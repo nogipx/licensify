@@ -52,6 +52,10 @@ class LicenseGenerator implements ILicenseGenerator {
     Map<String, dynamic> features = const {},
     Map<String, dynamic>? metadata,
   }) {
+    if (_keyType == LicensifyKeyType.rsa) {
+      throw UnsupportedError('RSA is deprecated');
+    }
+
     final id = const Uuid().v4();
 
     // Round creation time to minutes for consistency
@@ -69,10 +73,7 @@ class LicenseGenerator implements ILicenseGenerator {
         '$id:$appId:${utcExpirationDate.toIso8601String()}:${type.name}:$featuresJson:$metadataJson';
 
     // Generate the signature based on the key type
-    final signature =
-        _keyType == LicensifyKeyType.rsa
-            ? _generateRsaSignature(dataToSign)
-            : _generateEcdsaSignature(dataToSign);
+    final signature = _generateEcdsaSignature(dataToSign);
 
     // Create a copy of metadata without modifying the original
     final extendedMetadata =
@@ -91,19 +92,6 @@ class LicenseGenerator implements ILicenseGenerator {
       features: features,
       metadata: extendedMetadata,
     );
-  }
-
-  /// Generates an RSA signature
-  String _generateRsaSignature(String dataToSign) {
-    // Create RSA signature with the private key
-    final privateKey = CryptoUtils.rsaPrivateKeyFromPem(_privateKey.content);
-    final signer = RSASigner(_digest, '0609608648016503040203');
-    signer.init(true, PrivateKeyParameter<RSAPrivateKey>(privateKey));
-
-    final signatureBytes = signer.generateSignature(
-      Uint8List.fromList(utf8.encode(dataToSign)),
-    );
-    return base64Encode(signatureBytes.bytes);
   }
 
   /// Generates an ECDSA signature

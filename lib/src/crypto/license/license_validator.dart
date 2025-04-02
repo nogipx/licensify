@@ -34,6 +34,10 @@ class LicenseValidator implements ILicenseValidator {
 
   @override
   ValidationResult call(License license, {LicenseSchema? schema}) {
+    if (_keyType == LicensifyKeyType.rsa) {
+      throw UnsupportedError('RSA is deprecated');
+    }
+
     // First validate signature and expiration
     // Validate signature
     final signatureResult = validateSignature(license);
@@ -92,26 +96,12 @@ class LicenseValidator implements ILicenseValidator {
       final dataToVerify =
           '${license.id}:${license.appId}:${roundedExpirationDate.toIso8601String()}:${license.type.name}:$featuresJson:$metadataJson';
 
-      // Определяем, с какой сигнатурой имеем дело: пробуем разные методы проверки
+      // Try to verify ECDSA signature
       bool isValid;
-
-      // Сначала пробуем метод, соответствующий типу ключа
       try {
-        isValid =
-            _keyType == LicensifyKeyType.rsa
-                ? _verifyRsaSignature(dataToVerify, license.signature)
-                : _verifyEcdsaSignature(dataToVerify, license.signature);
-      } catch (e) {
-        // Если не получилось, пробуем альтернативный метод
-        try {
-          isValid =
-              _keyType == LicensifyKeyType.rsa
-                  ? _verifyEcdsaSignature(dataToVerify, license.signature)
-                  : _verifyRsaSignature(dataToVerify, license.signature);
-        } catch (_) {
-          // Если и это не получилось, значит подпись действительно неверная
-          isValid = false;
-        }
+        isValid = _verifyEcdsaSignature(dataToVerify, license.signature);
+      } catch (_) {
+        isValid = false;
       }
 
       return ValidationResult(
@@ -132,25 +122,6 @@ class LicenseValidator implements ILicenseValidator {
     result.remove('keyAlgorithm');
     result.remove('curve');
     return result;
-  }
-
-  /// Verifies RSA signature
-  bool _verifyRsaSignature(String dataToVerify, String signature) {
-    // Prepare the public key
-    final publicKey = CryptoUtils.rsaPublicKeyFromPem(_publicKey.content);
-
-    // Decode signature from Base64
-    final signatureBytes = base64Decode(signature);
-
-    // Verify signature using RSA with specified digest
-    final verifier = RSASigner(_digest, '0609608648016503040203');
-    verifier.init(false, PublicKeyParameter<RSAPublicKey>(publicKey));
-
-    final signatureParams = Uint8List.fromList(utf8.encode(dataToVerify));
-    return verifier.verifySignature(
-      signatureParams,
-      RSASignature(signatureBytes),
-    );
   }
 
   /// Verifies ECDSA signature

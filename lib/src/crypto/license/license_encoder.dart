@@ -53,7 +53,10 @@ class LicenseEncoderImpl implements ILicenseEncoder {
   /// Format version
   final int formatVersion;
 
-  const LicenseEncoderImpl({this.magicHeader = 'LCSF', this.formatVersion = 1});
+  const LicenseEncoderImpl({
+    this.magicHeader = LicenseEncoder.magicHeader,
+    this.formatVersion = 1,
+  });
 
   @override
   Uint8List encodeToBytes(License licenseData) {

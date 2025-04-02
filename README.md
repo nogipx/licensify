@@ -15,7 +15,7 @@ A lightweight yet powerful license management solution for Dart applications wit
 Licensify is a Dart library for license validation, signing, and management. It provides:
 
 - Cryptographically secure license validation
-- RSA and ECDSA signature support
+- ECDSA signature support with legacy RSA key generation
 - License request generation and sharing
 - Platform-independent implementation
 
@@ -31,7 +31,7 @@ Licensify is a Dart library for license validation, signing, and management. It 
 
 ## 🔥 Features
 
-- **Powerful Cryptography**: RSA and ECDSA with SHA-512 for robust protection
+- **Powerful Cryptography**: ECDSA with SHA-512 for robust protection
 - **Flexible Licenses**: Built-in and custom types, metadata, and features
 - **Expiration**: Automatic expiration verification
 - **Schema Validation**: Validate license structures with custom schemas
@@ -43,7 +43,7 @@ Licensify is a Dart library for license validation, signing, and management. It 
 
 ```yaml
 dependencies:
-  licensify: ^1.7.1
+  licensify: ^2.0.0
 ```
 
 ## 🏁 Quick Start
@@ -71,13 +71,14 @@ if (result.isValid) {
 }
 ```
 
-### RSA (traditional approach)
+### Legacy RSA Key Generation
 
 ```dart
-// 1. Generate key pair
+// While RSA keys can still be generated for backward compatibility,
+// they cannot be used for license operations in v2.0.0+
 final keyPair = RsaKeyGenerator.generateKeyPairAsPem(bitLength: 2048);
 
-// 2 and 3 - same as with ECDSA
+// Note: Using RSA keys for license operations will throw UnsupportedError
 ```
 
 ## 📚 Usage Examples
@@ -86,8 +87,9 @@ final keyPair = RsaKeyGenerator.generateKeyPairAsPem(bitLength: 2048);
 
 ```dart
 // SERVER: generating a license
-// Import private key with automatic type detection
+// Import private key 
 final privateKey = LicensifyKeyImporter.importPrivateKeyFromString(privateKeyPem);
+// Note: Only ECDSA keys can be used for license operations
 final generator = privateKey.licenseGenerator;
 
 final license = generator(
@@ -109,7 +111,7 @@ final license = generator(
 final bytes = LicenseEncoder.encodeToBytes(license);
 
 // CLIENT: validating the received license
-// Import public key with automatic type detection
+// Import public key
 final publicKey = LicensifyKeyImporter.importPublicKeyFromString(publicKeyPem);
 final validator = publicKey.licenseValidator;
 
@@ -224,12 +226,13 @@ final isValid = validator.validateLicenseWithSchema(license, schema);
 ### Key Formats and Importing
 
 ```dart
-// Generate keys
+// Generate ECDSA keys (recommended)
 final ecdsaKeyPair = EcdsaKeyGenerator.generateKeyPairAsPem();
 
 // Create keys with explicit type specification
-final privateKey = LicensifyPrivateKey.rsa(privateKeyPemString);
+// Note: RSA keys are supported for generation only
 final publicKey = LicensifyPublicKey.ecdsa(publicKeyPemString);
+final privateKey = LicensifyPrivateKey.ecdsa(privateKeyPemString);
 
 // Import keys with automatic type detection
 final privateKey = LicensifyKeyImporter.importPrivateKeyFromString(pemPrivateKey);
@@ -246,7 +249,7 @@ final keyPair = LicensifyKeyImporter.importKeyPairFromStrings(
 );
 
 // The importer automatically:
-// 1. Detects key type (RSA or ECDSA)
+// 1. Detects key type (ECDSA or RSA)
 // 2. Verifies key format correctness
 // 3. Ensures key pair consistency (matching types)
 ```

@@ -1,3 +1,11 @@
+## 2.0.0 - 2025-04-03
+- **BREAKING CHANGE**: Deprecated RSA for all cryptographic operations except key generation
+- Improved cryptographic operations with dedicated `ECDHCryptoUtils` class
+- Enhanced encryption using `ECCipher` for better security and performance
+- Optimized key derivation using industry-standard HKDF implementation
+- Refactored license request generation and decryption process
+- Added comprehensive documentation on customizing encryption parameters
+
 ## 1.7.1 - 2025-03-27
 - Update README.md
 

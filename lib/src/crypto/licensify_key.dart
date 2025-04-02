@@ -8,6 +8,7 @@ import 'package:pointycastle/api.dart' show Digest;
 /// Cryptographic key type
 enum LicensifyKeyType {
   /// RSA algorithm (traditional)
+  /// @deprecated RSA support is being phased out, use ECDSA instead
   rsa,
 
   /// ECDSA algorithm (elliptic curves)
@@ -19,7 +20,7 @@ sealed class LicensifyKey {
   /// PEM-encoded key content
   final String content;
 
-  /// Type of the key (RSA or ECDSA)
+  /// Type of the key (only ECDSA supported for operations)
   final LicensifyKeyType keyType;
 
   const LicensifyKey({required this.content, required this.keyType});
@@ -37,6 +38,8 @@ final class LicensifyPrivateKey extends LicensifyKey {
   const LicensifyPrivateKey._({required super.content, required super.keyType});
 
   /// Creates an RSA private key
+  ///
+  /// @deprecated RSA support is being phased out, can only be used for key generation
   factory LicensifyPrivateKey.rsa(String content) =>
       LicensifyPrivateKey._(content: content, keyType: LicensifyKeyType.rsa);
 
@@ -45,7 +48,15 @@ final class LicensifyPrivateKey extends LicensifyKey {
       LicensifyPrivateKey._(content: content, keyType: LicensifyKeyType.ecdsa);
 
   /// Creates a license generator for the private key
-  LicenseGenerator get licenseGenerator => LicenseGenerator(privateKey: this);
+  LicenseGenerator get licenseGenerator {
+    // Ensure only ECDSA keys are used for operations
+    if (keyType != LicensifyKeyType.ecdsa) {
+      throw UnsupportedError(
+        'Only ECDSA keys are supported for license generation. RSA is deprecated.',
+      );
+    }
+    return LicenseGenerator(privateKey: this);
+  }
 
   /// Creates a license request decoder for the private key
   LicenseRequestDecrypter licenseRequestDecoder({
@@ -53,13 +64,21 @@ final class LicensifyPrivateKey extends LicensifyKey {
     Digest? hkdfDigest,
     String? hkdfSalt,
     String? hkdfInfo,
-  }) => LicenseRequestDecrypter(
-    privateKey: this,
-    aesKeySize: aesKeySize,
-    hkdfDigest: hkdfDigest,
-    hkdfSalt: hkdfSalt,
-    hkdfInfo: hkdfInfo,
-  );
+  }) {
+    // Ensure only ECDSA keys are used for operations
+    if (keyType != LicensifyKeyType.ecdsa) {
+      throw UnsupportedError(
+        'Only ECDSA keys are supported for license request decryption. RSA is deprecated.',
+      );
+    }
+    return LicenseRequestDecrypter(
+      privateKey: this,
+      aesKeySize: aesKeySize,
+      hkdfDigest: hkdfDigest,
+      hkdfSalt: hkdfSalt,
+      hkdfInfo: hkdfInfo,
+    );
+  }
 }
 
 /// Represents a public key used for validating licenses
@@ -71,6 +90,8 @@ final class LicensifyPublicKey extends LicensifyKey {
   const LicensifyPublicKey._({required super.content, required super.keyType});
 
   /// Creates an RSA public key
+  ///
+  /// @deprecated RSA support is being phased out, can only be used for key generation
   factory LicensifyPublicKey.rsa(String content) =>
       LicensifyPublicKey._(content: content, keyType: LicensifyKeyType.rsa);
 
@@ -79,7 +100,15 @@ final class LicensifyPublicKey extends LicensifyKey {
       LicensifyPublicKey._(content: content, keyType: LicensifyKeyType.ecdsa);
 
   /// Creates a license validator for the public key
-  LicenseValidator get licenseValidator => LicenseValidator(publicKey: this);
+  LicenseValidator get licenseValidator {
+    // Ensure only ECDSA keys are used for operations
+    if (keyType != LicensifyKeyType.ecdsa) {
+      throw UnsupportedError(
+        'Only ECDSA keys are supported for license validation. RSA is deprecated.',
+      );
+    }
+    return LicenseValidator(publicKey: this);
+  }
 
   /// Creates a license request generator for the public key with custom parameters
   /// It used for generating license requests and encrypt to transport to the license issuer
@@ -90,15 +119,23 @@ final class LicensifyPublicKey extends LicensifyKey {
     Digest? hkdfDigest,
     String? hkdfSalt,
     String? hkdfInfo,
-  }) => LicenseRequestGenerator(
-    publicKey: this,
-    magicHeader: magicHeader,
-    formatVersion: formatVersion,
-    aesKeySize: aesKeySize,
-    hkdfDigest: hkdfDigest,
-    hkdfSalt: hkdfSalt,
-    hkdfInfo: hkdfInfo,
-  );
+  }) {
+    // Ensure only ECDSA keys are used for operations
+    if (keyType != LicensifyKeyType.ecdsa) {
+      throw UnsupportedError(
+        'Only ECDSA keys are supported for license request generation. RSA is deprecated.',
+      );
+    }
+    return LicenseRequestGenerator(
+      publicKey: this,
+      magicHeader: magicHeader,
+      formatVersion: formatVersion,
+      aesKeySize: aesKeySize,
+      hkdfDigest: hkdfDigest,
+      hkdfSalt: hkdfSalt,
+      hkdfInfo: hkdfInfo,
+    );
+  }
 }
 
 /// Represents a cryptographic key pair (private and public keys)

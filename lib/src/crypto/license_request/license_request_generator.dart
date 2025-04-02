@@ -3,10 +3,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 import 'dart:convert';
-import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:basic_utils/basic_utils.dart';
 import 'package:licensify/licensify.dart';
 import 'package:pointycastle/export.dart';
 
@@ -78,6 +76,10 @@ class LicenseRequestGenerator implements ILicenseRequestGenerator {
     required String appId,
     int expirationHours = 48,
   }) {
+    if (_keyType == LicensifyKeyType.rsa) {
+      throw UnsupportedError('RSA is deprecated');
+    }
+
     // Creating the request
     final request = LicenseRequest(
       deviceHash: deviceHash,
@@ -99,90 +101,8 @@ class LicenseRequestGenerator implements ILicenseRequestGenerator {
     final jsonData = request.toJsonString();
     final dataToEncrypt = utf8.encode(jsonData);
 
-    if (_keyType == LicensifyKeyType.rsa) {
-      return _encryptWithRsa(dataToEncrypt);
-    } else {
-      // For ECDSA we cannot encrypt directly, so we use a hybrid approach
-      // AES + ECDH
-      return _encryptWithEcdh(dataToEncrypt);
-    }
-  }
-
-  /// Encrypts data with RSA
-  Uint8List _encryptWithRsa(Uint8List data) {
-    final publicKey = CryptoUtils.rsaPublicKeyFromPem(_publicKey.content);
-
-    // For RSA there are size limitations, so we use OAEP padding
-    final encrypter = OAEPEncoding(RSAEngine())
-      ..init(true, PublicKeyParameter<RSAPublicKey>(publicKey));
-
-    // If the data is too large for one RSA block, we split it into parts
-    final blockSize =
-        (publicKey.modulus!.bitLength ~/ 8) - 42; // with OAEP padding
-
-    if (data.length <= blockSize) {
-      // The data fits into one block
-      return encrypter.process(data);
-    } else {
-      // Generate a random AES key and encrypt the data
-      final secureRandom = FortunaRandom();
-      final seedSource = Random.secure();
-      final seeds = List<int>.generate(32, (_) => seedSource.nextInt(256));
-      secureRandom.seed(KeyParameter(Uint8List.fromList(seeds)));
-
-      // Generating an AES key
-      final aesKeyBytes = secureRandom.nextBytes(32); // 256 bits
-      final aesIvBytes = secureRandom.nextBytes(16); // 128 bits
-
-      // Encrypting the data with AES
-      // Инициализируем AES шифрование и используем его напрямую
-      final aesKey = KeyParameter(aesKeyBytes);
-      final params = ParametersWithIV(aesKey, aesIvBytes);
-      final aesCipher = CBCBlockCipher(AESEngine())..init(true, params);
-
-      // Добавляем PKCS7 padding
-      final paddingSize =
-          aesCipher.blockSize - (data.length % aesCipher.blockSize);
-      final paddedData = Uint8List(data.length + paddingSize);
-      paddedData.setRange(0, data.length, data);
-      paddedData.fillRange(data.length, paddedData.length, paddingSize);
-
-      // Выполняем шифрование
-      final encryptedData = Uint8List(paddedData.length);
-      for (
-        var offset = 0;
-        offset < paddedData.length;
-        offset += aesCipher.blockSize
-      ) {
-        aesCipher.processBlock(paddedData, offset, encryptedData, offset);
-      }
-
-      // Encrypting the AES key with RSA
-      final encryptedAesKey = encrypter.process(
-        Uint8List.fromList([...aesKeyBytes, ...aesIvBytes]),
-      );
-
-      // Combining the encrypted key and encrypted data
-      final result =
-          BytesBuilder()
-            ..add([
-              encryptedAesKey.length ~/ 256,
-              encryptedAesKey.length % 256,
-            ]) // 2 bytes for the key length
-            ..add(encryptedAesKey)
-            ..add(encryptedData);
-
-      return result.toBytes();
-    }
-  }
-
-  /// Encrypts data with ECDH + AES
-  Uint8List _encryptWithEcdh(Uint8List data) {
-    // Используем новый класс ECCipher для шифрования данных
-    // Он объединяет в себе генерацию эфемерного ключа, вычисление общего секрета,
-    // вывод AES ключа и шифрование данных
     return ECCipher.encryptWithLicensifyKey(
-      data: data,
+      data: dataToEncrypt,
       publicKey: _publicKey,
       aesKeySize: _aesKeySize,
       hkdfDigest: _hkdfDigest,

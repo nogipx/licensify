@@ -19,11 +19,9 @@ void main() {
 /// Main class containing all examples
 class LicensifyExamples {
   // Store key pairs for reuse across examples
-  late final LicensifyKeyPair rsaKeyPair;
   late final LicensifyKeyPair ecdsaKeyPair;
 
   // Store licenses for reuse across examples
-  late final License rsaLicense;
   late final License ecdsaLicense;
 
   /// Run all examples in sequence
@@ -42,33 +40,14 @@ class LicensifyExamples {
 
     // 5. License storage examples
     licenseStorageExamples();
-
-    // 6. Performance comparison examples
-    performanceComparisonExamples();
   }
 
   /// Examples of generating cryptographic keys
   void keyGenerationExamples() {
     print('\n===== KEY GENERATION EXAMPLES =====');
 
-    // Generate RSA keys (traditional approach)
-    print('\n1. Generating RSA keys:');
-    final rsaStartTime = DateTime.now();
-    rsaKeyPair = RsaKeyGenerator.generateKeyPairAsPem(bitLength: 2048);
-    final rsaEndTime = DateTime.now();
-
-    print('RSA private key (excerpt):');
-    print(rsaKeyPair.privateKey.content);
-    print('RSA public key (excerpt):');
-    print(rsaKeyPair.publicKey.content);
-    print(
-      'Generation time: ${rsaEndTime.difference(rsaStartTime).inMilliseconds}ms',
-    );
-    print('Private key size: ${rsaKeyPair.privateKey.content.length} bytes');
-    print('Public key size: ${rsaKeyPair.publicKey.content.length} bytes');
-
     // Generate ECDSA keys (modern, more efficient approach)
-    print('\n2. Generating ECDSA keys:');
+    print('\n1. Generating ECDSA keys:');
     final ecdsaStartTime = DateTime.now();
     ecdsaKeyPair = EcdsaKeyGenerator.generateKeyPairAsPem(
       curve: EcCurve.p256, // NIST P-256 curve
@@ -85,43 +64,14 @@ class LicensifyExamples {
     );
     print('Private key size: ${ecdsaKeyPair.privateKey.content.length} bytes');
     print('Public key size: ${ecdsaKeyPair.publicKey.content.length} bytes');
-
-    // Show benefits of ECDSA over RSA
-    _compareCryptoSystems(
-      rsaKeyPair,
-      ecdsaKeyPair,
-      rsaEndTime.difference(rsaStartTime),
-      ecdsaEndTime.difference(ecdsaStartTime),
-    );
   }
 
   /// Examples of creating licenses
   void licenseCreationExamples() {
     print('\n\n===== LICENSE CREATION EXAMPLES =====');
 
-    // Create RSA license
-    print('\n1. Creating license with RSA:');
-    final rsaGenerator = LicenseGenerator(privateKey: rsaKeyPair.privateKey);
-
-    rsaLicense = rsaGenerator(
-      appId: 'com.example.app',
-      expirationDate: DateTime.now().add(Duration(days: 365)),
-      type: LicenseType.pro,
-      features: {
-        'maxUsers': 50,
-        'modules': ['reporting', 'analytics', 'export'],
-        'premium': true,
-      },
-      metadata: {
-        'customerName': 'Acme Corp',
-        'contactEmail': 'support@acme.com',
-      },
-    );
-
-    _printLicenseDetails(rsaLicense, 'RSA');
-
     // Create ECDSA license
-    print('\n2. Creating license with ECDSA:');
+    print('\n1. Creating license with ECDSA:');
     final ecdsaGenerator = LicenseGenerator(
       privateKey: ecdsaKeyPair.privateKey,
       // Optionally specify hash algorithm (defaults to SHA-512)
@@ -146,8 +96,8 @@ class LicensifyExamples {
     _printLicenseDetails(ecdsaLicense, 'ECDSA');
 
     // Create a license with custom type
-    print('\n3. Creating license with custom type:');
-    final customLicense = rsaGenerator(
+    print('\n2. Creating license with custom type:');
+    final customLicense = ecdsaGenerator(
       appId: 'com.example.app',
       expirationDate: DateTime.now().add(Duration(days: 365)),
       type: LicenseType('enterprise'), // Custom license type
@@ -166,19 +116,8 @@ class LicensifyExamples {
   void licenseValidationExamples() {
     print('\n\n===== LICENSE VALIDATION EXAMPLES =====');
 
-    // Validate RSA license
-    print('\n1. Validating RSA license:');
-    final rsaValidator = LicenseValidator(publicKey: rsaKeyPair.publicKey);
-
-    final rsaValidationResult = rsaValidator(rsaLicense);
-    if (rsaValidationResult.isValid) {
-      print('✅ RSA license is valid');
-    } else {
-      print('❌ RSA license is invalid: ${rsaValidationResult.message}');
-    }
-
     // Validate ECDSA license
-    print('\n2. Validating ECDSA license:');
+    print('\n1. Validating ECDSA license:');
     final ecdsaValidator = LicenseValidator(
       publicKey: ecdsaKeyPair.publicKey,
       digest: SHA512Digest(), // Must match the digest used for signing
@@ -195,7 +134,7 @@ class LicensifyExamples {
     print('\n3. Comprehensive license validation:');
 
     // First check the license expiration separately
-    final license = rsaLicense; // Using our sample license
+    final license = ecdsaLicense; // Using our sample license
 
     if (license.isExpired) {
       print(
@@ -209,7 +148,7 @@ class LicensifyExamples {
     }
 
     // Then check the signature
-    final signatureResult = rsaValidator.validateSignature(license);
+    final signatureResult = ecdsaValidator.validateSignature(license);
     if (signatureResult.isValid) {
       print('✅ Signature is valid');
     } else {
@@ -217,7 +156,7 @@ class LicensifyExamples {
     }
 
     // Combined validation
-    final validationResult = rsaValidator(license);
+    final validationResult = ecdsaValidator(license);
     if (validationResult.isValid) {
       print('✅ License is completely valid (signature and expiration)');
     } else {
@@ -227,20 +166,20 @@ class LicensifyExamples {
     // Demonstrate tampered license validation
     print('\n4. Validating tampered license:');
     final tamperedLicense = License(
-      id: rsaLicense.id,
-      appId: rsaLicense.appId,
-      expirationDate: rsaLicense.expirationDate.add(
+      id: ecdsaLicense.id,
+      appId: ecdsaLicense.appId,
+      expirationDate: ecdsaLicense.expirationDate.add(
         Duration(days: 365),
       ), // Tampered expiration
-      createdAt: rsaLicense.createdAt,
+      createdAt: ecdsaLicense.createdAt,
       signature:
-          rsaLicense.signature, // Signature doesn't match the modified data
-      type: rsaLicense.type,
-      features: rsaLicense.features,
-      metadata: rsaLicense.metadata,
+          ecdsaLicense.signature, // Signature doesn't match the modified data
+      type: ecdsaLicense.type,
+      features: ecdsaLicense.features,
+      metadata: ecdsaLicense.metadata,
     );
 
-    final tamperedResult = rsaValidator(tamperedLicense);
+    final tamperedResult = ecdsaValidator(tamperedLicense);
     if (tamperedResult.isValid) {
       print('❌ SECURITY ISSUE: Tampered license validated as valid!');
     } else {
@@ -292,9 +231,9 @@ class LicensifyExamples {
 
     // Validate license against schema
     print('\n2. Validating license against schema:');
-    final rsaValidator = LicenseValidator(publicKey: rsaKeyPair.publicKey);
+    final ecdsaValidator = LicenseValidator(publicKey: ecdsaKeyPair.publicKey);
 
-    final schemaResult = rsaValidator.validateSchema(rsaLicense, schema);
+    final schemaResult = ecdsaValidator.validateSchema(ecdsaLicense, schema);
     if (schemaResult.isValid) {
       print('✅ License schema is valid');
     } else {
@@ -311,12 +250,14 @@ class LicensifyExamples {
 
     // Comprehensive validation with schema
     print('\n3. Comprehensive validation with schema:');
-    final completeResult = rsaValidator(rsaLicense, schema: schema);
+    final completeResult = ecdsaValidator(ecdsaLicense, schema: schema);
     print('License valid: $completeResult');
 
     // Create invalid license to demonstrate schema validation failure
     print('\n4. Validating license with invalid schema:');
-    final invalidLicense = LicenseGenerator(privateKey: rsaKeyPair.privateKey)(
+    final invalidLicense = LicenseGenerator(
+      privateKey: ecdsaKeyPair.privateKey,
+    )(
       appId: 'com.example.app',
       expirationDate: DateTime.now().add(Duration(days: 365)),
       type: LicenseType.pro,
@@ -328,7 +269,7 @@ class LicensifyExamples {
       // Missing required 'customerName' field
     );
 
-    final invalidSchemaResult = rsaValidator.validateSchema(
+    final invalidSchemaResult = ecdsaValidator.validateSchema(
       invalidLicense,
       schema,
     );
@@ -359,7 +300,7 @@ class LicensifyExamples {
 
     // Save license
     print('Saving license...');
-    repository.saveLicense(rsaLicense);
+    repository.saveLicense(ecdsaLicense);
 
     // Check if license exists
     storage.hasLicense().then((exists) {
@@ -411,130 +352,6 @@ class FileSystemLicenseStorage implements ILicenseStorage {
   }
 }
 ''');
-  }
-
-  /// Examples comparing performance between RSA and ECDSA
-  void performanceComparisonExamples() {
-    print('\n\n===== PERFORMANCE COMPARISON EXAMPLES =====');
-
-    // Compare license generation performance
-    print('\n1. License generation performance:');
-    final rsaGenerator = LicenseGenerator(privateKey: rsaKeyPair.privateKey);
-    final ecdsaGenerator = LicenseGenerator(
-      privateKey: ecdsaKeyPair.privateKey,
-    );
-
-    // RSA license generation time
-    final rsaStartTime = DateTime.now();
-    for (var i = 0; i < 10; i++) {
-      rsaGenerator(
-        appId: 'com.example.app',
-        expirationDate: DateTime.now().add(Duration(days: 365)),
-        type: LicenseType.standard,
-      );
-    }
-    final rsaDuration = DateTime.now().difference(rsaStartTime);
-    print('RSA license generation (10x): ${rsaDuration.inMilliseconds}ms');
-
-    // ECDSA license generation time
-    final ecdsaStartTime = DateTime.now();
-    for (var i = 0; i < 10; i++) {
-      ecdsaGenerator(
-        appId: 'com.example.app',
-        expirationDate: DateTime.now().add(Duration(days: 365)),
-        type: LicenseType.standard,
-      );
-    }
-    final ecdsaDuration = DateTime.now().difference(ecdsaStartTime);
-    print('ECDSA license generation (10x): ${ecdsaDuration.inMilliseconds}ms');
-
-    // Calculate performance difference
-    final generationSpeedup =
-        rsaDuration.inMilliseconds / ecdsaDuration.inMilliseconds;
-    print(
-      'ECDSA is ${generationSpeedup.toStringAsFixed(1)}x faster for generation',
-    );
-
-    // Compare validation performance
-    print('\n2. License validation performance:');
-    final rsaValidator = LicenseValidator(publicKey: rsaKeyPair.publicKey);
-    final ecdsaValidator = LicenseValidator(publicKey: ecdsaKeyPair.publicKey);
-
-    // RSA validation time
-    final rsaValidationStart = DateTime.now();
-    for (var i = 0; i < 100; i++) {
-      rsaValidator(rsaLicense);
-    }
-    final rsaValidationDuration = DateTime.now().difference(rsaValidationStart);
-    print(
-      'RSA license validation (100x): ${rsaValidationDuration.inMilliseconds}ms',
-    );
-
-    // ECDSA validation time
-    final ecdsaValidationStart = DateTime.now();
-    for (var i = 0; i < 100; i++) {
-      ecdsaValidator(ecdsaLicense);
-    }
-    final ecdsaValidationDuration = DateTime.now().difference(
-      ecdsaValidationStart,
-    );
-    print(
-      'ECDSA license validation (100x): ${ecdsaValidationDuration.inMilliseconds}ms',
-    );
-
-    // Calculate performance difference
-    final validationSpeedup =
-        rsaValidationDuration.inMilliseconds /
-        ecdsaValidationDuration.inMilliseconds;
-    print(
-      'ECDSA is ${validationSpeedup.toStringAsFixed(1)}x faster for validation',
-    );
-
-    // Compare signature sizes
-    print('\n3. Signature size comparison:');
-    print('RSA signature size: ${rsaLicense.signature.length} bytes');
-    print('ECDSA signature size: ${ecdsaLicense.signature.length} bytes');
-    print(
-      'ECDSA signatures are ${((rsaLicense.signature.length - ecdsaLicense.signature.length) / rsaLicense.signature.length * 100).toStringAsFixed(1)}% smaller',
-    );
-  }
-
-  /// Helper method to compare RSA and ECDSA crypto systems
-  void _compareCryptoSystems(
-    LicensifyKeyPair rsaKeyPair,
-    LicensifyKeyPair ecdsaKeyPair,
-    Duration rsaGenerationTime,
-    Duration ecdsaGenerationTime,
-  ) {
-    print('\n3. Comparing RSA vs ECDSA:');
-
-    // Key size comparison
-    final rsaPrivateKeySize = rsaKeyPair.privateKey.content.length;
-    final rsaPublicKeySize = rsaKeyPair.publicKey.content.length;
-    final ecdsaPrivateKeySize = ecdsaKeyPair.privateKey.content.length;
-    final ecdsaPublicKeySize = ecdsaKeyPair.publicKey.content.length;
-
-    print('RSA private key: $rsaPrivateKeySize bytes');
-    print('RSA public key: $rsaPublicKeySize bytes');
-    print(
-      'ECDSA private key: $ecdsaPrivateKeySize bytes (${(100 - ecdsaPrivateKeySize * 100 / rsaPrivateKeySize).toStringAsFixed(0)}% smaller)',
-    );
-    print(
-      'ECDSA public key: $ecdsaPublicKeySize bytes (${(100 - ecdsaPublicKeySize * 100 / rsaPublicKeySize).toStringAsFixed(0)}% smaller)',
-    );
-
-    // Generation time comparison
-    print('RSA generation time: ${rsaGenerationTime.inMilliseconds}ms');
-    print('ECDSA generation time: ${ecdsaGenerationTime.inMilliseconds}ms');
-    print(
-      'ECDSA is ${(rsaGenerationTime.inMilliseconds / ecdsaGenerationTime.inMilliseconds).toStringAsFixed(1)}x faster',
-    );
-
-    // Security level comparison
-    print('\nSecurity level comparison:');
-    print('RSA-2048: ~112-bit security level');
-    print('ECDSA P-256: ~128-bit security level');
-    print('ECDSA is more secure with smaller keys!');
   }
 
   /// Helper method to print license details
