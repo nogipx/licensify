@@ -11,7 +11,7 @@ import 'package:pointycastle/export.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group('Криптографическая система с ECDSA ключами', () {
+  group('Криптографическая система с ECDSA ключами (p256)', () {
     late LicensifyKeyPair keyPair;
     late String appId;
     late String deviceHash;
@@ -81,6 +81,75 @@ void main() {
         expect(duration.inHours, equals(48));
       },
     );
+  });
+
+  group('Криптографическая система с ECDSA ключами (p521)', () {
+    late LicensifyKeyPair keyPair;
+    late String appId;
+    late String deviceHash;
+
+    setUp(() {
+      // Подготовка: генерируем ключевую пару с кривой p521
+      keyPair = EcdsaKeyGenerator.generateKeyPairAsPem(curve: EcCurve.p521);
+      appId = 'com.example.testapp';
+
+      // Используем фиксированный хеш устройства для предсказуемости тестов
+      deviceHash =
+          'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+    });
+
+    test('Шифрование и расшифровка запроса лицензии с кривой p521', () async {
+      // Подготовка:
+      // 1. Создаем запрос с настраиваемыми параметрами
+      final generator = keyPair.publicKey.licenseRequestGenerator(
+        aesKeySize: 192, // Используем 192-битный AES ключ
+        hkdfDigest: SHA384Digest(), // Используем SHA-384 для HKDF
+        hkdfSalt: 'CUSTOM-SALT-VALUE',
+        hkdfInfo: 'CUSTOM-INFO-VALUE',
+      );
+
+      final requestBytes = generator(deviceHash: deviceHash, appId: appId);
+
+      // 2. Создаем декодер с такими же параметрами
+      final decoder = keyPair.privateKey.licenseRequestDecoder(
+        aesKeySize: 192,
+        hkdfDigest: SHA384Digest(),
+        hkdfSalt: 'CUSTOM-SALT-VALUE',
+        hkdfInfo: 'CUSTOM-INFO-VALUE',
+      );
+
+      // 3. Расшифровываем запрос
+      final licenseRequest = decoder(requestBytes);
+
+      // Проверяем данные запроса
+      expect(licenseRequest.deviceHash, equals(deviceHash));
+      expect(licenseRequest.appId, equals(appId));
+
+      // Проверяем время жизни запроса
+      final duration = licenseRequest.expiresAt.difference(
+        licenseRequest.createdAt,
+      );
+      expect(duration.inHours, equals(48));
+    });
+
+    test('Ошибка при несоответствии параметров шифрования', () async {
+      // 1. Создаем запрос с одними параметрами
+      final generator = keyPair.publicKey.licenseRequestGenerator(
+        hkdfSalt: 'SALT-A',
+        hkdfInfo: 'INFO-A',
+      );
+
+      final requestBytes = generator(deviceHash: deviceHash, appId: appId);
+
+      // 2. Пытаемся расшифровать с другими параметрами
+      final decoder = keyPair.privateKey.licenseRequestDecoder(
+        hkdfSalt: 'SALT-B', // Другая соль
+        hkdfInfo: 'INFO-B', // Другая информация
+      );
+
+      // 3. Ожидаем ошибку при расшифровке (неверный AES ключ)
+      expect(() => decoder(requestBytes), throwsA(isA<Exception>()));
+    });
   });
 }
 
@@ -181,20 +250,26 @@ Uint8List computeSharedSecret(ECPrivateKey privateKey, ECPublicKey publicKey) {
 
 /// Выводит AES ключ из общего секрета с помощью HKDF
 Uint8List deriveAesKey(Uint8List sharedSecret) {
-  // Шаг 1: Извлечение (extraction)
-  final hmac = HMac(SHA256Digest(), 64);
-  hmac.init(
-    KeyParameter(Uint8List.fromList(utf8.encode('LICENSIFY-ECDH-Salt'))),
-  );
-  final prk = hmac.process(sharedSecret);
+  // Используем готовый HKDFKeyDerivator из PointyCastle
+  final hkdf = HKDFKeyDerivator(SHA256Digest());
 
-  // Шаг 2: Расширение (expansion)
-  hmac.init(KeyParameter(prk));
+  // Параметры для HKDF
+  final salt = Uint8List.fromList(utf8.encode('LICENSIFY-ECDH-Salt'));
   final info = Uint8List.fromList(utf8.encode('LICENSIFY-ECDH-AES'));
-  final t = hmac.process(Uint8List.fromList([...info, 1]));
+  final params = HkdfParameters(
+    sharedSecret,
+    32,
+    salt,
+    info,
+  ); // 32 байта = 256 бит
 
-  // Возвращаем первые 32 байта (256 бит для AES-256)
-  return t.sublist(0, 32);
+  hkdf.init(params);
+
+  // Получаем вывод HKDF
+  final output = Uint8List(32);
+  hkdf.deriveKey(null, 0, output, 0);
+
+  return output;
 }
 
 /// Расшифровывает данные с помощью AES в режиме CBC
@@ -267,11 +342,20 @@ BigInt bytesToBigInt(Uint8List bytes) {
 
 /// Преобразует BigInt в байты
 Uint8List bigIntToBytes(BigInt number) {
-  final hexString = number.toRadixString(16).padLeft(64, '0');
+  // Получаем строку в шестнадцатеричном формате
+  // Для кривых с большим размером поля (например, p521)
+  // необходимо обеспечить достаточную длину
+  final hexString = number.toRadixString(16);
+
+  // Если длина нечетная, добавляем 0 в начало
+  final paddedHexString = hexString.length.isOdd ? '0$hexString' : hexString;
+
   final bytes = <int>[];
 
-  for (var i = 0; i < hexString.length; i += 2) {
-    final byte = int.parse(hexString.substring(i, i + 2), radix: 16);
+  // Преобразуем каждую пару символов в байт
+  for (var i = 0; i < paddedHexString.length; i += 2) {
+    final byteStr = paddedHexString.substring(i, i + 2);
+    final byte = int.parse(byteStr, radix: 16);
     bytes.add(byte);
   }
 

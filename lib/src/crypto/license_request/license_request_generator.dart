@@ -8,6 +8,7 @@ import 'dart:typed_data';
 
 import 'package:basic_utils/basic_utils.dart';
 import 'package:licensify/licensify.dart';
+import 'package:licensify/src/crypto/utils/ec_cipher.dart';
 import 'package:pointycastle/export.dart';
 
 /// License request generator
@@ -27,19 +28,43 @@ class LicenseRequestGenerator implements ILicenseRequestGenerator {
   /// Request format version
   final int _formatVersion;
 
+  /// AES key size in bits
+  final int _aesKeySize;
+
+  /// Digest algorithm for HKDF
+  final Digest _hkdfDigest;
+
+  /// Salt for HKDF key derivation
+  final String _hkdfSalt;
+
+  /// Info string for HKDF key derivation
+  final String _hkdfInfo;
+
   /// Creates a new license request generator
   ///
   /// [publicKey] - Public key in PEM format for encrypting the request
   /// [magicHeader] - Magic header for identifying the request file
   /// [formatVersion] - Request format version
+  /// [aesKeySize] - Size of AES key in bits (128, 192, or 256)
+  /// [hkdfDigest] - Digest algorithm for HKDF (default: SHA256)
+  /// [hkdfSalt] - Salt for HKDF key derivation
+  /// [hkdfInfo] - Info string for HKDF key derivation
   LicenseRequestGenerator({
     required LicensifyPublicKey publicKey,
     String magicHeader = 'MLRQ',
     int formatVersion = 1,
+    int aesKeySize = 256,
+    Digest? hkdfDigest,
+    String? hkdfSalt,
+    String? hkdfInfo,
   }) : _publicKey = publicKey,
        _keyType = publicKey.keyType,
        _magicHeader = magicHeader,
-       _formatVersion = formatVersion;
+       _formatVersion = formatVersion,
+       _aesKeySize = aesKeySize,
+       _hkdfDigest = hkdfDigest ?? SHA256Digest(),
+       _hkdfSalt = hkdfSalt ?? 'LICENSIFY-ECDH-Salt',
+       _hkdfInfo = hkdfInfo ?? 'LICENSIFY-ECDH-AES';
 
   /// Creates and encrypts a license request
   ///
@@ -111,13 +136,27 @@ class LicenseRequestGenerator implements ILicenseRequestGenerator {
       final aesIvBytes = secureRandom.nextBytes(16); // 128 bits
 
       // Encrypting the data with AES
+      // Инициализируем AES шифрование и используем его напрямую
       final aesKey = KeyParameter(aesKeyBytes);
       final params = ParametersWithIV(aesKey, aesIvBytes);
       final aesCipher = CBCBlockCipher(AESEngine())..init(true, params);
 
-      // Padding the data to the block size
-      final paddedData = _padData(data, aesCipher.blockSize);
-      final encryptedData = _processBlocks(aesCipher, paddedData);
+      // Добавляем PKCS7 padding
+      final paddingSize =
+          aesCipher.blockSize - (data.length % aesCipher.blockSize);
+      final paddedData = Uint8List(data.length + paddingSize);
+      paddedData.setRange(0, data.length, data);
+      paddedData.fillRange(data.length, paddedData.length, paddingSize);
+
+      // Выполняем шифрование
+      final encryptedData = Uint8List(paddedData.length);
+      for (
+        var offset = 0;
+        offset < paddedData.length;
+        offset += aesCipher.blockSize
+      ) {
+        aesCipher.processBlock(paddedData, offset, encryptedData, offset);
+      }
 
       // Encrypting the AES key with RSA
       final encryptedAesKey = encrypter.process(
@@ -140,222 +179,17 @@ class LicenseRequestGenerator implements ILicenseRequestGenerator {
 
   /// Encrypts data with ECDH + AES
   Uint8List _encryptWithEcdh(Uint8List data) {
-    // Creating an ephemeral key pair for exchange
-    final ephemeralKeyPair = _generateEphemeralKeyPair();
-
-    // Getting the ECDSA public key from PEM
-    final ecdsaPublicKey = CryptoUtils.ecPublicKeyFromPem(_publicKey.content);
-
-    // Calculating the shared secret using ECDH
-    final sharedSecret = _computeSharedSecret(
-      ephemeralKeyPair.privateKey,
-      ecdsaPublicKey,
+    // Используем новый класс ECCipher для шифрования данных
+    // Он объединяет в себе генерацию эфемерного ключа, вычисление общего секрета,
+    // вывод AES ключа и шифрование данных
+    return ECCipher.encryptWithLicensifyKey(
+      data: data,
+      publicKey: _publicKey,
+      aesKeySize: _aesKeySize,
+      hkdfDigest: _hkdfDigest,
+      hkdfSalt: _hkdfSalt,
+      hkdfInfo: _hkdfInfo,
     );
-
-    // Generating a symmetric key from the shared secret
-    final aesKey = _deriveAesKey(sharedSecret);
-    final aesIv = _generateRandomIv();
-
-    // Encrypting the data with AES
-    final encryptedData = _encryptWithAes(data, aesKey, aesIv);
-
-    // Serializing the ephemeral public key
-    final ephemeralPublicKeyBytes = _serializeEcPublicKey(
-      ephemeralKeyPair.publicKey,
-    );
-
-    // Collecting everything together: ephemeral public key + IV + encrypted data
-    final result =
-        BytesBuilder()
-          ..add([
-            ephemeralPublicKeyBytes.length ~/ 256,
-            ephemeralPublicKeyBytes.length % 256,
-          ]) // 2 bytes for the key length
-          ..add(ephemeralPublicKeyBytes)
-          ..add(aesIv)
-          ..add(encryptedData);
-
-    return result.toBytes();
-  }
-
-  /// Generates an ephemeral ECDH key pair for one-time use
-  AsymmetricKeyPair<ECPublicKey, ECPrivateKey> _generateEphemeralKeyPair() {
-    final keyGen = KeyGenerator('EC');
-    final random = FortunaRandom();
-
-    // Initializing the random generator
-    final seedSource = Random.secure();
-    final seeds = List<int>.generate(32, (_) => seedSource.nextInt(256));
-    random.seed(KeyParameter(Uint8List.fromList(seeds)));
-
-    // Извлекаем параметры кривой из публичного ключа для обеспечения совместимости
-    final ecPublicKey = CryptoUtils.ecPublicKeyFromPem(_publicKey.content);
-
-    // Используем те же параметры домена, что и в публичном ключе
-    final domainParams = ecPublicKey.parameters!;
-
-    // Parameters for key generation
-    final ecParams = ECKeyGeneratorParameters(domainParams);
-    final params = ParametersWithRandom(ecParams, random);
-
-    // Generating the key pair
-    keyGen.init(params);
-    final keyPair = keyGen.generateKeyPair();
-
-    return AsymmetricKeyPair<ECPublicKey, ECPrivateKey>(
-      keyPair.publicKey as ECPublicKey,
-      keyPair.privateKey as ECPrivateKey,
-    );
-  }
-
-  /// Calculates the shared secret using ECDH
-  Uint8List _computeSharedSecret(
-    ECPrivateKey privateKey,
-    ECPublicKey publicKey,
-  ) {
-    // Проверка совместимости параметров ключей
-    if (!_areDomainsCompatible(privateKey.parameters!, publicKey.parameters!)) {
-      throw Exception(
-        'Incompatible EC domain parameters: ${privateKey.parameters!.domainName} '
-        'and ${publicKey.parameters!.domainName}',
-      );
-    }
-
-    final agreement = ECDHBasicAgreement();
-    agreement.init(privateKey);
-    final sharedSecret = agreement.calculateAgreement(publicKey);
-
-    // Converting BigInt to bytes
-    return _bigIntToBytes(sharedSecret);
-  }
-
-  /// Checks if two EC domain parameters are compatible
-  bool _areDomainsCompatible(
-    ECDomainParameters domain1,
-    ECDomainParameters domain2,
-  ) {
-    // Для полной совместимости должны совпадать: кривая, точка G, порядок n
-    return domain1.curve.a == domain2.curve.a &&
-        domain1.curve.b == domain2.curve.b &&
-        domain1.curve.fieldSize == domain2.curve.fieldSize &&
-        domain1.G.x == domain2.G.x &&
-        domain1.G.y == domain2.G.y &&
-        domain1.n == domain2.n;
-  }
-
-  /// Converts BigInt to Uint8List
-  Uint8List _bigIntToBytes(BigInt number) {
-    final hexString = number.toRadixString(16).padLeft(64, '0');
-    final bytes = <int>[];
-
-    for (var i = 0; i < hexString.length; i += 2) {
-      final byte = int.parse(hexString.substring(i, i + 2), radix: 16);
-      bytes.add(byte);
-    }
-
-    return Uint8List.fromList(bytes);
-  }
-
-  /// Derives an AES key from the shared secret using HKDF
-  Uint8List _deriveAesKey(Uint8List sharedSecret) {
-    // Own implementation of HKDF (RFC 5869)
-    // Step 1: Extraction
-    final hmac = HMac(SHA256Digest(), 64);
-    hmac.init(
-      KeyParameter(Uint8List.fromList(utf8.encode('LICENSIFY-ECDH-Salt'))),
-    );
-    final prk = hmac.process(sharedSecret); // PRK = HMAC-Hash(salt, IKM)
-
-    // Step 2: Extension
-    hmac.init(KeyParameter(prk));
-    final info = Uint8List.fromList(utf8.encode('LICENSIFY-ECDH-AES'));
-    final t = hmac.process(Uint8List.fromList([...info, 1]));
-
-    // Returning the first 32 bytes (256 bits for AES-256)
-    return t.sublist(0, 32);
-  }
-
-  /// Generates a random initialization vector for AES
-  Uint8List _generateRandomIv() {
-    final secureRandom = FortunaRandom();
-    final seedSource = Random.secure();
-    final seeds = List<int>.generate(32, (_) => seedSource.nextInt(256));
-    secureRandom.seed(KeyParameter(Uint8List.fromList(seeds)));
-
-    return secureRandom.nextBytes(16); // 128 бит
-  }
-
-  /// Encrypts data with AES in CBC mode
-  Uint8List _encryptWithAes(Uint8List data, Uint8List key, Uint8List iv) {
-    final aesKey = KeyParameter(key);
-    final params = ParametersWithIV(aesKey, iv);
-    final aesCipher = CBCBlockCipher(AESEngine())..init(true, params);
-
-    // Padding the data to the block size
-    final paddedData = _padData(data, aesCipher.blockSize);
-
-    return _processBlocks(aesCipher, paddedData);
-  }
-
-  /// Pads the data to the block size (PKCS7 padding)
-  Uint8List _padData(Uint8List data, int blockSize) {
-    final padLength = blockSize - (data.length % blockSize);
-    final paddedData = Uint8List(data.length + padLength);
-
-    // Copying the original data
-    paddedData.setAll(0, data);
-
-    // Adding padding
-    paddedData.fillRange(data.length, paddedData.length, padLength);
-
-    return paddedData;
-  }
-
-  /// Processes data by blocks using BlockCipher
-  Uint8List _processBlocks(BlockCipher cipher, Uint8List data) {
-    final result = Uint8List(data.length);
-
-    for (var offset = 0; offset < data.length; offset += cipher.blockSize) {
-      cipher.processBlock(data, offset, result, offset);
-    }
-
-    return result;
-  }
-
-  /// Serializes the ECDSA public key in X9.63 format
-  Uint8List _serializeEcPublicKey(ECPublicKey publicKey) {
-    final q = publicKey.Q!;
-
-    // Получаем параметры кривой для определения длины байтов
-    final curveParameters = publicKey.parameters!;
-    final fieldSize = (curveParameters.curve.fieldSize + 7) ~/ 8;
-
-    final xBytes = _padOrTrimBytes(
-      _bigIntToBytes(q.x!.toBigInteger()!),
-      fieldSize,
-    );
-    final yBytes = _padOrTrimBytes(
-      _bigIntToBytes(q.y!.toBigInteger()!),
-      fieldSize,
-    );
-
-    // X9.63 format: 0x04 | X | Y (uncompressed point)
-    return Uint8List.fromList([0x04, ...xBytes, ...yBytes]);
-  }
-
-  /// Pads or trims byte array to the specified length
-  Uint8List _padOrTrimBytes(Uint8List bytes, int length) {
-    if (bytes.length == length) {
-      return bytes;
-    } else if (bytes.length > length) {
-      // Если массив слишком длинный, обрезаем лишние нули слева
-      return bytes.sublist(bytes.length - length);
-    } else {
-      // Если массив слишком короткий, дополняем нулями слева
-      final result = Uint8List(length);
-      result.setRange(length - bytes.length, length, bytes);
-      return result;
-    }
   }
 
   /// Formats the encrypted data in binary format

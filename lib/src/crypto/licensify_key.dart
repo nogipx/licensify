@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 import 'package:licensify/licensify.dart';
+import 'package:pointycastle/api.dart' show Digest;
 
 /// Cryptographic key type
 enum LicensifyKeyType {
@@ -47,8 +48,18 @@ final class LicensifyPrivateKey extends LicensifyKey {
   LicenseGenerator get licenseGenerator => LicenseGenerator(privateKey: this);
 
   /// Creates a license request decoder for the private key
-  LicenseRequestDecrypter licenseRequestDecoder() =>
-      LicenseRequestDecrypter(privateKey: this);
+  LicenseRequestDecrypter licenseRequestDecoder({
+    int aesKeySize = 256,
+    Digest? hkdfDigest,
+    String? hkdfSalt,
+    String? hkdfInfo,
+  }) => LicenseRequestDecrypter(
+    privateKey: this,
+    aesKeySize: aesKeySize,
+    hkdfDigest: hkdfDigest,
+    hkdfSalt: hkdfSalt,
+    hkdfInfo: hkdfInfo,
+  );
 }
 
 /// Represents a public key used for validating licenses
@@ -75,10 +86,18 @@ final class LicensifyPublicKey extends LicensifyKey {
   LicenseRequestGenerator licenseRequestGenerator({
     String magicHeader = 'MLRQ',
     int formatVersion = 1,
+    int aesKeySize = 256,
+    Digest? hkdfDigest,
+    String? hkdfSalt,
+    String? hkdfInfo,
   }) => LicenseRequestGenerator(
     publicKey: this,
     magicHeader: magicHeader,
     formatVersion: formatVersion,
+    aesKeySize: aesKeySize,
+    hkdfDigest: hkdfDigest,
+    hkdfSalt: hkdfSalt,
+    hkdfInfo: hkdfInfo,
   );
 }
 
