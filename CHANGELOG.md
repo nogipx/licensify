@@ -10,7 +10,6 @@
 - Update README.md
 
 ## 1.7.0 - 2025-03-27
-- Removed automatic key type detection to ensure more stable and predictable behavior
 - Added new key models: `LicensifyKey`, `LicensifyPrivateKey`, `LicensifyPublicKey`, and `LicensifyKeyPair` for better type safety
 - Added `LicensifyKeyType` enum for key types
 - Updated examples to reflect new required parameter and key models

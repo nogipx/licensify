@@ -63,7 +63,6 @@ class LicenseRequestDecrypter implements ILicenseRequestDecrypter {
       throw UnsupportedError('RSA is deprecated');
     }
 
-    // Check and extract header
     _validateRequestFormat(requestBytes);
 
     // Get encrypted data
@@ -109,7 +108,6 @@ class LicenseRequestDecrypter implements ILicenseRequestDecrypter {
 
   /// Decrypts using ECDH
   String _decryptWithEcdh(Uint8List encryptedData) {
-    // Используем класс ECCipher для дешифрования данных
     final decryptedData = ECCipher.decryptWithLicensifyKey(
       encryptedData: encryptedData,
       privateKey: _privateKey,
@@ -119,7 +117,6 @@ class LicenseRequestDecrypter implements ILicenseRequestDecrypter {
       hkdfInfo: _hkdfInfo,
     );
 
-    // Конвертируем байты в JSON-строку
     return utf8.decode(decryptedData);
   }
 }

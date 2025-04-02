@@ -61,7 +61,7 @@ void main() {
         final requestBytes = generator(deviceHash: deviceHash, appId: appId);
 
         // 2. Создаем декодер с приватным ключом
-        final decoder = keyPair.privateKey.licenseRequestDecoder();
+        final decoder = keyPair.privateKey.licenseRequestDecrypter();
 
         // 3. Расшифровываем запрос
         final licenseRequest = decoder(requestBytes);
@@ -111,7 +111,7 @@ void main() {
       final requestBytes = generator(deviceHash: deviceHash, appId: appId);
 
       // 2. Создаем декодер с такими же параметрами
-      final decoder = keyPair.privateKey.licenseRequestDecoder(
+      final decoder = keyPair.privateKey.licenseRequestDecrypter(
         aesKeySize: 192,
         hkdfDigest: SHA384Digest(),
         hkdfSalt: 'CUSTOM-SALT-VALUE',
@@ -142,7 +142,7 @@ void main() {
       final requestBytes = generator(deviceHash: deviceHash, appId: appId);
 
       // 2. Пытаемся расшифровать с другими параметрами
-      final decoder = keyPair.privateKey.licenseRequestDecoder(
+      final decoder = keyPair.privateKey.licenseRequestDecrypter(
         hkdfSalt: 'SALT-B', // Другая соль
         hkdfInfo: 'INFO-B', // Другая информация
       );

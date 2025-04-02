@@ -150,7 +150,7 @@ class LicenseValidator implements ILicenseValidator {
       return verifier.verifySignature(hashedData, ecSignature);
     } catch (e) {
       print('ECDSA verification error: $e');
-      rethrow; // Пробрасываем ошибку дальше, чтобы попробовать другой метод
+      rethrow;
     }
   }
 

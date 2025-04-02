@@ -2,26 +2,26 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-/// Результат валидации лицензии
+/// Validation result
 class ValidationResult {
-  /// Является ли лицензия валидной
+  /// Is license valid
   final bool isValid;
 
-  /// Сообщение об ошибке (null если лицензия валидна)
+  /// Error message (null if license is valid)
   final String message;
 
-  /// Создает новый результат валидации
+  /// Creates a new validation result
   ///
-  /// [isValid] - Валидна ли лицензия
-  /// [message] - Сообщение об ошибке (null если лицензия валидна)
+  /// [isValid] - Is license valid
+  /// [message] - Error message (null if license is valid)
   const ValidationResult({required this.isValid, this.message = ''});
 
-  /// Создает результат успешной валидации
+  /// Creates a valid validation result
   factory ValidationResult.valid() {
     return const ValidationResult(isValid: true);
   }
 
-  /// Создает результат неуспешной валидации с сообщением
+  /// Creates an invalid validation result with a message
   factory ValidationResult.invalid(String message) {
     return ValidationResult(isValid: false, message: message);
   }

@@ -3,7 +3,7 @@
 
 ![GitHub stars](https://img.shields.io/github/stars/nogipx/licensify?style=flat-square&labelColor=1A365D&color=00A67E)
 ![GitHub last commit](https://img.shields.io/github/last-commit/nogipx/licensify?style=flat-square&labelColor=1A365D&color=00A67E)
-![License](https://img.shields.io/badge/license-LPGL-blue.svg?style=flat-square&labelColor=1A365D&color=00A67E&link=https://pub.dev/packages/licensify/license)
+![License](https://img.shields.io/badge/license-LGPL-blue.svg?style=flat-square&labelColor=1A365D&color=00A67E&link=https://pub.dev/packages/licensify/license)
 
 
 # Licensify
@@ -26,8 +26,9 @@ Licensify is a Dart library for license validation, signing, and management. It 
 - [Quick Start](#-quick-start)
 - [Usage Examples](#-usage-examples)
 - [Documentation](#-documentation)
-- [Security](#-security)
-- [License](#-license)
+- [License Request Generation](#license-request-generation)
+- [Security](#security)
+- [License](#license)
 
 ## 🔥 Features
 
@@ -287,68 +288,114 @@ final premium = LicenseType('premium');
 }
 ```
 
-## 🔒 Security
 
-1. **Private key** should be stored only on the server or licensing authority side
-2. **Public key** can be safely embedded in your application
-3. Code obfuscation is recommended in release builds
-4. ECDSA with P-256 curve provides high security level with smaller key sizes
-
-## 📝 License
-
-```
-SPDX-License-Identifier: LGPL-3.0-or-later
-```
-
-Created by Karim "nogipx" Mamatkazin
 
 ## License Request Generation
 
-Licensify provides a platform-independent way to generate license requests. This is useful for implementing license activation in your applications.
+Licensify provides a platform-independent way to generate license requests and decrypt them. This is useful for implementing license activation in your applications.
 
-### Basic Usage
+### License Request Generation (Client-side)
 
 ```dart
 import 'package:licensify/licensify.dart';
+import 'dart:typed_data';
+import 'dart:io';
 
-// Load your public key
+// Load your public key - IMPORTANT: Only ECDSA keys are supported in v2.0.0+
 final publicKeyString = '''
 -----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvtV2y6EHoHsQNH8v5hZG
-5YlZOepxQ/xCh5IY5O7OYg+xEoSLgQ24MGkY7QnePxQiFpNJUwyQyQmEEp4XUZh5
-NgXJKSiYLOaLMYh2AXNomR/CKn/8W2hp8qMGbpGxgJJRxR0I/pMSu/jEyGgeXOVt
-R6r0UeM9Y52zu+qM0f8rXpGHVlk9Yvh5jFjIRRJjzAY6qNOZYGXwFvEkXRxBC16y
-k/iuUfyPV3J0YoW+v2SgLemCCLFkBM0toIDFIw4PNRh7oyj/KLmvJ3OqUOGwUyVE
-bllZnYPLFfqFXojKVOYHfUNVtWfWm6PWRxQ1XpOQvRgAD10EIxnQN5mJUBk24QCK
-3QIDAQAB
+...
 -----END PUBLIC KEY-----
 ''';
 final publicKey = LicensifyKeyImporter.importPublicKeyFromString(publicKeyString);
 
-// Create the request generator usecase
-final useCase = GenerateLicenseRequestUseCase(
-  publicKey: publicKey,
-  // Optional: custom device info service
-  // deviceInfoService: YourCustomDeviceInfoService(),
-  // Optional: custom storage implementation
-  // storage: YourCustomLicenseRequestStorage(),
+// Verify that the key is ECDSA
+if (publicKey.keyType != LicensifyKeyType.ecdsa) {
+  throw UnsupportedError('Only ECDSA keys are supported for license operations');
+}
+
+// Create a license request generator from the public key
+final generator = publicKey.licenseRequestGenerator(
+  // Optional: customize encryption parameters
+  aesKeySize: 256, 
+  hkdfSalt: 'custom-salt',
+  hkdfInfo: 'license-request-info',
 );
 
-// Generate binary license request
-final requestBytes = await useCase.generateRequest(
+// Get device hash (in real app, implement proper device info collection)
+final deviceHash = await DeviceHashGenerator.getDeviceHash();
+
+// Generate a license request
+final encryptedBytes = generator(
+  deviceHash: deviceHash,
   appId: 'com.example.app',
   expirationHours: 48, // default is 48 hours
 );
 
-// Generate and save the request (requires a storage implementation)
-final filePath = await useCase.generateAndSaveRequest(
-  appId: 'com.example.app',
-);
+// Save the request to a file (simple example)
+final file = File('license_request.lreq');
+await file.writeAsBytes(encryptedBytes);
+print('License request saved to: ${file.path}');
 
-// Generate, save and share the request (requires a storage implementation)
-await useCase.generateAndShareRequest(
-  appId: 'com.example.app',
-);
+// In a real app, you would typically share this file with the licensing server
+```
+
+### License Request Decryption (Server-side)
+
+```dart
+import 'package:licensify/licensify.dart';
+import 'dart:io';
+import 'dart:typed_data';
+
+// Load the private key (server-side only)
+final privateKeyString = '''
+-----BEGIN PRIVATE KEY-----
+...
+-----END PRIVATE KEY-----
+''';
+final privateKey = LicensifyKeyImporter.importPrivateKeyFromString(privateKeyString);
+
+// Verify that the key is ECDSA
+if (privateKey.keyType != LicensifyKeyType.ecdsa) {
+  throw UnsupportedError('Only ECDSA keys are supported for license operations');
+}
+
+// Create a license request decrypter
+final decrypter = privateKey.licenseRequestDecrypter();
+
+// Read the encrypted request file
+final File requestFile = File('license_request.lreq');
+final Uint8List encryptedBytes = await requestFile.readAsBytes();
+
+// Decrypt the request
+final decryptedRequest = decrypter(encryptedBytes);
+
+// Access the request data
+print('App ID: ${decryptedRequest.appId}');
+print('Device Hash: ${decryptedRequest.deviceHash}');
+print('Created At: ${decryptedRequest.createdAt}');
+print('Expires At: ${decryptedRequest.expiresAt}');
+
+// Check if the request has expired
+final bool isExpired = DateTime.now().isAfter(decryptedRequest.expiresAt);
+if (isExpired) {
+  print('Request has expired');
+} else {
+  // Generate a license for this device
+  final license = privateKey.licenseGenerator(
+    appId: decryptedRequest.appId,
+    expirationDate: DateTime.now().add(Duration(days: 365)),
+    type: LicenseType.pro,
+    metadata: {
+      'deviceHash': decryptedRequest.deviceHash,
+    }
+  );
+  
+  // Encode the license to bytes and send it back to the user
+  final licenseBytes = LicenseEncoder.encodeToBytes(license);
+  await File('license.lic').writeAsBytes(licenseBytes);
+  print('License generated for device: ${decryptedRequest.deviceHash}');
+}
 ```
 
 ### Custom Device Information Service
@@ -358,6 +405,7 @@ For platform-specific device information, implement the `IDeviceInfoService` int
 ```dart
 import 'package:licensify/licensify.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'dart:io' show Platform;
 
 class FlutterDeviceInfoService implements IDeviceInfoService {
   final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
@@ -367,9 +415,8 @@ class FlutterDeviceInfoService implements IDeviceInfoService {
     // Implement platform-specific device info collection
     final Map<String, dynamic> deviceData = await _collectDeviceData();
     
-    // Use the built-in hash generation method
-    final hashGenerator = BasicDeviceInfoService();
-    return hashGenerator._generateHash(deviceData);
+    // Generate a hash from the collected data
+    return DeviceHashGenerator.generateHash(deviceData);
   }
   
   Future<Map<String, dynamic>> _collectDeviceData() async {
@@ -393,39 +440,17 @@ class FlutterDeviceInfoService implements IDeviceInfoService {
 }
 ```
 
-### Custom License Request Storage
+## 🔒 Security
 
-For platform-specific file handling, implement the `ILicenseRequestStorage` interface:
+1. **Private key** should be stored only on the server or licensing authority side
+2. **Public key** can be safely embedded in your application
+3. Code obfuscation is recommended in release builds
+4. ECDSA with P-256 curve provides high security level with smaller key sizes
 
-```dart
-import 'dart:io';
-import 'package:licensify/licensify.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
+## 📝 License
 
-class FlutterLicenseRequestStorage implements ILicenseRequestStorage {
-  @override
-  Future<String> saveLicenseRequest(Uint8List bytes, String appId) async {
-    // Get a temporary directory
-    final tempDir = await getTemporaryDirectory();
-    
-    // Create a file name
-    final fileName = '${appId.replaceAll('.', '_')}_license_request${LicenseRequestGenerator.fileExtension}';
-    
-    // Create and write to the file
-    final file = File('${tempDir.path}/$fileName');
-    await file.writeAsBytes(bytes);
-    
-    return file.path;
-  }
-  
-  @override
-  Future<void> shareLicenseRequest(String filePath, String appId) async {
-    // Use the share_plus package to share the file
-    await Share.shareXFiles(
-      [XFile(filePath)],
-      text: 'License request for $appId',
-    );
-  }
-}
 ```
+SPDX-License-Identifier: LGPL-3.0-or-later
+```
+
+Created by Karim "nogipx" Mamatkazin

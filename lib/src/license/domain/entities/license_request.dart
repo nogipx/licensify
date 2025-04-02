@@ -4,32 +4,32 @@
 
 import 'dart:convert';
 
-/// Модель запроса лицензии
+/// License request model
 ///
-/// Содержит данные, необходимые для идентификации устройства
-/// и генерации лицензии на сервере.
+/// Contains data required to identify a device
+/// and generate a license on the server.
 class LicenseRequest {
-  /// Магический заголовок для запроса лицензии
+  /// Magic header for license request
   static const magicHeader = 'LCRQ';
 
-  /// Хеш данных устройства
+  /// Device data hash
   final String deviceHash;
 
-  /// Идентификатор приложения
+  /// Application identifier
   final String appId;
 
-  /// Дата и время создания запроса
+  /// Creation date and time
   final DateTime createdAt;
 
-  /// Дата и время истечения срока действия запроса
+  /// Expiration date and time
   final DateTime expiresAt;
 
-  /// Создает новый запрос лицензии
+  /// Creates a new license request
   ///
-  /// [deviceHash] - Хеш уникальных данных устройства
-  /// [appId] - Идентификатор приложения
-  /// [createdAt] - Дата и время создания запроса
-  /// [expiresAt] - Дата и время истечения срока действия запроса
+  /// [deviceHash] - Hash of unique device data
+  /// [appId] - Application identifier
+  /// [createdAt] - Creation date and time
+  /// [expiresAt] - Expiration date and time
   const LicenseRequest({
     required this.deviceHash,
     required this.appId,
@@ -37,7 +37,10 @@ class LicenseRequest {
     required this.expiresAt,
   });
 
-  /// Конвертирует запрос в JSON
+  /// Checks if the request has expired
+  bool get isExpired => DateTime.now().toUtc().isAfter(expiresAt);
+
+  /// Converts request to JSON
   Map<String, dynamic> toJson() => {
     'deviceHash': deviceHash,
     'appId': appId,
@@ -45,7 +48,7 @@ class LicenseRequest {
     'expiresAt': expiresAt.toUtc().toIso8601String(),
   };
 
-  /// Создает запрос из JSON
+  /// Creates a request from JSON
   factory LicenseRequest.fromJson(Map<String, dynamic> json) {
     return LicenseRequest(
       deviceHash: json['deviceHash'] as String,
@@ -55,10 +58,10 @@ class LicenseRequest {
     );
   }
 
-  /// Конвертирует запрос в JSON строку
+  /// Converts request to JSON string
   String toJsonString() => jsonEncode(toJson());
 
-  /// Создает запрос из JSON строки
+  /// Creates a request from JSON string
   factory LicenseRequest.fromJsonString(String jsonString) {
     final json = jsonDecode(jsonString) as Map<String, dynamic>;
     return LicenseRequest.fromJson(json);

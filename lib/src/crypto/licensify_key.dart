@@ -58,8 +58,8 @@ final class LicensifyPrivateKey extends LicensifyKey {
     return LicenseGenerator(privateKey: this);
   }
 
-  /// Creates a license request decoder for the private key
-  LicenseRequestDecrypter licenseRequestDecoder({
+  /// Creates a license request decrypter for the private key
+  LicenseRequestDecrypter licenseRequestDecrypter({
     int aesKeySize = 256,
     Digest? hkdfDigest,
     String? hkdfSalt,

@@ -8,14 +8,14 @@ import 'dart:typed_data';
 
 import 'package:pointycastle/export.dart';
 
-/// Утилиты для работы с ECDH шифрованием
+/// Utility for working with ECDH encryption
 abstract interface class ECDHCryptoUtils {
-  /// Проверяет совместимость параметров домена эллиптической кривой
+  /// Checks compatibility of elliptic curve domain parameters
   static bool areDomainsCompatible(
     ECDomainParameters domain1,
     ECDomainParameters domain2,
   ) {
-    // Для совместимости должны совпадать: кривая, точка G, порядок n
+    // For compatibility, the following must match: curve, point G, order n
     return domain1.curve.a == domain2.curve.a &&
         domain1.curve.b == domain2.curve.b &&
         domain1.curve.fieldSize == domain2.curve.fieldSize &&
@@ -24,22 +24,22 @@ abstract interface class ECDHCryptoUtils {
         domain1.n == domain2.n;
   }
 
-  /// Дополняет или обрезает массив байтов до указанной длины
+  /// Pads or trims an array of bytes to the specified length
   static Uint8List padOrTrimBytes(Uint8List bytes, int length) {
     if (bytes.length == length) {
       return bytes;
     } else if (bytes.length > length) {
-      // Если массив слишком длинный, обрезаем лишние нули слева
+      // If the array is too long, trim the extra zeros from the left
       return bytes.sublist(bytes.length - length);
     } else {
-      // Если массив слишком короткий, дополняем нулями слева
+      // If the array is too short, pad with zeros from the left
       final result = Uint8List(length);
       result.setRange(length - bytes.length, length, bytes);
       return result;
     }
   }
 
-  /// Выводит AES-ключ из общего секрета с использованием HKDF
+  /// Derives an AES key from the shared secret using HKDF
   static Uint8List deriveAesKey({
     required Uint8List sharedSecret,
     required int aesKeySize,
@@ -47,35 +47,35 @@ abstract interface class ECDHCryptoUtils {
     required String hkdfSalt,
     required String hkdfInfo,
   }) {
-    // Используем готовый HKDFKeyDerivator из PointyCastle
+    // Use the ready-made HKDFKeyDerivator from PointyCastle
     final hkdf = HKDFKeyDerivator(hkdfDigest);
 
-    // Размер ключа в байтах
+    // Key length in bytes
     final keyLength = aesKeySize ~/ 8;
 
-    // Параметры для HKDF
+    // Parameters for HKDF
     final salt = Uint8List.fromList(utf8.encode(hkdfSalt));
     final info = Uint8List.fromList(utf8.encode(hkdfInfo));
     final params = HkdfParameters(sharedSecret, keyLength, salt, info);
 
     hkdf.init(params);
 
-    // Получаем вывод HKDF
+    // Get the output of HKDF
     final output = Uint8List(keyLength);
     hkdf.deriveKey(null, 0, output, 0);
 
     return output;
   }
 
-  /// Сериализует публичный ECDSA ключ в формат X9.63
+  /// Serializes an ECDSA public key in the X9.63 format
   static Uint8List serializeEcPublicKey(ECPublicKey publicKey) {
     final q = publicKey.Q!;
 
-    // Получаем параметры кривой для определения длины байтов
+    // Get the curve parameters to determine the byte length
     final curveParameters = publicKey.parameters!;
     final fieldSize = (curveParameters.curve.fieldSize + 7) ~/ 8;
 
-    // Используем CryptoUtils для преобразования BigInt в байты
+    // Use CryptoUtils to convert BigInt to bytes
     final xBytes = padOrTrimBytes(
       _bigIntToBytes(q.x!.toBigInteger()!),
       fieldSize,
@@ -89,20 +89,20 @@ abstract interface class ECDHCryptoUtils {
     return Uint8List.fromList([0x04, ...xBytes, ...yBytes]);
   }
 
-  /// Десериализует публичный ECDSA ключ из формата X9.63
+  /// Deserializes an ECDSA public key from the X9.63 format
   static ECPublicKey deserializeEcPublicKey(
     Uint8List bytes,
     ECDomainParameters domain,
   ) {
-    // Проверяем формат (несжатая точка)
+    // Check format (uncompressed point)
     if (bytes[0] != 0x04) {
       throw ArgumentError('Unsupported key format: ${bytes[0]}');
     }
 
-    // Длина каждой координаты
+    // Length of each coordinate
     final halfLength = (bytes.length - 1) ~/ 2;
 
-    // Если длина координат не соответствует размеру поля кривой, это неправильный формат
+    // If the coordinate length does not match the curve field size, this is an incorrect format
     final expectedFieldSize = (domain.curve.fieldSize + 7) ~/ 8;
     if (halfLength != expectedFieldSize) {
       throw ArgumentError(
@@ -111,16 +111,16 @@ abstract interface class ECDHCryptoUtils {
       );
     }
 
-    // Извлекаем координаты X и Y
+    // Extract the coordinates X and Y
     final xBytes = bytes.sublist(1, 1 + halfLength);
     final yBytes = bytes.sublist(1 + halfLength);
 
-    // Преобразуем байты в BigInt
+    // Convert bytes to BigInt
     final x = _bytesToBigInt(xBytes);
     final y = _bytesToBigInt(yBytes);
 
     try {
-      // Создаем точку на кривой
+      // Create a point on the curve
       final point = domain.curve.createPoint(x, y);
       return ECPublicKey(point, domain);
     } catch (e) {
@@ -130,16 +130,16 @@ abstract interface class ECDHCryptoUtils {
     }
   }
 
-  /// Вычисляет общий секрет с использованием ECDH
+  /// Computes a shared secret using ECDH
   static Uint8List computeSharedSecret(
     ECPrivateKey privateKey,
     ECPublicKey publicKey,
   ) {
-    // Проверка совместимости параметров кривых
+    // Check compatibility of curve parameters
     final privateParams = privateKey.parameters!;
     final publicParams = publicKey.parameters!;
 
-    // Сначала проверяем, что названия доменов совпадают, если они доступны
+    // First check that the domain names match, if they are available
     final privateDomainName = privateParams.domainName;
     final publicDomainName = publicParams.domainName;
 
@@ -149,14 +149,14 @@ abstract interface class ECDHCryptoUtils {
       );
     }
 
-    // Затем проверяем параметры кривых напрямую
+    // Then check the curve parameters directly
     if (!areDomainsCompatible(privateParams, publicParams)) {
       throw ArgumentError(
         'Incompatible EC domain parameters between private and public keys',
       );
     }
 
-    // Размеры полей должны совпадать
+    // The field sizes must match
     if (privateParams.curve.fieldSize != publicParams.curve.fieldSize) {
       throw ArgumentError(
         'Field size mismatch: private key ${privateParams.curve.fieldSize} bits, '
@@ -171,18 +171,18 @@ abstract interface class ECDHCryptoUtils {
     return _bigIntToBytes(sharedSecret);
   }
 
-  /// Шифрует данные с использованием AES в режиме CBC
+  /// Encrypts data using AES in CBC mode
   static Uint8List encryptWithAes(Uint8List data, Uint8List key, Uint8List iv) {
     final aesKey = KeyParameter(key);
     final params = ParametersWithIV(aesKey, iv);
     final aesCipher = CBCBlockCipher(AESEngine())..init(true, params);
 
-    // Добавляем PKCS7 padding
+    // Add PKCS7 padding
     final paddedData = _addPkcs7Padding(data, aesCipher.blockSize);
 
     final result = Uint8List(paddedData.length);
 
-    // Шифруем блоки
+    // Encrypt blocks
     for (
       var offset = 0;
       offset < paddedData.length;
@@ -194,7 +194,7 @@ abstract interface class ECDHCryptoUtils {
     return result;
   }
 
-  /// Расшифровывает данные с использованием AES в режиме CBC
+  /// Decrypts data using AES in CBC mode
   static Uint8List decryptWithAes(Uint8List data, Uint8List key, Uint8List iv) {
     final aesKey = KeyParameter(key);
     final params = ParametersWithIV(aesKey, iv);
@@ -202,45 +202,45 @@ abstract interface class ECDHCryptoUtils {
 
     final result = Uint8List(data.length);
 
-    // Расшифровываем блоки
+    // Decrypt blocks
     for (var offset = 0; offset < data.length; offset += aesCipher.blockSize) {
       aesCipher.processBlock(data, offset, result, offset);
     }
 
-    // Удаляем PKCS7 padding
+    // Remove PKCS7 padding
     return _removePkcs7Padding(result, aesCipher.blockSize);
   }
 
-  /// Генерирует случайный инициализационный вектор для AES
+  /// Generates a random initialization vector for AES
   static Uint8List generateRandomIv() {
     final secureRandom = FortunaRandom();
 
-    // Инициализируем генератор случайных чисел
+    // Initialize the random number generator
     final seedSource = Random.secure();
     final seeds = List<int>.generate(32, (_) => seedSource.nextInt(256));
     secureRandom.seed(KeyParameter(Uint8List.fromList(seeds)));
 
-    // IV для AES всегда 16 байт (128 бит)
+    // IV for AES is always 16 bytes (128 bits)
     return secureRandom.nextBytes(16);
   }
 
-  /// Генерирует случайную пару ключей ECDH
+  /// Generates a random ECDH key pair
   static AsymmetricKeyPair<ECPublicKey, ECPrivateKey> generateEphemeralKeyPair(
     ECDomainParameters domainParams,
   ) {
     final keyGen = KeyGenerator('EC');
     final random = FortunaRandom();
 
-    // Инициализируем генератор случайных чисел
+    // Initialize the random number generator
     final seedSource = Random.secure();
     final seeds = List<int>.generate(32, (_) => seedSource.nextInt(256));
     random.seed(KeyParameter(Uint8List.fromList(seeds)));
 
-    // Параметры для генерации ключей
+    // Parameters for key generation
     final ecParams = ECKeyGeneratorParameters(domainParams);
     final params = ParametersWithRandom(ecParams, random);
 
-    // Генерируем пару ключей
+    // Generate a key pair
     keyGen.init(params);
     final keyPair = keyGen.generateKeyPair();
 
@@ -250,19 +250,19 @@ abstract interface class ECDHCryptoUtils {
     );
   }
 
-  // Вспомогательные приватные методы
+  // Helper private methods
 
-  /// Конвертирует BigInt в Uint8List
+  /// Converts BigInt to Uint8List
   static Uint8List _bigIntToBytes(BigInt number) {
-    // Получаем строку в шестнадцатеричном формате без лишних нулей
+    // Get the string in hexadecimal format without extra zeros
     final hexString = number.toRadixString(16);
 
-    // Если длина нечетная, добавляем 0 в начало
+    // If the length is odd, add 0 to the beginning
     final paddedHexString = hexString.length.isOdd ? '0$hexString' : hexString;
 
     final bytes = <int>[];
 
-    // Преобразуем каждую пару символов в байт
+    // Convert each pair of characters to a byte
     for (var i = 0; i < paddedHexString.length; i += 2) {
       final byteStr = paddedHexString.substring(i, i + 2);
       final byte = int.parse(byteStr, radix: 16);
@@ -272,7 +272,7 @@ abstract interface class ECDHCryptoUtils {
     return Uint8List.fromList(bytes);
   }
 
-  /// Конвертирует Uint8List в BigInt
+  /// Converts Uint8List to BigInt
   static BigInt _bytesToBigInt(Uint8List bytes) {
     BigInt result = BigInt.zero;
     for (int i = 0; i < bytes.length; i++) {
@@ -281,21 +281,21 @@ abstract interface class ECDHCryptoUtils {
     return result;
   }
 
-  /// Добавляет PKCS7 padding к данным
+  /// Adds PKCS7 padding to data
   static Uint8List _addPkcs7Padding(Uint8List data, int blockSize) {
     final padLength = blockSize - (data.length % blockSize);
     final paddedData = Uint8List(data.length + padLength);
 
-    // Копируем исходные данные
+    // Copy the original data
     paddedData.setAll(0, data);
 
-    // Добавляем padding
+    // Add padding
     paddedData.fillRange(data.length, paddedData.length, padLength);
 
     return paddedData;
   }
 
-  /// Удаляет PKCS7 padding из данных
+  /// Removes PKCS7 padding from data
   static Uint8List _removePkcs7Padding(Uint8List data, int blockSize) {
     final padLength = data[data.length - 1];
 

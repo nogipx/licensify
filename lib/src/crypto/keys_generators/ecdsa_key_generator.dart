@@ -121,8 +121,7 @@ abstract interface class EcdsaKeyGenerator {
 
       case SecureRandomAlgorithm.autoSeedBlockCtr:
         // Auto-seeded block CTR random (reseeds itself periodically)
-        final secureRandom =
-            FortunaRandom(); // Используем Fortuna как более безопасную альтернативу
+        final secureRandom = FortunaRandom();
         secureRandom.seed(KeyParameter(seedBytes));
         return secureRandom;
     }
