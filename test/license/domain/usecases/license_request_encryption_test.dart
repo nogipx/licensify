@@ -34,7 +34,7 @@ void main() {
       // Проверяем формат:
 
       // 1. Начинается с магического заголовка
-      expect(utf8.decode(requestBytes.sublist(0, 4)), equals('MLRQ'));
+      expect(utf8.decode(requestBytes.sublist(0, 4)), equals('LCRQ'));
 
       // 2. Имеет версию формата (байты 4-8)
       final versionData = ByteData.view(

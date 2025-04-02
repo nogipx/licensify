@@ -7,7 +7,6 @@ import 'dart:typed_data';
 
 import 'package:basic_utils/basic_utils.dart';
 import 'package:licensify/licensify.dart';
-import 'package:licensify/src/crypto/utils/ecdh_crypto_utils.dart';
 import 'package:pointycastle/export.dart';
 
 /// Class for encrypting and decrypting data using EC keys

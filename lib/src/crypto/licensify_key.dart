@@ -84,7 +84,7 @@ final class LicensifyPublicKey extends LicensifyKey {
   /// Creates a license request generator for the public key with custom parameters
   /// It used for generating license requests and encrypt to transport to the license issuer
   LicenseRequestGenerator licenseRequestGenerator({
-    String magicHeader = 'MLRQ',
+    String magicHeader = LicenseRequest.magicHeader,
     int formatVersion = 1,
     int aesKeySize = 256,
     Digest? hkdfDigest,

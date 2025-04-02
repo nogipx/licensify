@@ -6,7 +6,6 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:licensify/licensify.dart';
-import 'package:licensify/src/crypto/utils/ec_cipher.dart';
 import 'package:test/test.dart';
 
 void main() {

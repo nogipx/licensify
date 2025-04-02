@@ -8,3 +8,4 @@ export 'license_request/_index.dart';
 export 'crypto_consts.dart';
 export 'licensify_key.dart';
 export 'licensify_key_importer.dart';
+export 'utils/_index.dart';

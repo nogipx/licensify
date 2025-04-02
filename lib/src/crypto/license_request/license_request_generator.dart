@@ -8,7 +8,6 @@ import 'dart:typed_data';
 
 import 'package:basic_utils/basic_utils.dart';
 import 'package:licensify/licensify.dart';
-import 'package:licensify/src/crypto/utils/ec_cipher.dart';
 import 'package:pointycastle/export.dart';
 
 /// License request generator
@@ -51,7 +50,7 @@ class LicenseRequestGenerator implements ILicenseRequestGenerator {
   /// [hkdfInfo] - Info string for HKDF key derivation
   LicenseRequestGenerator({
     required LicensifyPublicKey publicKey,
-    String magicHeader = 'MLRQ',
+    String magicHeader = LicenseRequest.magicHeader,
     int formatVersion = 1,
     int aesKeySize = 256,
     Digest? hkdfDigest,

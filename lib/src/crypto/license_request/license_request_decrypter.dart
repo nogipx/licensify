@@ -7,7 +7,6 @@ import 'dart:typed_data';
 
 import 'package:basic_utils/basic_utils.dart';
 import 'package:licensify/licensify.dart';
-import 'package:licensify/src/crypto/utils/ec_cipher.dart';
 import 'package:pointycastle/export.dart';
 
 /// Decrypter for license requests
@@ -84,7 +83,7 @@ class LicenseRequestDecrypter implements ILicenseRequestDecrypter {
 
     // Check the magic header
     final header = utf8.decode(requestBytes.sublist(0, 4));
-    if (header != 'MLRQ') {
+    if (header != LicenseRequest.magicHeader) {
       throw FormatException('Invalid request format: wrong header');
     }
 

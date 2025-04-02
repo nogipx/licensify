@@ -9,6 +9,9 @@ import 'dart:convert';
 /// Содержит данные, необходимые для идентификации устройства
 /// и генерации лицензии на сервере.
 class LicenseRequest {
+  /// Магический заголовок для запроса лицензии
+  static const magicHeader = 'LCRQ';
+
   /// Хеш данных устройства
   final String deviceHash;
 
