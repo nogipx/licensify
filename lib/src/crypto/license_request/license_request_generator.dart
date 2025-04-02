@@ -188,8 +188,11 @@ class LicenseRequestGenerator implements ILicenseRequestGenerator {
     final seeds = List<int>.generate(32, (_) => seedSource.nextInt(256));
     random.seed(KeyParameter(Uint8List.fromList(seeds)));
 
-    // Defining the curve parameters (using the same as in the public key)
-    final domainParams = ECDomainParameters('secp256r1'); // P-256
+    // Извлекаем параметры кривой из публичного ключа для обеспечения совместимости
+    final ecPublicKey = CryptoUtils.ecPublicKeyFromPem(_publicKey.content);
+
+    // Используем те же параметры домена, что и в публичном ключе
+    final domainParams = ecPublicKey.parameters!;
 
     // Parameters for key generation
     final ecParams = ECKeyGeneratorParameters(domainParams);
@@ -210,12 +213,34 @@ class LicenseRequestGenerator implements ILicenseRequestGenerator {
     ECPrivateKey privateKey,
     ECPublicKey publicKey,
   ) {
+    // Проверка совместимости параметров ключей
+    if (!_areDomainsCompatible(privateKey.parameters!, publicKey.parameters!)) {
+      throw Exception(
+        'Incompatible EC domain parameters: ${privateKey.parameters!.domainName} '
+        'and ${publicKey.parameters!.domainName}',
+      );
+    }
+
     final agreement = ECDHBasicAgreement();
     agreement.init(privateKey);
     final sharedSecret = agreement.calculateAgreement(publicKey);
 
     // Converting BigInt to bytes
     return _bigIntToBytes(sharedSecret);
+  }
+
+  /// Checks if two EC domain parameters are compatible
+  bool _areDomainsCompatible(
+    ECDomainParameters domain1,
+    ECDomainParameters domain2,
+  ) {
+    // Для полной совместимости должны совпадать: кривая, точка G, порядок n
+    return domain1.curve.a == domain2.curve.a &&
+        domain1.curve.b == domain2.curve.b &&
+        domain1.curve.fieldSize == domain2.curve.fieldSize &&
+        domain1.G.x == domain2.G.x &&
+        domain1.G.y == domain2.G.y &&
+        domain1.n == domain2.n;
   }
 
   /// Converts BigInt to Uint8List
@@ -300,11 +325,37 @@ class LicenseRequestGenerator implements ILicenseRequestGenerator {
   /// Serializes the ECDSA public key in X9.63 format
   Uint8List _serializeEcPublicKey(ECPublicKey publicKey) {
     final q = publicKey.Q!;
-    final xBytes = _bigIntToBytes(q.x!.toBigInteger()!).sublist(32 - 32);
-    final yBytes = _bigIntToBytes(q.y!.toBigInteger()!).sublist(32 - 32);
+
+    // Получаем параметры кривой для определения длины байтов
+    final curveParameters = publicKey.parameters!;
+    final fieldSize = (curveParameters.curve.fieldSize + 7) ~/ 8;
+
+    final xBytes = _padOrTrimBytes(
+      _bigIntToBytes(q.x!.toBigInteger()!),
+      fieldSize,
+    );
+    final yBytes = _padOrTrimBytes(
+      _bigIntToBytes(q.y!.toBigInteger()!),
+      fieldSize,
+    );
 
     // X9.63 format: 0x04 | X | Y (uncompressed point)
     return Uint8List.fromList([0x04, ...xBytes, ...yBytes]);
+  }
+
+  /// Pads or trims byte array to the specified length
+  Uint8List _padOrTrimBytes(Uint8List bytes, int length) {
+    if (bytes.length == length) {
+      return bytes;
+    } else if (bytes.length > length) {
+      // Если массив слишком длинный, обрезаем лишние нули слева
+      return bytes.sublist(bytes.length - length);
+    } else {
+      // Если массив слишком короткий, дополняем нулями слева
+      final result = Uint8List(length);
+      result.setRange(length - bytes.length, length, bytes);
+      return result;
+    }
   }
 
   /// Formats the encrypted data in binary format
