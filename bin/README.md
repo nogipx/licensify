@@ -106,7 +106,7 @@ Required options:
 
 Additional options:
 - `--decryptKey`: Key for decryption (if the license was encrypted)
-- `--output-json, -o`: Save verification results to a JSON file at the specified path
+- `--outputJson, -o`: Save verification results to a JSON file at the specified path
 
 Example:
 ```bash
@@ -115,7 +115,7 @@ licensify verify --license license.licensify --publicKey ./keys/customer1.public
 
 With JSON output:
 ```bash
-licensify verify --license license.licensify --publicKey ./keys/customer1.public.pem --output-json results.json
+licensify verify --license license.licensify --publicKey ./keys/customer1.public.pem --outputJson results.json
 ```
 
 ### Creating a License Request
@@ -149,7 +149,7 @@ Required options:
 - `--privateKey, -k`: Path to the private key file
 
 Additional options:
-- `--output-json, -o`: Save request details to a JSON file at the specified path
+- `--outputJson, -o`: Save request details to a JSON file at the specified path
 
 Example:
 ```bash
@@ -158,7 +158,7 @@ licensify decrypt-request --requestFile request.bin --privateKey ./keys/customer
 
 With JSON output:
 ```bash
-licensify decrypt-request --requestFile request.bin --privateKey ./keys/customer1.private.pem --output-json request-info.json
+licensify decrypt-request --requestFile request.bin --privateKey ./keys/customer1.private.pem --outputJson request-info.json
 ```
 
 ### Responding to a License Request
@@ -223,10 +223,10 @@ licensify verify --license license.licensify --publicKey ./keys/customer1.public
 
 ```bash
 # Verify a license and save results to JSON
-licensify verify --license license.licensify --publicKey ./keys/customer1.public.pem --output-json verification.json
+licensify verify --license license.licensify --publicKey ./keys/customer1.public.pem --outputJson verification.json
 
 # Decrypt a license request and save details to JSON
-licensify decrypt-request --requestFile request.bin --privateKey ./keys/customer1.private.pem --output-json request-details.json
+licensify decrypt-request --requestFile request.bin --privateKey ./keys/customer1.private.pem --outputJson request-details.json
 ```
 
 ## Notes

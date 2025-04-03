@@ -27,6 +27,12 @@ void main(List<String> arguments) async {
 
   // Commands
   parser.addCommand('generate')
+    ..addFlag(
+      'help',
+      abbr: 'h',
+      help: 'Show help for this command',
+      negatable: false,
+    )
     ..addOption('output', abbr: 'o', help: 'Output file path')
     ..addOption('privateKey', abbr: 'k', help: 'Private key file path')
     ..addOption('appId', help: 'Application ID for this license')
@@ -54,6 +60,12 @@ void main(List<String> arguments) async {
     ..addOption('encryptKey', help: 'Key for encryption');
 
   parser.addCommand('verify')
+    ..addFlag(
+      'help',
+      abbr: 'h',
+      help: 'Show help for this command',
+      negatable: false,
+    )
     ..addOption(
       'license',
       abbr: 'l',
@@ -68,12 +80,18 @@ void main(List<String> arguments) async {
     )
     ..addOption('decryptKey', help: 'Key for decryption')
     ..addOption(
-      'output-json',
+      'outputJson',
       abbr: 'o',
       help: 'Save output to JSON file at specified path',
     );
 
   parser.addCommand('keygen')
+    ..addFlag(
+      'help',
+      abbr: 'h',
+      help: 'Show help for this command',
+      negatable: false,
+    )
     ..addOption(
       'output',
       abbr: 'o',
@@ -94,6 +112,12 @@ void main(List<String> arguments) async {
 
   // Add license request commands
   parser.addCommand('request')
+    ..addFlag(
+      'help',
+      abbr: 'h',
+      help: 'Show help for this command',
+      negatable: false,
+    )
     ..addOption(
       'output',
       abbr: 'o',
@@ -122,6 +146,12 @@ void main(List<String> arguments) async {
     );
 
   parser.addCommand('decrypt-request')
+    ..addFlag(
+      'help',
+      abbr: 'h',
+      help: 'Show help for this command',
+      negatable: false,
+    )
     ..addOption(
       'requestFile',
       abbr: 'r',
@@ -135,12 +165,18 @@ void main(List<String> arguments) async {
       mandatory: true,
     )
     ..addOption(
-      'output-json',
+      'outputJson',
       abbr: 'o',
       help: 'Save output to JSON file at specified path',
     );
 
   parser.addCommand('respond')
+    ..addFlag(
+      'help',
+      abbr: 'h',
+      help: 'Show help for this command',
+      negatable: false,
+    )
     ..addOption(
       'requestFile',
       abbr: 'r',
@@ -238,6 +274,27 @@ void main(List<String> arguments) async {
     }
   } catch (e) {
     stderr.writeln('Error: $e');
+
+    // Будем выводить только справку по команде, если мы знаем, какая именно команда вызвана
+    if (arguments.isNotEmpty) {
+      try {
+        final commandName = arguments[0];
+        if (commandName == 'keygen' ||
+            commandName == 'generate' ||
+            commandName == 'verify' ||
+            commandName == 'request' ||
+            commandName == 'decrypt-request' ||
+            commandName == 'respond') {
+          printCommandHelp(commandName, parser);
+          exit(1);
+        }
+      } catch (e) {
+        // Если что-то пошло не так при выводе справки для команды, выводим общую справку
+        printUsage(parser);
+        exit(1);
+      }
+    }
+
     printUsage(parser);
     exit(1);
   }
@@ -288,7 +345,7 @@ void printUsage(ArgParser parser) {
   );
   print('  You can save results to JSON:');
   print(
-    '  licensify verify --license license.licensify --publicKey ./keys/customer1.public.pem --output-json results.json',
+    '  licensify verify --license license.licensify --publicKey ./keys/customer1.public.pem --outputJson results.json',
   );
 
   print('\n4. License request workflow:');
@@ -392,14 +449,14 @@ void printCommandHelp(String command, ArgParser parser) {
       print('  --publicKey, -k   Path to the public key file');
       print('\nAdditional options:');
       print(
-        '  --output-json, -o Save verification results to a JSON file at the specified path',
+        '  --outputJson, -o Save verification results to a JSON file at the specified path',
       );
       print('\nExamples:');
       print(
         '  licensify verify --license license.licensify --publicKey ./keys/app.public.pem',
       );
       print(
-        '  licensify verify --license license.licensify --publicKey ./keys/app.public.pem --output-json results.json',
+        '  licensify verify --license license.licensify --publicKey ./keys/app.public.pem --outputJson results.json',
       );
       break;
 
@@ -454,7 +511,7 @@ void printCommandHelp(String command, ArgParser parser) {
       print('  --privateKey, -k  Path to the private key file');
       print('\nAdditional options:');
       print(
-        '  --output-json, -o Save request details to a JSON file at the specified path',
+        '  --outputJson, -o Save request details to a JSON file at the specified path',
       );
       print('\nExamples:');
       print(
@@ -463,7 +520,7 @@ void printCommandHelp(String command, ArgParser parser) {
       print(
         '  licensify decrypt-request --requestFile request.bin --privateKey ./keys/app.private.pem \\',
       );
-      print('                          --output-json request-info.json');
+      print('                          --outputJson request-info.json');
       break;
 
     case 'respond':
@@ -591,7 +648,7 @@ Future<void> verifyLicense(ArgResults args) async {
   final licensePath = args['license'] as String;
   final publicKeyPath = args['publicKey'] as String;
   final decryptKey = args['decryptKey'] as String?;
-  final outputJsonPath = args['output-json'] as String?;
+  final outputJsonPath = args['outputJson'] as String?;
 
   try {
     // Reading public key from file
@@ -806,7 +863,7 @@ Future<void> createLicenseRequest(ArgResults args) async {
 Future<void> decryptLicenseRequest(ArgResults args) async {
   final requestPath = args['requestFile'] as String;
   final privateKeyPath = args['privateKey'] as String;
-  final outputJsonPath = args['output-json'] as String?;
+  final outputJsonPath = args['outputJson'] as String?;
 
   try {
     // Read the license request
