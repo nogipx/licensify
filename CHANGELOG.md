@@ -1,3 +1,6 @@
+## 2.1.2 - 2025-04-03
+- Fix argument parsing in CLI
+
 ## 2.1.1 - 2025-04-03
 - Added export to json
 - Improved CLI documentation
