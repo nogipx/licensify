@@ -12,3 +12,4 @@ LICENSES/
 *.pem
 *.licensify
 *.bin
+bin/licensify

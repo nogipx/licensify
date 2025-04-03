@@ -24,3 +24,8 @@ reactivate:
     fvm dart pub global deactivate licensify
     fvm dart pub global activate --source path .
     fvm dart pub global run licensify
+
+compile:
+    fvm dart compile exe bin/licensify.dart -o bin/licensify
+    chmod +x bin/licensify
+    cp bin/licensify /usr/local/bin/
