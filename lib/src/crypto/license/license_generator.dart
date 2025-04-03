@@ -6,7 +6,6 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
-import 'package:basic_utils/basic_utils.dart';
 import 'package:licensify/licensify.dart';
 import 'package:pointycastle/export.dart';
 import 'package:uuid/uuid.dart';

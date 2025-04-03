@@ -1,3 +1,12 @@
+## 2.1.0 - 2025-04-04
+- Added comprehensive CLI tool for license management operations
+- CLI commands for key generation, license creation and verification
+- Support for license request workflows in the CLI
+- License requests can be created, decrypted, and processed through CLI
+- Added detailed CLI documentation in bin/README.md
+- Improved default license file extension to .licensify
+- Added device hash generation utilities for license binding
+
 ## 2.0.0 - 2025-04-03
 - **BREAKING CHANGE**: Deprecated RSA for all cryptographic operations except key generation
 - Improved cryptographic operations with dedicated `ECDHCryptoUtils` class

@@ -5,7 +5,6 @@
 import 'dart:typed_data';
 import 'dart:convert';
 
-import 'package:basic_utils/basic_utils.dart';
 import 'package:licensify/licensify.dart';
 
 /// Utility for importing cryptographic keys from PEM format

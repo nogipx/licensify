@@ -3,5 +3,6 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 export 'src/crypto/_index.dart';
+export 'src/crypto_utils/_index.dart';
 export 'src/license/_index.dart';
 export 'src/utils/_index.dart';

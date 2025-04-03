@@ -9,3 +9,6 @@ REUSE.toml
 coverage/
 docs/
 LICENSES/
+*.pem
+*.licensify
+*.bin

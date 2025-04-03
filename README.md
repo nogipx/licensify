@@ -18,6 +18,7 @@ Licensify is a Dart library for license validation, signing, and management. It 
 - ECDSA signature support with legacy RSA key generation
 - License request generation and sharing
 - Platform-independent implementation
+- Command-line interface (CLI) for license management
 
 ## 🚀 Contents
 
@@ -25,6 +26,7 @@ Licensify is a Dart library for license validation, signing, and management. It 
 - [Installation](#-installation)
 - [Quick Start](#-quick-start)
 - [Usage Examples](#-usage-examples)
+- [CLI Tool](#-cli-tool)
 - [Documentation](#-documentation)
 - [License Request Generation](#license-request-generation)
 - [Security](#security)
@@ -221,6 +223,41 @@ if (schemaResult.isValid) {
 // Comprehensive validation of signature, expiration, and schema
 final isValid = validator.validateLicenseWithSchema(license, schema);
 ```
+
+## 🛠 CLI Tool
+
+Licensify includes a command-line interface for managing licenses without writing code:
+
+```bash
+# Activate the package globally
+dart pub global activate licensify
+
+# Generate a key pair
+licensify keygen --output ./keys --name customer1
+
+# Generate a license
+licensify generate --privateKey ./keys/customer1.private.pem --appId com.example.app --expiration 2025-01-01 --output license.licensify
+
+# Verify a license
+licensify verify --license license.licensify --publicKey ./keys/customer1.public.pem
+
+# Create a license request
+licensify request --appId com.example.app --publicKey ./keys/customer1.public.pem --output request.bin
+
+# Process a license request and generate a license
+licensify respond --requestFile request.bin --privateKey ./keys/customer1.private.pem --expiration 2025-01-01
+```
+
+### Available Commands
+
+- `keygen`: Generate a new ECDSA key pair
+- `generate`: Create and sign a new license
+- `verify`: Verify an existing license
+- `request`: Create a license request (client-side)
+- `decrypt-request`: Decrypt and view a license request (server-side)
+- `respond`: Process a license request and generate a license (server-side)
+
+For more details, see the [CLI documentation](bin/README.md).
 
 ## 📖 Documentation
 
