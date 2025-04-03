@@ -66,7 +66,12 @@ void main(List<String> arguments) async {
       help: 'Public key file path',
       mandatory: true,
     )
-    ..addOption('decryptKey', help: 'Key for decryption');
+    ..addOption('decryptKey', help: 'Key for decryption')
+    ..addOption(
+      'output-json',
+      abbr: 'o',
+      help: 'Save output to JSON file at specified path',
+    );
 
   parser.addCommand('keygen')
     ..addOption(
@@ -128,6 +133,11 @@ void main(List<String> arguments) async {
       abbr: 'k',
       help: 'Private key file path',
       mandatory: true,
+    )
+    ..addOption(
+      'output-json',
+      abbr: 'o',
+      help: 'Save output to JSON file at specified path',
     );
 
   parser.addCommand('respond')
@@ -176,7 +186,13 @@ void main(List<String> arguments) async {
     final results = parser.parse(arguments);
 
     if (results['help'] == true) {
-      printUsage(parser);
+      if (results.command != null) {
+        // Справка по конкретной команде
+        printCommandHelp(results.command!.name!, parser);
+      } else {
+        // Общая справка
+        printUsage(parser);
+      }
       exit(0);
     }
 
@@ -189,6 +205,12 @@ void main(List<String> arguments) async {
     if (command == null) {
       printUsage(parser);
       exit(1);
+    }
+
+    // Проверяем, запрошена ли справка для конкретной команды
+    if (command['help'] == true) {
+      printCommandHelp(command.name!, parser);
+      exit(0);
     }
 
     switch (command.name) {
@@ -222,36 +244,272 @@ void main(List<String> arguments) async {
 }
 
 void printUsage(ArgParser parser) {
-  print('Usage: licensify <command> [options]');
+  print('Licensify CLI - License Management Tool v1.0.0');
+  print('=====================================================');
+  print('\nKey and license management for the Licensify library.');
+  print('\nBasic usage:');
+  print('  licensify <command> [options]');
   print(parser.usage);
 
-  print('\nCommands:');
-  print('  generate        Generate a new license file');
-  print('  verify          Verify an existing license file');
-  print('  keygen          Generate a new ECDSA key pair');
+  print('\nAvailable commands:');
+  print('  keygen          Generate a new ECDSA key pair (private and public)');
+  print('  generate        Create and sign a new license');
+  print('  verify          Verify an existing license');
   print('  request         Create a license request (client-side)');
-  print('  decrypt-request Decrypt a license request (server-side)');
+  print('  decrypt-request Decrypt and view a license request (server-side)');
   print(
     '  respond         Process a license request and generate a license (server-side)',
   );
 
-  print('\nExamples:');
+  print('\nTo get help for a specific command:');
+  print('  licensify <command> --help');
+
+  print('\nUsage examples:');
+
+  print('\n1. Generating keys:');
   print('  licensify keygen --output ./keys --name customer1');
   print(
-    '  licensify generate --privateKey ./keys/customer1.private.pem --appId com.example.app --expiration 2025-01-01 --output license.licensify',
+    '  Creates a key pair: customer1.private.pem and customer1.public.pem in the ./keys directory',
   );
+
+  print('\n2. Creating a license (direct method):');
+  print('  licensify generate --privateKey ./keys/customer1.private.pem \\');
+  print('                    --appId com.example.app \\');
+  print('                    --expiration 2025-01-01 \\');
+  print(
+    '                    --features maxUsers=10 --features premium=true \\',
+  );
+  print('                    --metadata customer=ACME \\');
+  print('                    --output license.licensify');
+
+  print('\n3. Verifying a license:');
   print(
     '  licensify verify --license license.licensify --publicKey ./keys/customer1.public.pem',
   );
+  print('  You can save results to JSON:');
+  print(
+    '  licensify verify --license license.licensify --publicKey ./keys/customer1.public.pem --output-json results.json',
+  );
+
+  print('\n4. License request workflow:');
+  print('  # Client: creating a request');
   print(
     '  licensify request --appId com.example.app --publicKey ./keys/customer1.public.pem --output request.bin',
   );
+  print('  # Server: decrypting the request');
   print(
     '  licensify decrypt-request --requestFile request.bin --privateKey ./keys/customer1.private.pem',
   );
+  print('  # Server: creating a license based on the request');
   print(
-    '  licensify respond --requestFile request.bin --privateKey ./keys/customer1.private.pem --expiration 2025-01-01',
+    '  licensify respond --requestFile request.bin --privateKey ./keys/customer1.private.pem \\',
   );
+  print(
+    '                   --expiration 2025-01-01 --type pro --features maxUsers=100',
+  );
+}
+
+void printCommandHelp(String command, ArgParser parser) {
+  switch (command) {
+    case 'keygen':
+      print('Command: keygen - generate ECDSA key pair');
+      print(
+        '\nCreates a new ECDSA cryptographic key pair for creating and verifying licenses.',
+      );
+      print(
+        'The private key is used for creating licenses, the public key - for verification.',
+      );
+      print('\nUsage:');
+      print('  licensify keygen [options]');
+      print('\nOptions:');
+      print('  --output, -o      Directory to save keys (default: ./keys)');
+      print('  --name, -n        Base name for key files (default: ecdsa)');
+      print(
+        '  --curve           ECDSA curve: p256, p384, p521 (default: p256)',
+      );
+      print('\nExamples:');
+      print('  licensify keygen');
+      print(
+        '  licensify keygen --output ./customers/keys --name client1 --curve p384',
+      );
+      break;
+
+    case 'generate':
+      print('Command: generate - create and sign a license');
+      print(
+        '\nCreates a new license by signing it with a private key. The license will contain',
+      );
+      print(
+        'the specified application ID, expiration date, type, and additional parameters.',
+      );
+      print('\nUsage:');
+      print('  licensify generate [options]');
+      print('\nRequired options:');
+      print('  --privateKey, -k  Path to the private key file');
+      print('  --appId           Application identifier');
+      print('  --expiration      License expiration date (YYYY-MM-DD)');
+      print('\nAdditional options:');
+      print(
+        '  --output, -o      Path to save the license file (default: license.licensify)',
+      );
+      print(
+        '  --id              License ID (UUID). If not specified, it will be generated automatically',
+      );
+      print(
+        '  --type            License type: trial, standard, pro (default: standard)',
+      );
+      print(
+        '  --features, -f    License features in key=value format (can specify multiple)',
+      );
+      print(
+        '  --metadata, -m    License metadata in key=value format (can specify multiple)',
+      );
+      print('\nExamples:');
+      print(
+        '  licensify generate --privateKey ./keys/app.private.pem --appId com.example --expiration 2025-12-31',
+      );
+      print(
+        '  licensify generate --privateKey ./keys/app.private.pem --appId com.example --expiration 2025-12-31 \\',
+      );
+      print(
+        '                    --type pro --features maxUsers=50 --features modules=analytics,reports \\',
+      );
+      print(
+        '                    --metadata customer="ACME Corp" --metadata orderId=12345',
+      );
+      break;
+
+    case 'verify':
+      print('Command: verify - verify a license');
+      print(
+        '\nVerifies the signature and validity of an existing license using a public key.',
+      );
+      print('Displays information about the license and its status.');
+      print('\nUsage:');
+      print('  licensify verify [options]');
+      print('\nRequired options:');
+      print('  --license, -l     Path to the license file');
+      print('  --publicKey, -k   Path to the public key file');
+      print('\nAdditional options:');
+      print(
+        '  --output-json, -o Save verification results to a JSON file at the specified path',
+      );
+      print('\nExamples:');
+      print(
+        '  licensify verify --license license.licensify --publicKey ./keys/app.public.pem',
+      );
+      print(
+        '  licensify verify --license license.licensify --publicKey ./keys/app.public.pem --output-json results.json',
+      );
+      break;
+
+    case 'request':
+      print('Command: request - create a license request');
+      print(
+        '\nCreates an encrypted license request containing information about the device',
+      );
+      print(
+        'and application. The request is encrypted with a public key so that only the owner',
+      );
+      print('of the corresponding private key can decrypt it.');
+      print('\nUsage:');
+      print('  licensify request [options]');
+      print('\nRequired options:');
+      print('  --appId           Application identifier');
+      print(
+        '  --publicKey, -k   Path to the public key file (from the license issuer)',
+      );
+      print('\nAdditional options:');
+      print(
+        '  --output, -o      Path to save the request file (default: license_request.bin)',
+      );
+      print(
+        '  --deviceId        Device identifier (will be hashed, random if not specified)',
+      );
+      print(
+        '  --validHours      Request validity period in hours (default: 48)',
+      );
+      print('\nExamples:');
+      print(
+        '  licensify request --appId com.example --publicKey ./keys/app.public.pem',
+      );
+      print(
+        '  licensify request --appId com.example --publicKey ./keys/app.public.pem \\',
+      );
+      print(
+        '                   --deviceId "unique-device-id-123" --validHours 72',
+      );
+      break;
+
+    case 'decrypt-request':
+      print('Command: decrypt-request - decrypt a license request');
+      print('\nDecrypts and displays the contents of a license request,');
+      print(
+        'using a private key. Shows information about the request and its status.',
+      );
+      print('\nUsage:');
+      print('  licensify decrypt-request [options]');
+      print('\nRequired options:');
+      print('  --requestFile, -r Path to the license request file');
+      print('  --privateKey, -k  Path to the private key file');
+      print('\nAdditional options:');
+      print(
+        '  --output-json, -o Save request details to a JSON file at the specified path',
+      );
+      print('\nExamples:');
+      print(
+        '  licensify decrypt-request --requestFile request.bin --privateKey ./keys/app.private.pem',
+      );
+      print(
+        '  licensify decrypt-request --requestFile request.bin --privateKey ./keys/app.private.pem \\',
+      );
+      print('                          --output-json request-info.json');
+      break;
+
+    case 'respond':
+      print('Command: respond - process a request and create a license');
+      print(
+        '\nDecrypts a license request and creates a corresponding license,',
+      );
+      print(
+        'bound to the device from the request. This is the primary method for creating',
+      );
+      print('licenses tied to specific devices.');
+      print('\nUsage:');
+      print('  licensify respond [options]');
+      print('\nRequired options:');
+      print('  --requestFile, -r Path to the license request file');
+      print('  --privateKey, -k  Path to the private key file');
+      print('  --expiration      License expiration date (YYYY-MM-DD)');
+      print('\nAdditional options:');
+      print(
+        '  --output, -o      Path to save the license file (default: license.licensify)',
+      );
+      print(
+        '  --type            License type: trial, standard, pro (default: standard)',
+      );
+      print(
+        '  --features, -f    License features in key=value format (can specify multiple)',
+      );
+      print(
+        '  --metadata, -m    License metadata in key=value format (can specify multiple)',
+      );
+      print('\nExamples:');
+      print(
+        '  licensify respond --requestFile request.bin --privateKey ./keys/app.private.pem --expiration 2025-12-31',
+      );
+      print(
+        '  licensify respond --requestFile request.bin --privateKey ./keys/app.private.pem \\',
+      );
+      print(
+        '                   --expiration 2025-12-31 --type pro --features maxUsers=100',
+      );
+      break;
+
+    default:
+      print('Unknown command: $command');
+      printUsage(parser);
+  }
 }
 
 Future<void> generateLicense(ArgResults args) async {
@@ -333,6 +591,7 @@ Future<void> verifyLicense(ArgResults args) async {
   final licensePath = args['license'] as String;
   final publicKeyPath = args['publicKey'] as String;
   final decryptKey = args['decryptKey'] as String?;
+  final outputJsonPath = args['output-json'] as String?;
 
   try {
     // Reading public key from file
@@ -359,6 +618,31 @@ Future<void> verifyLicense(ArgResults args) async {
     final validationResult = validator(license);
 
     if (validationResult.isValid) {
+      // Prepare JSON output data
+      final outputData = {
+        'validationResult': {'isValid': true, 'message': ''},
+        'licenseDetails': {
+          'id': license.id,
+          'appId': license.appId,
+          'type': license.type.name,
+          'createdAt': license.createdAt.toIso8601String(),
+          'expirationDate': license.expirationDate.toIso8601String(),
+          'isExpired': license.isExpired,
+          'remainingDays': license.remainingDays,
+          'features': license.features,
+          'metadata': license.metadata,
+        },
+      };
+
+      // Save to JSON if output path is specified
+      if (outputJsonPath != null) {
+        final jsonOutput = JsonEncoder.withIndent('  ').convert(outputData);
+        final outputFile = File(outputJsonPath);
+        await outputFile.writeAsString(jsonOutput);
+        print('License validation information saved to: $outputJsonPath');
+      }
+
+      // Normal console output
       print('License is valid!');
 
       // Expiration check
@@ -390,6 +674,22 @@ Future<void> verifyLicense(ArgResults args) async {
         });
       }
     } else {
+      // Prepare JSON output data for invalid license
+      final outputData = {
+        'validationResult': {
+          'isValid': false,
+          'message': validationResult.message,
+        },
+      };
+
+      // Save to JSON if output path is specified
+      if (outputJsonPath != null) {
+        final jsonOutput = JsonEncoder.withIndent('  ').convert(outputData);
+        final outputFile = File(outputJsonPath);
+        await outputFile.writeAsString(jsonOutput);
+        print('License validation information saved to: $outputJsonPath');
+      }
+
       print('License verification failed: ${validationResult.message}');
       exit(1);
     }
@@ -506,6 +806,7 @@ Future<void> createLicenseRequest(ArgResults args) async {
 Future<void> decryptLicenseRequest(ArgResults args) async {
   final requestPath = args['requestFile'] as String;
   final privateKeyPath = args['privateKey'] as String;
+  final outputJsonPath = args['output-json'] as String?;
 
   try {
     // Read the license request
@@ -522,6 +823,25 @@ Future<void> decryptLicenseRequest(ArgResults args) async {
 
     // Decrypt the request
     final request = requestDecrypter(requestBytes);
+
+    // Prepare JSON output data
+    final outputData = {
+      'requestDetails': {
+        'appId': request.appId,
+        'deviceHash': request.deviceHash,
+        'createdAt': request.createdAt.toIso8601String(),
+        'expiresAt': request.expiresAt.toIso8601String(),
+        'isExpired': request.isExpired,
+      },
+    };
+
+    // Save to JSON if output path is specified
+    if (outputJsonPath != null) {
+      final jsonOutput = JsonEncoder.withIndent('  ').convert(outputData);
+      final outputFile = File(outputJsonPath);
+      await outputFile.writeAsString(jsonOutput);
+      print('License request information saved to: $outputJsonPath');
+    }
 
     // Print request information
     print('License request successfully decrypted:');

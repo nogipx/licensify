@@ -1,24 +1,50 @@
 # Licensify CLI
 
-Command-line tool for managing licenses using the Licensify library.
+CLI tool for managing licenses directly from the command line.
 
 ## Installation
 
-The Licensify CLI is installed with the Licensify package. To use it:
+Global activation:
 
 ```bash
 dart pub global activate licensify
 ```
 
-After activating the package, you can use the `licensify` command directly from the terminal.
-
-## Usage
+Or use directly from a repository clone:
 
 ```bash
-licensify <command> [options]
+dart run bin/licensify.dart <command> [options]
 ```
 
-### Available Commands
+## General Help
+
+To get general help on commands, use:
+
+```bash
+licensify --help
+```
+
+This will display a list of available commands and general options.
+
+## Command-specific Help
+
+To get detailed help on any command, use:
+
+```bash
+licensify <command> --help
+```
+
+For example:
+
+```bash
+licensify generate --help
+```
+
+This will display a detailed description of the command, all available options, and usage examples.
+
+## Available Commands
+
+Licensify CLI supports the following commands:
 
 - `keygen`: Generate an ECDSA key pair
 - `generate`: Create and sign a new license
@@ -80,10 +106,16 @@ Required options:
 
 Additional options:
 - `--decryptKey`: Key for decryption (if the license was encrypted)
+- `--output-json, -o`: Save verification results to a JSON file at the specified path
 
 Example:
 ```bash
 licensify verify --license license.licensify --publicKey ./keys/customer1.public.pem
+```
+
+With JSON output:
+```bash
+licensify verify --license license.licensify --publicKey ./keys/customer1.public.pem --output-json results.json
 ```
 
 ### Creating a License Request
@@ -116,9 +148,17 @@ Required options:
 - `--requestFile, -r`: Path to the license request file
 - `--privateKey, -k`: Path to the private key file
 
+Additional options:
+- `--output-json, -o`: Save request details to a JSON file at the specified path
+
 Example:
 ```bash
 licensify decrypt-request --requestFile request.bin --privateKey ./keys/customer1.private.pem
+```
+
+With JSON output:
+```bash
+licensify decrypt-request --requestFile request.bin --privateKey ./keys/customer1.private.pem --output-json request-info.json
 ```
 
 ### Responding to a License Request
@@ -179,6 +219,16 @@ licensify respond --requestFile request.bin --privateKey ./keys/customer1.privat
 licensify verify --license license.licensify --publicKey ./keys/customer1.public.pem
 ```
 
+### Output to JSON Examples
+
+```bash
+# Verify a license and save results to JSON
+licensify verify --license license.licensify --publicKey ./keys/customer1.public.pem --output-json verification.json
+
+# Decrypt a license request and save details to JSON
+licensify decrypt-request --requestFile request.bin --privateKey ./keys/customer1.private.pem --output-json request-details.json
+```
+
 ## Notes
 
 - The private key should be stored in a secure location and used only for license creation.
@@ -186,4 +236,5 @@ licensify verify --license license.licensify --publicKey ./keys/customer1.public
 - All dates should be in ISO format (YYYY-MM-DD).
 - For production scenarios, it's recommended to use p384 or p521 curves for a higher level of security.
 - License requests contain a device hash, which allows binding licenses to specific devices.
-- License requests are encrypted using the public key and can only be decrypted with the corresponding private key. 
+- License requests are encrypted using the public key and can only be decrypted with the corresponding private key.
+- JSON output files can be used for integration with other systems or for automated processing. 

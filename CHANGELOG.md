@@ -1,4 +1,8 @@
-## 2.1.0 - 2025-04-04
+## 2.1.1 - 2025-04-03
+- Added export to json
+- Improved CLI documentation
+
+## 2.1.0 - 2025-04-03
 - Added comprehensive CLI tool for license management operations
 - CLI commands for key generation, license creation and verification
 - Support for license request workflows in the CLI

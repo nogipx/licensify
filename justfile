@@ -14,18 +14,14 @@ prepare:
     genhtml coverage/lcov.info -o coverage/html
     open coverage/html/index.html
 
-activate:
-    fvm dart pub global activate --source path .
-deactivate:
-    fvm dart pub global deactivate licensify
-reactivate:
+compile:
     rm pubspec.lock
     fvm dart pub get
-    fvm dart pub global deactivate licensify
-    fvm dart pub global activate --source path .
-    fvm dart pub global run licensify
-
-compile:
     fvm dart compile exe bin/licensify.dart -o bin/licensify
     chmod +x bin/licensify
-    cp bin/licensify /usr/local/bin/
+
+dry:
+    fvm dart pub publish --dry-run
+
+publish:
+    fvm dart pub publish
