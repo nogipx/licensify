@@ -1,3 +1,7 @@
+## 2.1.3 - 2025-04-04
+- Added support for custom license types from CLI
+- Improved CLI documentation
+
 ## 2.1.2 - 2025-04-03
 - Fix argument parsing in CLI
 

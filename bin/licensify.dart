@@ -602,8 +602,22 @@ Future<void> generateLicense(ArgResults args) async {
     final privateKeyPem = await privateKeyFile.readAsString();
     final privateKey = LicensifyPrivateKey.ecdsa(privateKeyPem);
 
+    // Validate appId
+    final appIdError = validateAppId(appId);
+    if (appIdError != null) {
+      stderr.writeln('Error: $appIdError');
+      exit(1);
+    }
+
     final features = _parseKeyValues(featuresList);
     final metadata = _parseKeyValues(metadataList);
+
+    // Validate license type
+    final licenseTypeError = validateLicenseType(licenseType.toLowerCase());
+    if (licenseTypeError != null) {
+      stderr.writeln('Error: $licenseTypeError');
+      exit(1);
+    }
 
     LicenseType type;
     switch (licenseType.toLowerCase()) {
@@ -614,8 +628,11 @@ Future<void> generateLicense(ArgResults args) async {
         type = LicenseType.pro;
         break;
       case 'standard':
-      default:
         type = LicenseType.standard;
+        break;
+      default:
+        // Create a custom license type
+        type = LicenseType(licenseType.toLowerCase());
         break;
     }
 
@@ -827,6 +844,13 @@ Future<void> createLicenseRequest(ArgResults args) async {
     final publicKeyPem = await publicKeyFile.readAsString();
     final publicKey = LicensifyPublicKey.ecdsa(publicKeyPem);
 
+    // Validate appId
+    final appIdError = validateAppId(appId);
+    if (appIdError != null) {
+      stderr.writeln('Error: $appIdError');
+      exit(1);
+    }
+
     // Generate device hash
     final deviceHash = generateDeviceHash(deviceId);
 
@@ -949,6 +973,13 @@ Future<void> respondToLicenseRequest(ArgResults args) async {
       print('WARNING: The license request has expired. Continuing anyway...');
     }
 
+    // Validate appId from request
+    final appIdError = validateAppId(request.appId);
+    if (appIdError != null) {
+      stderr.writeln('Error: $appIdError');
+      exit(1);
+    }
+
     // Parse expiration date
     final expirationDate = DateTime.parse(expirationStr);
 
@@ -958,6 +989,13 @@ Future<void> respondToLicenseRequest(ArgResults args) async {
 
     // Add device hash to metadata
     final metadata = {'deviceHash': request.deviceHash, ...additionalMetadata};
+
+    // Validate license type
+    final licenseTypeError = validateLicenseType(licenseType.toLowerCase());
+    if (licenseTypeError != null) {
+      stderr.writeln('Error: $licenseTypeError');
+      exit(1);
+    }
 
     // Determine license type
     LicenseType type;
@@ -969,8 +1007,11 @@ Future<void> respondToLicenseRequest(ArgResults args) async {
         type = LicenseType.pro;
         break;
       case 'standard':
-      default:
         type = LicenseType.standard;
+        break;
+      default:
+        // Create a custom license type
+        type = LicenseType(licenseType.toLowerCase());
         break;
     }
 
@@ -1037,4 +1078,48 @@ Map<String, dynamic> _parseKeyValues(List<String> items) {
     result[parts[0]] = parts[1];
   }
   return result;
+}
+
+/// Validates license type value
+/// Returns an error message if invalid, or null if valid
+String? validateLicenseType(String licenseType) {
+  // Check length
+  if (licenseType.length < 2) {
+    return 'License type should be at least 2 characters long';
+  }
+
+  if (licenseType.length > 100) {
+    return 'License type should not exceed 100 characters';
+  }
+
+  // Check allowed characters (only latin letters and numbers)
+  final validPattern = RegExp(r'^[a-zA-Z0-9\-_\.@]+$');
+
+  if (!validPattern.hasMatch(licenseType)) {
+    return 'License type should contain only latin letters, numbers, and symbols -_.@. No other special characters allowed.';
+  }
+
+  return null;
+}
+
+/// Validates application ID
+/// Returns an error message if invalid, or null if valid
+String? validateAppId(String appId) {
+  // Check length
+  if (appId.length < 3) {
+    return 'Application ID should be at least 3 characters long';
+  }
+
+  if (appId.length > 100) {
+    return 'Application ID should not exceed 100 characters';
+  }
+
+  // Check allowed characters (latin letters, numbers, dots, dashes, underscores)
+  final validPattern = RegExp(r'^[a-zA-Z0-9\-_\.]+$');
+
+  if (!validPattern.hasMatch(appId)) {
+    return 'Application ID should contain only latin letters, numbers, and symbols -_. (for example, com.example.app)';
+  }
+
+  return null;
 }

@@ -248,6 +248,8 @@ licensify request --appId com.example.app --publicKey ./keys/customer1.public.pe
 licensify respond --requestFile request.bin --privateKey ./keys/customer1.private.pem --expiration 2025-01-01
 ```
 
+For detailed CLI documentation, see the **[Licensify CLI Guide](bin/README.md)** with complete commands reference and usage examples.
+
 ### Available Commands
 
 - `keygen`: Generate a new ECDSA key pair
@@ -256,8 +258,6 @@ licensify respond --requestFile request.bin --privateKey ./keys/customer1.privat
 - `request`: Create a license request (client-side)
 - `decrypt-request`: Decrypt and view a license request (server-side)
 - `respond`: Process a license request and generate a license (server-side)
-
-For more details, see the [CLI documentation](bin/README.md).
 
 ## 📖 Documentation
 
