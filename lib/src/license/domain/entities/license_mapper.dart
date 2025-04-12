@@ -14,6 +14,7 @@ abstract interface class LicenseMapper {
     type: license.type.name,
     features: license.features,
     metadata: license.metadata,
+    isTrial: license.isTrial,
   );
 
   static License toDomain(LicenseDto dto) => License(
@@ -25,5 +26,6 @@ abstract interface class LicenseMapper {
     type: LicenseType(dto.type),
     features: dto.features,
     metadata: dto.metadata,
+    isTrial: dto.isTrial,
   );
 }

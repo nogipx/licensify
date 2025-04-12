@@ -26,7 +26,8 @@ void main() {
         expirationDate: DateTime.now(),
         createdAt: DateTime.now(),
         signature: '',
-        type: LicenseType.trial,
+        type: LicenseType.standard,
+        isTrial: true,
       );
 
       // Act - we'll test the validator's behavior with an invalid license
@@ -45,7 +46,8 @@ void main() {
         expirationDate: DateTime.now().add(Duration(days: 30)),
         createdAt: DateTime.now(),
         signature: base64Encode(utf8.encode('invalid_signature')),
-        type: LicenseType.trial,
+        type: LicenseType.standard,
+        isTrial: true,
       );
 
       // Act

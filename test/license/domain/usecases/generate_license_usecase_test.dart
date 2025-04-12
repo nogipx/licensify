@@ -106,7 +106,7 @@ void main() {
       );
     });
 
-    test('creates trial license by default', () {
+    test('creates standard license by default', () {
       // Arrange
       final sut = TestConstants.testKeyPair.privateKey.licenseGenerator;
 
@@ -120,6 +120,7 @@ void main() {
 
       // Assert
       expect(license.type, equals(LicenseType.standard));
+      expect(license.isTrial, isFalse);
     });
 
     test('serializes license to binary format with header', () {

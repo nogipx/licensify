@@ -296,13 +296,19 @@ final keyPair = LicensifyKeyImporter.importKeyPairFromStrings(
 
 ```dart
 // Built-in types
-final trial = LicenseType.trial;
 final standard = LicenseType.standard;
 final pro = LicenseType.pro;
 
 // Custom types
 final enterprise = LicenseType('enterprise');
 final premium = LicenseType('premium');
+
+// Trial license (using isTrial flag)
+final license = License(
+  // ... other license parameters
+  type: LicenseType.standard,
+  isTrial: true,
+);
 ```
 
 ### License Format

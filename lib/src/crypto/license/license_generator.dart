@@ -37,9 +37,10 @@ class LicenseGenerator implements ILicenseGenerator {
   ///
   /// [appId] - Unique identifier of the application this license is for
   /// [expirationDate] - Date when the license expires
-  /// [type] - License type (trial, standard, pro)
+  /// [type] - License type (standard, pro or custom)
   /// [features] - Custom features map that can contain any application-specific parameters
   /// [metadata] - Optional metadata for the license (e.g., customer info)
+  /// [isTrial] - Whether this is a trial license
   /// [includeSecurityInfo] - Whether to include security algorithm info in metadata (not recommended in production)
   ///
   /// Returns a cryptographically signed License object
@@ -50,6 +51,8 @@ class LicenseGenerator implements ILicenseGenerator {
     LicenseType type = LicenseType.standard,
     Map<String, dynamic> features = const {},
     Map<String, dynamic>? metadata,
+    bool isTrial = false,
+    bool includeSecurityInfo = false,
   }) {
     if (_keyType == LicensifyKeyType.rsa) {
       throw UnsupportedError('RSA is deprecated');
@@ -90,6 +93,7 @@ class LicenseGenerator implements ILicenseGenerator {
       type: type,
       features: features,
       metadata: extendedMetadata,
+      isTrial: isTrial,
     );
   }
 

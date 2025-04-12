@@ -30,6 +30,9 @@ class LicenseDto {
   /// Additional license metadata
   final Map<String, dynamic>? metadata;
 
+  /// Flag indicating if this is a trial license
+  final bool isTrial;
+
   /// Creates a new license DTO instance
   const LicenseDto({
     required this.id,
@@ -40,6 +43,7 @@ class LicenseDto {
     this.type = 'standard',
     this.features = const {},
     this.metadata,
+    this.isTrial = false,
   });
 
   /// Converts from domain entity
@@ -59,6 +63,7 @@ class LicenseDto {
     'type': type,
     'features': features,
     'metadata': metadata,
+    'isTrial': isTrial,
   };
 
   /// Creates a DTO object from JSON
@@ -72,6 +77,7 @@ class LicenseDto {
       type: (json['type'] as String?) ?? 'standard',
       features: (json['features'] as Map<String, dynamic>?) ?? const {},
       metadata: json['metadata'] as Map<String, dynamic>?,
+      isTrial: (json['isTrial'] as bool?) ?? false,
     );
   }
 
@@ -87,7 +93,8 @@ class LicenseDto {
         other.signature == signature &&
         other.type == type &&
         _mapsEqual(other.features, features) &&
-        _mapsEqual(other.metadata, metadata);
+        _mapsEqual(other.metadata, metadata) &&
+        other.isTrial == isTrial;
   }
 
   @override
@@ -101,6 +108,7 @@ class LicenseDto {
       type,
       Object.hashAll(features.entries),
       metadata != null ? Object.hashAll(metadata!.entries) : null,
+      isTrial,
     );
   }
 
@@ -108,7 +116,7 @@ class LicenseDto {
   String toString() {
     return 'LicenseDto(id: $id, appId: $appId, expirationDate: $expirationDate, '
         'createdAt: $createdAt, signature: $signature, type: $type, '
-        'features: $features, metadata: $metadata)';
+        'features: $features, metadata: $metadata, isTrial: $isTrial)';
   }
 
   /// Helper for comparing maps in operator ==

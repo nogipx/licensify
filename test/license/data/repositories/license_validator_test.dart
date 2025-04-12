@@ -25,7 +25,8 @@ void main() {
       validLicense = TestConstants.testKeyPair.privateKey.licenseGenerator(
         appId: TestConstants.testAppId,
         expirationDate: DateTime.now().add(Duration(days: 30)),
-        type: LicenseType.trial,
+        type: LicenseType.standard,
+        isTrial: true,
         features: {'maxUsers': 10, 'premium': true},
         metadata: {'owner': 'Test Corp', 'email': 'test@example.com'},
       );
@@ -33,7 +34,8 @@ void main() {
       expiredLicense = TestConstants.testKeyPair.privateKey.licenseGenerator(
         appId: TestConstants.testAppId,
         expirationDate: DateTime.now().subtract(Duration(days: 1)),
-        type: LicenseType.trial,
+        type: LicenseType.standard,
+        isTrial: true,
       );
 
       invalidSignatureLicense = License(
@@ -42,7 +44,8 @@ void main() {
         expirationDate: DateTime.now().add(Duration(days: 30)),
         createdAt: DateTime.now(),
         signature: 'invalid-signature',
-        type: LicenseType.trial,
+        type: LicenseType.standard,
+        isTrial: true,
       );
 
       // Создаем другую пару ключей для тестирования несоответствия ключей

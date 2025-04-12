@@ -8,8 +8,9 @@ abstract interface class ILicenseGenerator {
   License call({
     required String appId,
     required DateTime expirationDate,
-    required LicenseType type,
+    LicenseType type = LicenseType.standard,
     Map<String, dynamic> features = const {},
     Map<String, dynamic>? metadata,
+    bool isTrial = false,
   });
 }

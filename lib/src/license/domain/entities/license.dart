@@ -35,6 +35,10 @@ class License {
   /// Can store information about customer, purchase, etc.
   final Map<String, dynamic>? metadata;
 
+  /// Flag indicating if this is a trial license
+  /// Any license type can be marked as trial
+  final bool isTrial;
+
   /// Creates a new license instance
   ///
   /// All dates are automatically converted to UTC
@@ -44,9 +48,10 @@ class License {
     required DateTime expirationDate,
     required DateTime createdAt,
     required this.signature,
-    this.type = LicenseType.trial,
+    this.type = LicenseType.standard,
     this.features = const {},
     this.metadata,
+    this.isTrial = false,
   }) : expirationDate =
            expirationDate.isUtc ? expirationDate : expirationDate.toUtc(),
        createdAt = createdAt.isUtc ? createdAt : createdAt.toUtc();
@@ -69,6 +74,7 @@ class License {
     LicenseType? type,
     Map<String, dynamic>? features,
     Object? metadata = const _Unset(),
+    bool? isTrial,
   }) {
     return License(
       id: id ?? this.id,
@@ -82,6 +88,7 @@ class License {
           metadata is _Unset
               ? this.metadata
               : metadata as Map<String, dynamic>?,
+      isTrial: isTrial ?? this.isTrial,
     );
   }
 }

@@ -15,8 +15,9 @@ void main() {
       DateTime? expirationDate,
       DateTime? createdAt,
       String? signature,
-      LicenseType type = LicenseType.trial,
+      LicenseType type = LicenseType.standard,
       Map<String, dynamic> features = const {},
+      bool isTrial = false,
     }) {
       return License(
         id: id ?? 'test-license-id',
@@ -30,6 +31,7 @@ void main() {
         signature: signature ?? 'test_signature',
         type: type,
         features: features,
+        isTrial: isTrial,
       );
     }
 

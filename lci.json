@@ -1,0 +1,19 @@
+{
+  "validationResult": {
+    "isValid": true,
+    "message": ""
+  },
+  "licenseDetails": {
+    "id": "8e912773-d0c0-48f3-ad4d-677eb4eb1f2a",
+    "appId": "test.app.com",
+    "type": "standard",
+    "createdAt": "2025-04-12T16:59:00.000Z",
+    "expirationDate": "2026-04-09T21:00:00.000Z",
+    "isExpired": false,
+    "remainingDays": 362,
+    "features": {},
+    "metadata": {
+      "deviceHash": "567344ddfc7754aebfef7f94677077dd1277088ed6efdce7a9bb04f0567d032b"
+    }
+  }
+}

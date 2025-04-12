@@ -4,8 +4,9 @@
 
 /// License type representation
 ///
-/// This class allows both using predefined license types and
-/// creating custom types for specific business needs.
+/// This class allows creating custom license types for specific business needs.
+/// Any license type can be set as a trial license using the isTrial flag
+/// in the License class.
 class LicenseType {
   /// The name identifier of the license type
   final String name;
@@ -17,9 +18,6 @@ class LicenseType {
   /// final enterpriseType = LicenseType('enterprise');
   /// ```
   const LicenseType(this.name);
-
-  /// Trial license with limited functionality or time period
-  static const trial = LicenseType('trial');
 
   /// Standard license with basic functionality
   static const standard = LicenseType('standard');
