@@ -13,3 +13,4 @@ LICENSES/
 *.licensify
 *.bin
 bin/licensify
+test_cli/
