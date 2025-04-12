@@ -221,44 +221,15 @@ class RespondWithPlanCommand extends BaseLicenseCommand {
       final outputFile = File(outputPath);
       await outputFile.writeAsBytes(finalBytes);
 
-      // Подготовка данных лицензии для вывода
-      final licenseData = {
-        'id': license.id,
-        'appId': license.appId,
-        'type': license.type.name,
-        'isTrial': license.isTrial,
-        'createdAt': license.createdAt.toIso8601String(),
-        'expirationDate': license.expirationDate.toIso8601String(),
-        'remainingDays': license.remainingDays,
-        'usedPlan': {
-          'id': plan.id,
-          'name': plan.name,
-          'description': plan.description,
-          'price': plan.price,
-        },
-        'deviceHash': metadata['deviceHash'],
-        'features': license.features,
-        'metadata': license.metadata,
-      };
+      // Преобразуем лицензию в DTO для получения JSON
+      final licenseDto = LicenseDto.fromDomain(license);
+      final licenseData = licenseDto.toJson();
 
-      // Формирование JSON-ответа
-      final outputData = {
-        'status': 'success',
-        'message': 'Лицензия успешно создана на основе плана',
-        'filePath': outputPath,
-        'encrypted': shouldEncrypt,
-        'license': licenseData,
-      };
-
-      final jsonOutput = JsonEncoder.withIndent('  ').convert(outputData);
+      // Выводим только данные лицензии
+      final jsonOutput = JsonEncoder.withIndent('  ').convert(licenseData);
       print(jsonOutput);
     } catch (e) {
-      final errorJson = JsonEncoder.withIndent('  ').convert({
-        'status': 'error',
-        'message': 'Ошибка создания лицензии',
-        'error': e.toString(),
-      });
-      print(errorJson);
+      print('Ошибка создания лицензии: ${e.toString()}');
     }
   }
 

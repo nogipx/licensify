@@ -80,54 +80,24 @@ class DecryptRequestCommand extends BaseLicenseCommand {
       // Расшифровка запроса
       final request = requestDecrypter(requestBytes);
 
-      // Подготовка данных для JSON-вывода
-      final requestDetails = {
-        'appId': request.appId,
-        'deviceHash': request.deviceHash,
-        'createdAt': request.createdAt.toIso8601String(),
-        'expiresAt': request.expiresAt.toIso8601String(),
-        'isExpired': request.isExpired,
-        'remainingHours':
-            request.expiresAt.difference(DateTime.now().toUtc()).inHours,
-      };
-
-      final outputData = {
-        'status': 'success',
-        'message': 'Запрос на лицензию успешно расшифрован',
-        'requestDetails': requestDetails,
-      };
-
-      // Добавляем предупреждение, если запрос просрочен
-      if (request.isExpired) {
-        outputData['warning'] = 'Этот запрос уже просрочен';
-      }
+      // Используем родной метод toJson вместо ручного создания JSON
+      final requestDetails = request.toJson();
 
       // Сохранение в JSON, если указан путь
       if (outputJsonPath != null) {
-        final jsonOutput = JsonEncoder.withIndent('  ').convert(outputData);
+        final jsonOutput = JsonEncoder.withIndent('  ').convert(requestDetails);
         final outputFile = File(outputJsonPath);
         await outputFile.writeAsString(jsonOutput);
-
-        // Информация о сохранении в JSON формате
-        final saveInfo = {
-          'status': 'success',
-          'message': 'Информация о запросе на лицензию сохранена в файл',
-          'filePath': outputJsonPath,
-        };
-        final saveJson = JsonEncoder.withIndent('  ').convert(saveInfo);
-        print(saveJson);
+        print(
+          'Информация о запросе на лицензию сохранена в файл: $outputJsonPath',
+        );
       } else {
-        // Вывод результата в JSON
-        final jsonOutput = JsonEncoder.withIndent('  ').convert(outputData);
+        // Просто выводим JSON в консоль
+        final jsonOutput = JsonEncoder.withIndent('  ').convert(requestDetails);
         print(jsonOutput);
       }
     } catch (e) {
-      final errorJson = JsonEncoder.withIndent('  ').convert({
-        'status': 'error',
-        'message': 'Ошибка расшифровки запроса на лицензию',
-        'error': e.toString(),
-      });
-      print(errorJson);
+      print('Ошибка расшифровки запроса на лицензию: ${e.toString()}');
     }
   }
 }

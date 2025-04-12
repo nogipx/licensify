@@ -7,20 +7,18 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 
 // Import commands
-import 'commands/plans_commands.dart';
-import 'commands/license_commands.dart';
-import 'commands/flow_commands.dart';
+import 'commands/client_commands.dart';
+import 'commands/server_commands.dart';
 
 void main(List<String> args) async {
   final runner =
       CommandRunner<void>(
           'licensify',
-          'Tool for managing licenses and license plans',
+          'Инструмент для управления лицензиями и планами лицензирования',
         )
         // Add top-level commands
-        ..addCommand(PlansCommand())
-        ..addCommand(LicenseCommand())
-        ..addCommand(FlowCommand());
+        ..addCommand(ClientCommand())
+        ..addCommand(ServerCommand());
 
   try {
     await runner.run(args);

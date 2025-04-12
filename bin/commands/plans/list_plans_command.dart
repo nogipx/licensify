@@ -9,7 +9,7 @@ import '../_base/_index.dart';
 /// Command to list license plans
 class ListPlansCommand extends BasePlansCommand {
   @override
-  String get name => 'list';
+  String get name => 'ls';
 
   @override
   String get description => 'Просмотр списка планов лицензий';
@@ -53,34 +53,9 @@ class ListPlansCommand extends BasePlansCommand {
     // Сортируем по приоритету
     plans.sort((a, b) => a.priority.compareTo(b.priority));
 
-    final category = showTrials ? 'trial' : (showAll ? 'all' : 'public');
+    final plansOutput = plans.map((plan) => plan.toJson()).toList();
 
-    final plansOutput =
-        plans
-            .map(
-              (plan) => {
-                'id': plan.id,
-                'name': plan.name,
-                'description': plan.description,
-                'isTrial': plan.isTrial,
-                'isPublic': plan.isPublic,
-                'durationDays': plan.durationDays,
-                'priority': plan.priority,
-                'price': plan.price,
-                'appId': plan.appId,
-              },
-            )
-            .toList();
-
-    final outputData = {
-      'status': 'success',
-      'category': category,
-      'appId': currentAppId,
-      'count': plans.length,
-      'plans': plansOutput,
-    };
-
-    final jsonOutput = JsonEncoder.withIndent('  ').convert(outputData);
+    final jsonOutput = JsonEncoder.withIndent('  ').convert(plansOutput);
     print(jsonOutput);
   }
 }

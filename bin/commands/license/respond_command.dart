@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 import 'dart:io';
+import 'dart:convert';
 import 'package:licensify/licensify.dart';
 import '../_base/_index.dart';
 
@@ -183,30 +184,15 @@ class RespondCommand extends BaseLicenseCommand {
       final outputFile = File(outputPath);
       await outputFile.writeAsBytes(finalBytes);
 
-      print('Лицензия сгенерирована на основе запроса: $outputPath');
-      print('\nДетали лицензии:');
-      print('  ID: ${license.id}');
-      print('  ID приложения: ${license.appId}');
-      print('  Тип: ${license.type}');
-      print('  Пробная: ${license.isTrial ? 'Да' : 'Нет'}');
-      print('  Истекает: ${license.expirationDate}');
-      print('  Хеш устройства: ${metadata['deviceHash']}');
+      // Преобразуем лицензию в DTO для получения JSON
+      final licenseDto = LicenseDto.fromDomain(license);
+      final licenseData = licenseDto.toJson();
 
-      if (features.isNotEmpty) {
-        print('\nФичи:');
-        features.forEach((key, value) {
-          print('  $key: $value');
-        });
-      }
-
-      if (additionalMetadata.isNotEmpty) {
-        print('\nМетаданные:');
-        additionalMetadata.forEach((key, value) {
-          print('  $key: $value');
-        });
-      }
+      // Выводим только данные лицензии
+      final jsonOutput = JsonEncoder.withIndent('  ').convert(licenseData);
+      print(jsonOutput);
     } catch (e) {
-      handleError('Ошибка обработки запроса на лицензию: $e');
+      print('Ошибка обработки запроса на лицензию: ${e.toString()}');
     }
   }
 }

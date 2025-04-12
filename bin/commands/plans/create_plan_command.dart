@@ -146,36 +146,13 @@ class CreatePlanCommand extends BasePlansCommand {
     final result = service.addPlan(plan);
 
     if (result.success) {
-      // Подготовка данных плана для вывода
-      final planData = {
-        'id': plan.id,
-        'name': plan.name,
-        'description': plan.description,
-        'licenseType': plan.licenseType.name,
-        'durationDays': plan.durationDays,
-        'isPublic': plan.isPublic,
-        'priority': plan.priority,
-        'price': plan.price,
-        'isTrial': plan.isTrial,
-        'appId': service.appId,
-      };
-
-      // Вывод информации о созданном плане
-      final outputData = {
-        'status': 'success',
-        'message': result.message,
-        'plan': planData,
-      };
-
-      final jsonOutput = JsonEncoder.withIndent('  ').convert(outputData);
+      // Используем родной метод toJson вместо ручного создания JSON
+      final jsonOutput = JsonEncoder.withIndent('  ').convert(plan.toJson());
       print(jsonOutput);
 
       await savePlans(service);
     } else {
-      final errorJson = JsonEncoder.withIndent(
-        '  ',
-      ).convert({'status': 'error', 'message': result.message});
-      print(errorJson);
+      print('Ошибка: ${result.message}');
     }
   }
 }

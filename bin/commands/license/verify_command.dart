@@ -88,77 +88,52 @@ class VerifyCommand extends BaseLicenseCommand {
       final validationResult = validator(license);
 
       if (validationResult.isValid) {
-        // Подготовка данных для JSON-вывода
-        final outputData = {
-          'validationResult': {'isValid': true, 'message': ''},
-          'licenseDetails': {
-            'id': license.id,
-            'appId': license.appId,
-            'type': license.type.name,
-            'isTrial': license.isTrial,
-            'createdAt': license.createdAt.toIso8601String(),
-            'expirationDate': license.expirationDate.toIso8601String(),
-            'isExpired': license.isExpired,
-            'remainingDays': license.remainingDays,
-            'features': license.features,
-            'metadata': license.metadata,
-          },
-        };
+        // Преобразуем лицензию в DTO для получения JSON
+        final licenseDto = LicenseDto.fromDomain(license);
+        final licenseData = licenseDto.toJson();
+
+        // Добавляем информацию о валидации в объект лицензии
+        licenseData['validation'] = {'isValid': true, 'message': ''};
 
         // Сохранение в JSON, если указан путь
         if (outputJsonPath != null) {
-          final jsonOutput = JsonEncoder.withIndent('  ').convert(outputData);
+          final jsonOutput = JsonEncoder.withIndent('  ').convert(licenseData);
           final outputFile = File(outputJsonPath);
           await outputFile.writeAsString(jsonOutput);
-
-          // Выводим информацию о сохранении в JSON-формате
-          final resultJson = JsonEncoder.withIndent('  ').convert({
-            'status': 'success',
-            'message': 'Информация о валидации лицензии сохранена в файл',
-            'filePath': outputJsonPath,
-          });
-          print(resultJson);
+          print(
+            'Информация о валидации лицензии сохранена в файл: $outputJsonPath',
+          );
         } else {
           // Просто выводим JSON в консоль
-          final jsonOutput = JsonEncoder.withIndent('  ').convert(outputData);
+          final jsonOutput = JsonEncoder.withIndent('  ').convert(licenseData);
           print(jsonOutput);
         }
       } else {
-        // Подготовка данных для JSON-вывода для невалидной лицензии
-        final outputData = {
-          'validationResult': {
-            'isValid': false,
-            'message': validationResult.message,
-          },
+        // Возвращаем только результат валидации без обертки
+        final validationData = {
+          'validation': {'isValid': false, 'message': validationResult.message},
         };
 
         // Сохранение в JSON, если указан путь
         if (outputJsonPath != null) {
-          final jsonOutput = JsonEncoder.withIndent('  ').convert(outputData);
+          final jsonOutput = JsonEncoder.withIndent(
+            '  ',
+          ).convert(validationData);
           final outputFile = File(outputJsonPath);
           await outputFile.writeAsString(jsonOutput);
-
-          // Выводим информацию о сохранении в JSON-формате
-          final resultJson = JsonEncoder.withIndent('  ').convert({
-            'status': 'success',
-            'message': 'Информация о валидации лицензии сохранена в файл',
-            'filePath': outputJsonPath,
-          });
-          print(resultJson);
+          print(
+            'Информация о валидации лицензии сохранена в файл: $outputJsonPath',
+          );
         } else {
           // Выводим JSON с результатом валидации в консоль
-          final jsonOutput = JsonEncoder.withIndent('  ').convert(outputData);
+          final jsonOutput = JsonEncoder.withIndent(
+            '  ',
+          ).convert(validationData);
           print(jsonOutput);
         }
       }
     } catch (e) {
-      // Выводим ошибку в JSON формате
-      final errorJson = JsonEncoder.withIndent('  ').convert({
-        'status': 'error',
-        'message': 'Ошибка проверки лицензии',
-        'error': e.toString(),
-      });
-      print(errorJson);
+      print('Ошибка проверки лицензии: ${e.toString()}');
     }
   }
 }

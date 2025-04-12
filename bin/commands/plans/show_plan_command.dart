@@ -26,49 +26,12 @@ class ShowPlanCommand extends BasePlansCommand {
     final plan = service.getPlan(planId);
 
     if (plan == null) {
-      final errorJson = JsonEncoder.withIndent('  ').convert({
-        'status': 'error',
-        'message': 'План не найден',
-        'planId': planId,
-      });
-      print(errorJson);
+      print('План с ID "$planId" не найден');
       return;
     }
 
-    // Подготовка данных плана для вывода
-    final planData = {
-      'id': plan.id,
-      'name': plan.name,
-      'description': plan.description,
-      'licenseType': plan.licenseType.name,
-      'durationDays': plan.durationDays,
-      'isPublic': plan.isPublic,
-      'priority': plan.priority,
-      'price': plan.price,
-      'isTrial': plan.isTrial,
-      'appId': plan.appId,
-    };
-
-    // Добавляем информацию о фичах и метаданных, если они есть
-    if (plan.features.isNotEmpty) {
-      final features = <String, String>{};
-      for (final feature in plan.features) {
-        features[feature.key] = feature.schema.type.name;
-      }
-      planData['features'] = features;
-    }
-
-    if (plan.metadata.isNotEmpty) {
-      final metadata = <String, String>{};
-      for (final meta in plan.metadata) {
-        metadata[meta.key] = meta.schema.type.name;
-      }
-      planData['metadata'] = metadata;
-    }
-
-    final outputData = {'status': 'success', 'plan': planData};
-
-    final jsonOutput = JsonEncoder.withIndent('  ').convert(outputData);
+    // Используем родной метод toJson вместо ручного создания JSON
+    final jsonOutput = JsonEncoder.withIndent('  ').convert(plan.toJson());
     print(jsonOutput);
   }
 }

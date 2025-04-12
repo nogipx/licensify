@@ -34,13 +34,6 @@ class ShowLicenseCommand extends BaseLicenseCommand {
       abbr: 'o',
       help: 'Сохранить результат в JSON-файл',
     );
-
-    argParser.addFlag(
-      'verbose',
-      abbr: 'v',
-      help: 'Показать подробную информацию о лицензии',
-      defaultsTo: false,
-    );
   }
 
   @override
@@ -48,13 +41,17 @@ class ShowLicenseCommand extends BaseLicenseCommand {
     final licensePath = argResults!['license'] as String;
     final decryptKey = argResults!['decryptKey'] as String?;
     final outputJsonPath = argResults!['outputJson'] as String?;
-    final verbose = argResults!['verbose'] as bool;
 
     try {
       // Чтение файла лицензии
       final licenseFile = File(licensePath);
       if (!await licenseFile.exists()) {
-        handleError('Файл лицензии не найден: $licensePath');
+        final errorJson = JsonEncoder.withIndent('  ').convert({
+          'status': 'error',
+          'message': 'Файл лицензии не найден',
+          'path': licensePath,
+        });
+        print(errorJson);
         return;
       }
 
@@ -69,20 +66,8 @@ class ShowLicenseCommand extends BaseLicenseCommand {
       // Преобразуем лицензию в DTO для получения JSON
       final licenseDto = LicenseDto.fromDomain(license);
 
-      // Добавляем вычисляемые поля, если нужны подробности
-      final Map<String, dynamic> outputData = Map<String, dynamic>.from(
-        licenseDto.toJson(),
-      );
-
-      // Если не нужны подробности, удаляем некоторые поля
-      if (!verbose) {
-        // Опционально можем скрыть подпись и другие большие поля
-        if (outputData['signature'] != null &&
-            outputData['signature'].length > 40) {
-          outputData['signature'] =
-              '${outputData['signature'].substring(0, 30)}...';
-        }
-      }
+      // Получаем JSON данные лицензии без модификаций
+      final outputData = licenseDto.toJson();
 
       // Форматированный JSON для вывода
       final jsonOutput = JsonEncoder.withIndent('  ').convert(outputData);
@@ -91,14 +76,7 @@ class ShowLicenseCommand extends BaseLicenseCommand {
       if (outputJsonPath != null) {
         final outputFile = File(outputJsonPath);
         await outputFile.writeAsString(jsonOutput);
-
-        // Выводим статус операции в JSON
-        final resultJson = JsonEncoder.withIndent('  ').convert({
-          'status': 'success',
-          'message': 'Информация о лицензии сохранена в файл',
-          'filePath': outputJsonPath,
-        });
-        print(resultJson);
+        print('Информация о лицензии сохранена в файл: $outputJsonPath');
       } else {
         // Просто выводим JSON в консоль
         print(jsonOutput);
