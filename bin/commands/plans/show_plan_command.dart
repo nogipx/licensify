@@ -26,12 +26,23 @@ class ShowPlanCommand extends BasePlansCommand {
     final plan = service.getPlan(planId);
 
     if (plan == null) {
-      print('План с ID "$planId" не найден');
+      final errorJson = JsonEncoder.withIndent('  ').convert({
+        'status': 'error',
+        'message': 'План с ID "$planId" не найден',
+        'planId': planId,
+      });
+      print(errorJson);
       return;
     }
 
-    // Используем родной метод toJson вместо ручного создания JSON
-    final jsonOutput = JsonEncoder.withIndent('  ').convert(plan.toJson());
+    // Стандартизированный формат вывода с полями status, message и data
+    final response = {
+      'status': 'success',
+      'message': 'Информация о плане',
+      'data': plan.toJson(),
+    };
+
+    final jsonOutput = JsonEncoder.withIndent('  ').convert(response);
     print(jsonOutput);
   }
 }

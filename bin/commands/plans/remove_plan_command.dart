@@ -73,13 +73,17 @@ class RemovePlanCommand extends BasePlansCommand {
     final result = service.removePlan(planId);
 
     if (result.success) {
-      final successJson = JsonEncoder.withIndent('  ').convert({
+      // Сохраняем планы в файл после удаления
+      final saveResult = await savePlans(service);
+
+      // Подготовка и вывод единого JSON-объекта
+      final outputData = {
         'status': 'success',
         'message': result.message,
         'planId': planId,
-      });
-      print(successJson);
-      await savePlans(service);
+        'saveResult': saveResult,
+      };
+      print(JsonEncoder.withIndent('  ').convert(outputData));
     } else {
       final errorJson = JsonEncoder.withIndent(
         '  ',

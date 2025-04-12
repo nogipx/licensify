@@ -87,53 +87,52 @@ class VerifyCommand extends BaseLicenseCommand {
       final validator = LicenseValidator(publicKey: publicKey);
       final validationResult = validator(license);
 
+      final response = {
+        'status': validationResult.isValid ? 'success' : 'error',
+        'message':
+            validationResult.isValid
+                ? 'Лицензия валидна'
+                : 'Лицензия невалидна: ${validationResult.message}',
+        'data': <String, dynamic>{
+          'validation': {
+            'isValid': validationResult.isValid,
+            'message': validationResult.message,
+          },
+        },
+      };
+
+      // Если лицензия валидна, добавляем данные лицензии
       if (validationResult.isValid) {
-        // Преобразуем лицензию в DTO для получения JSON
         final licenseDto = LicenseDto.fromDomain(license);
-        final licenseData = licenseDto.toJson();
+        (response['data'] as Map<String, dynamic>)['license'] =
+            licenseDto.toJson();
+      }
 
-        // Добавляем информацию о валидации в объект лицензии
-        licenseData['validation'] = {'isValid': true, 'message': ''};
+      // Форматированный JSON для вывода
+      final jsonOutput = JsonEncoder.withIndent('  ').convert(response);
 
-        // Сохранение в JSON, если указан путь
-        if (outputJsonPath != null) {
-          final jsonOutput = JsonEncoder.withIndent('  ').convert(licenseData);
-          final outputFile = File(outputJsonPath);
-          await outputFile.writeAsString(jsonOutput);
-          print(
-            'Информация о валидации лицензии сохранена в файл: $outputJsonPath',
-          );
-        } else {
-          // Просто выводим JSON в консоль
-          final jsonOutput = JsonEncoder.withIndent('  ').convert(licenseData);
-          print(jsonOutput);
-        }
-      } else {
-        // Возвращаем только результат валидации без обертки
-        final validationData = {
-          'validation': {'isValid': false, 'message': validationResult.message},
+      // Сохранение в JSON, если указан путь
+      if (outputJsonPath != null) {
+        final outputFile = File(outputJsonPath);
+        await outputFile.writeAsString(jsonOutput);
+
+        final saveResponse = {
+          'status': 'success',
+          'message': 'Информация о валидации лицензии сохранена в файл',
+          'filePath': outputJsonPath,
         };
-
-        // Сохранение в JSON, если указан путь
-        if (outputJsonPath != null) {
-          final jsonOutput = JsonEncoder.withIndent(
-            '  ',
-          ).convert(validationData);
-          final outputFile = File(outputJsonPath);
-          await outputFile.writeAsString(jsonOutput);
-          print(
-            'Информация о валидации лицензии сохранена в файл: $outputJsonPath',
-          );
-        } else {
-          // Выводим JSON с результатом валидации в консоль
-          final jsonOutput = JsonEncoder.withIndent(
-            '  ',
-          ).convert(validationData);
-          print(jsonOutput);
-        }
+        print(JsonEncoder.withIndent('  ').convert(saveResponse));
+      } else {
+        // Просто выводим JSON в консоль
+        print(jsonOutput);
       }
     } catch (e) {
-      print('Ошибка проверки лицензии: ${e.toString()}');
+      final errorJson = JsonEncoder.withIndent('  ').convert({
+        'status': 'error',
+        'message': 'Ошибка проверки лицензии',
+        'error': e.toString(),
+      });
+      print(errorJson);
     }
   }
 }

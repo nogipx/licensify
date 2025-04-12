@@ -102,17 +102,20 @@ class ImportPlansCommand extends BasePlansCommand {
       if (result.success) {
         final plansAfterImport = service.getAllPlans();
 
-        final successJson = JsonEncoder.withIndent('  ').convert({
+        // Сохраняем планы в файл
+        final saveResult = await savePlans(service);
+
+        // Подготовка и вывод единого JSON-объекта
+        final outputData = {
           'status': 'success',
           'message': result.message,
           'plansCount': plansAfterImport.length,
           'inputFile': inputPath,
           'format': isBase64 ? 'base64' : 'json',
           'mode': merge ? 'merge' : 'replace',
-        });
-        print(successJson);
-
-        await savePlans(service);
+          'saveResult': saveResult,
+        };
+        print(JsonEncoder.withIndent('  ').convert(outputData));
       } else {
         final errorJson = JsonEncoder.withIndent(
           '  ',

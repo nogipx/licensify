@@ -66,17 +66,27 @@ class ShowLicenseCommand extends BaseLicenseCommand {
       // Преобразуем лицензию в DTO для получения JSON
       final licenseDto = LicenseDto.fromDomain(license);
 
-      // Получаем JSON данные лицензии без модификаций
-      final outputData = licenseDto.toJson();
+      // Стандартизированный формат вывода с полями status, message и data
+      final response = {
+        'status': 'success',
+        'message': 'Информация о лицензии',
+        'data': licenseDto.toJson(),
+      };
 
       // Форматированный JSON для вывода
-      final jsonOutput = JsonEncoder.withIndent('  ').convert(outputData);
+      final jsonOutput = JsonEncoder.withIndent('  ').convert(response);
 
       // Сохранение в файл, если указан путь
       if (outputJsonPath != null) {
         final outputFile = File(outputJsonPath);
         await outputFile.writeAsString(jsonOutput);
-        print('Информация о лицензии сохранена в файл: $outputJsonPath');
+
+        final saveResponse = {
+          'status': 'success',
+          'message': 'Информация о лицензии сохранена в файл',
+          'filePath': outputJsonPath,
+        };
+        print(JsonEncoder.withIndent('  ').convert(saveResponse));
       } else {
         // Просто выводим JSON в консоль
         print(jsonOutput);

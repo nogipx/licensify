@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 import 'dart:io';
+import 'dart:convert';
 import 'package:licensify/licensify.dart';
 import '../_base/_index.dart';
 
@@ -76,11 +77,31 @@ class KeygenCommand extends BaseLicenseCommand {
       final publicKeyFile = File('$outputDir/$baseName.public.pem');
       await publicKeyFile.writeAsString(keyPair.publicKey.content);
 
-      print('Пара ключей ECDSA сгенерирована:');
-      print('  Приватный ключ: ${privateKeyFile.path}');
-      print('  Публичный ключ: ${publicKeyFile.path}');
+      // Вывод результата в JSON-формате
+      final result = {
+        'status': 'success',
+        'message': 'Пара ключей ECDSA сгенерирована',
+        'curve': curveStr,
+        'keys': {
+          'privateKey': {
+            'path': privateKeyFile.path,
+            'size': keyPair.privateKey.content.length,
+          },
+          'publicKey': {
+            'path': publicKeyFile.path,
+            'size': keyPair.publicKey.content.length,
+          },
+        },
+      };
+
+      print(JsonEncoder.withIndent('  ').convert(result));
     } catch (e) {
-      handleError('Ошибка генерации ключевой пары: $e');
+      final errorJson = JsonEncoder.withIndent('  ').convert({
+        'status': 'error',
+        'message': 'Ошибка генерации ключевой пары',
+        'error': e.toString(),
+      });
+      print(errorJson);
     }
   }
 }

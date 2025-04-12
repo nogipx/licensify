@@ -4,6 +4,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 import 'dart:io';
+import 'dart:convert';
 import 'package:args/command_runner.dart';
 
 // Import commands
@@ -23,10 +24,20 @@ void main(List<String> args) async {
   try {
     await runner.run(args);
   } on UsageException catch (e) {
-    print(e);
+    final errorJson = JsonEncoder.withIndent('  ').convert({
+      'status': 'error',
+      'message': 'Invalid usage',
+      'usage': e.toString(),
+    });
+    print(errorJson);
     exit(64); // command line usage error
   } catch (e) {
-    stderr.writeln('Error: $e');
+    final errorJson = JsonEncoder.withIndent('  ').convert({
+      'status': 'error',
+      'message': 'Unexpected error',
+      'error': e.toString(),
+    });
+    print(errorJson);
     exit(1);
   }
 }

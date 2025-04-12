@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 import 'dart:io';
+import 'dart:convert';
 import 'package:licensify/licensify.dart';
 import '../_base/_index.dart';
 
@@ -92,7 +93,10 @@ class GenerateCommand extends BaseLicenseCommand {
       // Проверка appId
       final appIdError = validateAppId(appId);
       if (appIdError != null) {
-        handleError(appIdError);
+        final errorJson = JsonEncoder.withIndent(
+          '  ',
+        ).convert({'status': 'error', 'message': appIdError});
+        print(errorJson);
         return;
       }
 
@@ -101,23 +105,35 @@ class GenerateCommand extends BaseLicenseCommand {
       try {
         expirationDate = DateTime.parse(expirationStr);
       } catch (e) {
-        handleError(
-          'Некорректный формат даты истечения. Используйте YYYY-MM-DD',
-        );
+        final errorJson = JsonEncoder.withIndent('  ').convert({
+          'status': 'error',
+          'message':
+              'Некорректный формат даты истечения. Используйте YYYY-MM-DD',
+          'value': expirationStr,
+        });
+        print(errorJson);
         return;
       }
 
       // Проверка типа лицензии
       final licenseTypeError = validateLicenseType(licenseTypeStr);
       if (licenseTypeError != null) {
-        handleError(licenseTypeError);
+        final errorJson = JsonEncoder.withIndent(
+          '  ',
+        ).convert({'status': 'error', 'message': licenseTypeError});
+        print(errorJson);
         return;
       }
 
       // Чтение приватного ключа
       final privateKeyFile = File(privateKeyPath);
       if (!await privateKeyFile.exists()) {
-        handleError('Файл приватного ключа не найден: $privateKeyPath');
+        final errorJson = JsonEncoder.withIndent('  ').convert({
+          'status': 'error',
+          'message': 'Файл приватного ключа не найден',
+          'path': privateKeyPath,
+        });
+        print(errorJson);
         return;
       }
 
@@ -157,28 +173,27 @@ class GenerateCommand extends BaseLicenseCommand {
       final outputFile = File(outputPath);
       await outputFile.writeAsBytes(finalBytes);
 
-      print('Лицензия успешно сгенерирована: $outputPath');
-      print('ID: ${license.id}');
-      print('Приложение: ${license.appId}');
-      print('Тип: ${license.type.name}');
-      print('Пробная: ${license.isTrial ? 'Да' : 'Нет'}');
-      print('Дата истечения: ${license.expirationDate}');
+      // Преобразуем лицензию в DTO для получения JSON
+      final licenseDto = LicenseDto.fromDomain(license);
 
-      if (features.isNotEmpty) {
-        print('\nФичи:');
-        features.forEach((key, value) {
-          print('  $key: $value');
-        });
-      }
+      // Подготовка данных для вывода
+      final result = {
+        'status': 'success',
+        'message': 'Лицензия успешно сгенерирована',
+        'filePath': outputPath,
+        'encrypted': shouldEncrypt,
+        'license': licenseDto.toJson(),
+      };
 
-      if (metadata.isNotEmpty) {
-        print('\nМетаданные:');
-        metadata.forEach((key, value) {
-          print('  $key: $value');
-        });
-      }
+      // Вывод JSON
+      print(JsonEncoder.withIndent('  ').convert(result));
     } catch (e) {
-      handleError('Ошибка генерации лицензии: $e');
+      final errorJson = JsonEncoder.withIndent('  ').convert({
+        'status': 'error',
+        'message': 'Ошибка генерации лицензии',
+        'error': e.toString(),
+      });
+      print(errorJson);
     }
   }
 }

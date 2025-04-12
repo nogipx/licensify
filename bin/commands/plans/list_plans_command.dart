@@ -33,29 +33,47 @@ class ListPlansCommand extends BasePlansCommand {
     final service = await loadPlansService();
     if (service == null) return;
 
-    final showAll = argResults!['all'] as bool;
-    final showTrials = argResults!['trials'] as bool;
-    final currentAppId = service.appId;
+    final showAll = argResults!['all'] == true;
+    final showTrials = argResults!['trials'] == true;
 
-    List<LicensePlan> plans;
+    List<LicensePlan> plans = service.getAllPlans();
 
-    if (showTrials) {
-      plans = service.getTrialPlans();
-    } else if (showAll) {
-      plans = service.getAllPlans();
-    } else {
-      plans = service.getPublicPlans();
+    // Фильтруем планы по appId
+    plans = plans.where((plan) => plan.appId == service.appId).toList();
+
+    // Применяем фильтры
+    if (!showAll) {
+      plans = plans.where((plan) => plan.isPublic).toList();
     }
 
-    // Всегда фильтруем планы по app-id
-    plans = plans.where((plan) => plan.appId == currentAppId).toList();
+    // Если указан флаг --trials, показываем только trial-планы
+    if (showTrials) {
+      plans = plans.where((plan) => plan.isTrial).toList();
+    }
 
-    // Сортируем по приоритету
+    // Сортируем планы по приоритету
     plans.sort((a, b) => a.priority.compareTo(b.priority));
 
-    final plansOutput = plans.map((plan) => plan.toJson()).toList();
+    // Формируем вывод в JSON
+    final category =
+        showTrials
+            ? 'trial plans'
+            : showAll
+            ? 'all plans'
+            : 'public plans';
 
-    final jsonOutput = JsonEncoder.withIndent('  ').convert(plansOutput);
+    final output = {
+      'status': 'success',
+      'message': 'Список планов',
+      'data': {
+        'category': category,
+        'appId': service.appId,
+        'count': plans.length,
+        'plans': plans.map((plan) => plan.toJson()).toList(),
+      },
+    };
+
+    final jsonOutput = JsonEncoder.withIndent('  ').convert(output);
     print(jsonOutput);
   }
 }

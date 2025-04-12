@@ -72,25 +72,23 @@ abstract class BasePlansCommand extends BaseCommand {
   }
 
   /// Сохраняет планы в файл
-  Future<void> savePlans(LicensePlanService service) async {
+  Future<Map<String, dynamic>> savePlans(LicensePlanService service) async {
     final filePath = argResults!['file'] as String;
     final data = service.exportToString();
 
     try {
       await File(filePath).writeAsString(data);
-      final resultJson = JsonEncoder.withIndent('  ').convert({
+      return {
         'status': 'success',
         'message': 'Планы сохранены в файл',
         'filePath': filePath,
-      });
-      print(resultJson);
+      };
     } catch (e) {
-      final errorJson = JsonEncoder.withIndent('  ').convert({
+      return {
         'status': 'error',
         'message': 'Ошибка при сохранении планов',
         'error': e.toString(),
-      });
-      print(errorJson);
+      };
     }
   }
 }

@@ -25,3 +25,6 @@ dry:
 
 publish:
     fvm dart pub publish
+
+test_cli:
+    sh test_cli/test_all_commands.sh

@@ -2,17 +2,19 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-import 'dart:io';
 import 'package:args/command_runner.dart';
+import 'dart:convert';
 
 /// Base class for all licensify commands
 abstract class BaseCommand extends Command<void> {
   // Общие методы и функциональность для всех команд
 
   /// Handles errors and exits with appropriate code
-  void handleError(String message, {int exitCode = 1}) {
-    stderr.writeln('Error: $message');
-    exit(exitCode);
+  void handleError(String message) {
+    final errorJson = JsonEncoder.withIndent(
+      '  ',
+    ).convert({'status': 'error', 'message': message});
+    print(errorJson);
   }
 
   /// Validates application ID

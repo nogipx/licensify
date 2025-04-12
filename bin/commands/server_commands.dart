@@ -5,6 +5,7 @@
 import 'package:args/command_runner.dart';
 import 'license/_index.dart';
 import 'plans/_index.dart';
+import 'dart:convert';
 
 /// Main command for server-side license operations
 class ServerCommand extends Command<void> {
@@ -41,43 +42,31 @@ class ServerCommand extends Command<void> {
   void run() {
     // Этот метод вызывается, если пользователь набрал только `licensify server` без подкоманды
     if (argResults?.rest.isEmpty ?? true) {
-      print('Серверный процесс лицензирования');
-      print('');
-      print('Доступные операции:');
-      print('');
-      print('Управление ключами:');
-      print(
-        '  licensify server keygen --private private.pem --public public.pem',
-      );
-      print('');
-      print('Управление планами лицензий:');
-      print('  licensify server list --app-id APPID');
-      print('  licensify server plan --id PLAN_ID --app-id APPID');
-      print(
-        '  licensify server create --id PLAN_ID --name NAME --app-id APPID [--description DESC] [--type TYPE] [...]',
-      );
-      print('  licensify server remove --id PLAN_ID --app-id APPID');
-      print('  licensify server import --input plans.json --app-id APPID');
-      print('  licensify server export --output plans.json --app-id APPID');
-      print('');
-      print('Работа с лицензиями:');
-      print(
-        '  licensify server decrypt-request --requestFile request.bin --privateKey private.pem',
-      );
-      print(
-        '  licensify server respond --requestFile request.bin --privateKey private.pem --expiration 2025-12-31',
-      );
-      print(
-        '  licensify server respond-with-plan --requestFile request.bin --privateKey private.pem --planId PLAN_ID --app-id APPID',
-      );
-      print(
-        '  licensify server generate --appId APPID --privateKey private.pem --expiration 2025-12-31 [options]',
-      );
-      print('');
-      print(
-        'Для получения дополнительной информации по конкретной команде используйте:',
-      );
-      print('licensify server COMMAND --help');
+      final helpData = {
+        'status': 'info',
+        'message': 'Серверный процесс лицензирования',
+        'commands': {
+          'keyManagement': [
+            'licensify server keygen --private private.pem --public public.pem',
+          ],
+          'planManagement': [
+            'licensify server list --app-id APPID',
+            'licensify server plan --id PLAN_ID --app-id APPID',
+            'licensify server create --id PLAN_ID --name NAME --app-id APPID [--description DESC] [--type TYPE] [...]',
+            'licensify server remove --id PLAN_ID --app-id APPID',
+            'licensify server import --input plans.json --app-id APPID',
+            'licensify server export --output plans.json --app-id APPID',
+          ],
+          'licenseManagement': [
+            'licensify server decrypt-request --requestFile request.bin --privateKey private.pem',
+            'licensify server respond --requestFile request.bin --privateKey private.pem --expiration 2025-12-31',
+            'licensify server respond-with-plan --requestFile request.bin --privateKey private.pem --planId PLAN_ID --app-id APPID',
+            'licensify server generate --appId APPID --privateKey private.pem --expiration 2025-12-31 [options]',
+          ],
+          'help': 'licensify server COMMAND --help',
+        },
+      };
+      print(JsonEncoder.withIndent('  ').convert(helpData));
     }
   }
 }
