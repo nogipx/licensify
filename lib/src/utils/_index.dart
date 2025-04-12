@@ -2,4 +2,5 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+export 'crypto_utils/_index.dart';
 export 'date_extensions.dart';
