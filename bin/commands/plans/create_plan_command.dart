@@ -21,7 +21,8 @@ class CreatePlanCommand extends BasePlansCommand {
     argParser.addOption('description', help: 'Описание плана', defaultsTo: '');
     argParser.addOption(
       'type',
-      help: 'Тип лицензии (standard, pro или пользовательский)',
+      help:
+          'Тип лицензии (standard, pro или пользовательский). Этот тип будет использоваться в поле type создаваемой лицензии.',
       defaultsTo: 'standard',
     );
     argParser.addOption(

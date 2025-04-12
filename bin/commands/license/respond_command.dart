@@ -38,6 +38,11 @@ class RespondCommand extends BaseLicenseCommand {
     );
 
     argParser.addOption(
+      'extension',
+      help: 'Расширение файла лицензии (без точки)',
+    );
+
+    argParser.addOption(
       'expiration',
       help: 'Дата истечения лицензии (YYYY-MM-DD)',
       mandatory: true,
@@ -77,6 +82,7 @@ class RespondCommand extends BaseLicenseCommand {
     final requestPath = argResults!['requestFile'] as String;
     final privateKeyPath = argResults!['privateKey'] as String;
     final outputPath = argResults!['output'] as String;
+    final extension = argResults!['extension'] as String?;
     final expirationStr = argResults!['expiration'] as String;
     final licenseTypeStr = argResults!['type'] as String;
     final featuresList = argResults!['features'] as List<String>;
@@ -180,13 +186,27 @@ class RespondCommand extends BaseLicenseCommand {
               ? encryptLicense(licenseBytes, encryptKey)
               : licenseBytes;
 
+      // Определяем итоговый путь с учетом расширения
+      final String finalOutputPath;
+      if (extension != null && outputPath == 'license.licensify') {
+        // Если указано расширение и выходной путь не изменен пользователем,
+        // заменяем стандартное расширение на пользовательское
+        finalOutputPath =
+            'license.${getLicenseFileExtension(customExtension: extension)}';
+      } else {
+        finalOutputPath = outputPath;
+      }
+
       // Сохранение лицензии в файл
-      final outputFile = File(outputPath);
+      final outputFile = File(finalOutputPath);
       await outputFile.writeAsBytes(finalBytes);
 
       // Преобразуем лицензию в DTO для получения JSON
       final licenseDto = LicenseDto.fromDomain(license);
       final licenseData = licenseDto.toJson();
+
+      // Добавляем информацию о выходном файле
+      licenseData['outputFile'] = finalOutputPath;
 
       // Выводим только данные лицензии
       final jsonOutput = JsonEncoder.withIndent('  ').convert(licenseData);

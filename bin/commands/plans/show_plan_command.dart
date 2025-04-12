@@ -39,7 +39,7 @@ class ShowPlanCommand extends BasePlansCommand {
     final response = {
       'status': 'success',
       'message': 'Информация о плане',
-      'data': plan.toJson(),
+      'data': {...plan.toJson(), 'licenseType': plan.licenseType.name},
     };
 
     final jsonOutput = JsonEncoder.withIndent('  ').convert(response);

@@ -1,1 +1,0 @@
-[{"id":"test-plan-pro","name":"Pro Plan","description":"Professional Plan","durationDays":365,"features":{},"isPublic":true,"priority":100,"price":49.99,"isTrial":false,"appId":"test.app.123"},{"id":"test-plan-trial","name":"Trial Plan","description":"Trial Plan","durationDays":30,"features":{},"isPublic":true,"priority":100,"price":0,"isTrial":true,"appId":"test.app.123"}]

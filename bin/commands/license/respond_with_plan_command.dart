@@ -44,6 +44,11 @@ class RespondWithPlanCommand extends BaseLicenseCommand {
     );
 
     argParser.addOption(
+      'extension',
+      help: 'Расширение файла лицензии (без точки)',
+    );
+
+    argParser.addOption(
       'planId',
       help: 'ID плана лицензии, который нужно использовать',
       mandatory: true,
@@ -87,6 +92,7 @@ class RespondWithPlanCommand extends BaseLicenseCommand {
     final requestPath = argResults!['requestFile'] as String;
     final privateKeyPath = argResults!['privateKey'] as String;
     final outputPath = argResults!['output'] as String;
+    final extension = argResults!['extension'] as String?;
     final planId = argResults!['planId'] as String;
     final appId = argResults!['app-id'] as String;
     final plansFilePath = argResults!['plansFile'] as String;
@@ -217,19 +223,46 @@ class RespondWithPlanCommand extends BaseLicenseCommand {
               ? encryptLicense(licenseBytes, encryptKey)
               : licenseBytes;
 
+      // Определяем итоговый путь с учетом расширения
+      final String finalOutputPath;
+      if (extension != null && outputPath == 'license.licensify') {
+        // Если указано расширение и выходной путь не изменен пользователем,
+        // заменяем стандартное расширение на пользовательское
+        finalOutputPath =
+            'license.${getLicenseFileExtension(customExtension: extension)}';
+      } else {
+        finalOutputPath = outputPath;
+      }
+
       // Сохранение лицензии в файл
-      final outputFile = File(outputPath);
+      final outputFile = File(finalOutputPath);
       await outputFile.writeAsBytes(finalBytes);
 
       // Преобразуем лицензию в DTO для получения JSON
       final licenseDto = LicenseDto.fromDomain(license);
       final licenseData = licenseDto.toJson();
 
-      // Выводим только данные лицензии
-      final jsonOutput = JsonEncoder.withIndent('  ').convert(licenseData);
+      // Добавляем информацию о выходном файле
+      licenseData['outputFile'] = finalOutputPath;
+
+      // Объединяем данные лицензии с информацией о типе лицензии в один JSON
+      final response = {
+        'status': 'success',
+        'message': 'Лицензия успешно создана',
+        'planInfo': {'planId': plan.id, 'licenseType': plan.licenseType.name},
+        'data': licenseData,
+      };
+
+      // Выводим единый объект в JSON формате
+      final jsonOutput = JsonEncoder.withIndent('  ').convert(response);
       print(jsonOutput);
     } catch (e) {
-      print('Ошибка создания лицензии: ${e.toString()}');
+      final errorJson = JsonEncoder.withIndent('  ').convert({
+        'status': 'error',
+        'message': 'Ошибка создания лицензии',
+        'error': e.toString(),
+      });
+      print(errorJson);
     }
   }
 

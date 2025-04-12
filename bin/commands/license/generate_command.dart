@@ -24,6 +24,11 @@ class GenerateCommand extends BaseLicenseCommand {
     );
 
     argParser.addOption(
+      'extension',
+      help: 'Расширение файла лицензии (без точки)',
+    );
+
+    argParser.addOption(
       'privateKey',
       abbr: 'k',
       help: 'Путь к файлу приватного ключа',
@@ -79,6 +84,7 @@ class GenerateCommand extends BaseLicenseCommand {
   @override
   Future<void> run() async {
     final outputPath = argResults!['output'] as String;
+    final extension = argResults!['extension'] as String?;
     final privateKeyPath = argResults!['privateKey'] as String;
     final appId = argResults!['appId'] as String;
     final expirationStr = argResults!['expiration'] as String;
@@ -169,8 +175,19 @@ class GenerateCommand extends BaseLicenseCommand {
               ? encryptLicense(licenseBytes, encryptKey)
               : licenseBytes;
 
+      // Определяем итоговый путь с учетом расширения
+      final String finalOutputPath;
+      if (extension != null && outputPath == 'license.licensify') {
+        // Если указано расширение и выходной путь не изменен пользователем,
+        // заменяем стандартное расширение на пользовательское
+        finalOutputPath =
+            'license.${getLicenseFileExtension(customExtension: extension)}';
+      } else {
+        finalOutputPath = outputPath;
+      }
+
       // Сохранение в файл
-      final outputFile = File(outputPath);
+      final outputFile = File(finalOutputPath);
       await outputFile.writeAsBytes(finalBytes);
 
       // Преобразуем лицензию в DTO для получения JSON
@@ -180,7 +197,7 @@ class GenerateCommand extends BaseLicenseCommand {
       final result = {
         'status': 'success',
         'message': 'Лицензия успешно сгенерирована',
-        'filePath': outputPath,
+        'filePath': finalOutputPath,
         'encrypted': shouldEncrypt,
         'license': licenseDto.toJson(),
       };

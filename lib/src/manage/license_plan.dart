@@ -152,6 +152,7 @@ class LicensePlan {
       'price': price,
       'isTrial': isTrial,
       'appId': appId,
+      'licenseType': licenseType.name,
     };
   }
 
@@ -164,11 +165,32 @@ class LicensePlan {
   ///
   /// Creates a plan from JSON object
   factory LicensePlan.fromJson(Map<String, dynamic> json) {
+    // Определяем тип лицензии
+    LicenseType licenseType;
+    final licenseTypeName = json['licenseType'] as String?;
+    if (licenseTypeName == null) {
+      // Для обратной совместимости используем standard
+      licenseType = LicenseType.standard;
+    } else {
+      // Преобразуем известные типы или создаём пользовательский
+      switch (licenseTypeName.toLowerCase()) {
+        case 'pro':
+          licenseType = LicenseType.pro;
+          break;
+        case 'standard':
+          licenseType = LicenseType.standard;
+          break;
+        default:
+          licenseType = LicenseType(licenseTypeName.toLowerCase());
+          break;
+      }
+    }
+
     return LicensePlan(
       id: json['id'] as String,
       name: json['name'] as String,
       description: json['description'] as String,
-      licenseType: LicenseType.standard,
+      licenseType: licenseType,
       appId: json['appId'] as String,
       durationDays: json['durationDays'] as int?,
       isPublic: json['isPublic'] as bool? ?? true,

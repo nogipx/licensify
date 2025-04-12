@@ -25,6 +25,11 @@ class RequestCommand extends BaseLicenseCommand {
     );
 
     argParser.addOption(
+      'extension',
+      help: 'Расширение файла запроса на лицензию (без точки)',
+    );
+
+    argParser.addOption(
       'appId',
       help: 'Идентификатор приложения для запроса',
       mandatory: true,
@@ -52,6 +57,7 @@ class RequestCommand extends BaseLicenseCommand {
   @override
   Future<void> run() async {
     final outputPath = argResults!['output'] as String;
+    final extension = argResults!['extension'] as String?;
     final appId = argResults!['appId'] as String;
     final deviceId = argResults!['deviceId'] as String?;
     final publicKeyPath = argResults!['publicKey'] as String;
@@ -118,8 +124,19 @@ class RequestCommand extends BaseLicenseCommand {
         expirationHours: validHours,
       );
 
+      // Определяем итоговый путь с учетом расширения
+      final String finalOutputPath;
+      if (extension != null && outputPath == 'license_request.bin') {
+        // Если указано расширение и выходной путь не изменен пользователем,
+        // заменяем стандартное расширение на пользовательское
+        finalOutputPath =
+            'license_request.${getRequestFileExtension(customExtension: extension)}';
+      } else {
+        finalOutputPath = outputPath;
+      }
+
       // Сохранение в файл
-      final outputFile = File(outputPath);
+      final outputFile = File(finalOutputPath);
       await outputFile.writeAsBytes(requestBytes);
 
       // Подготовка данных для вывода в JSON
@@ -131,7 +148,7 @@ class RequestCommand extends BaseLicenseCommand {
           'deviceHash': deviceHash,
           'deviceIdSource': deviceId != null ? 'provided' : 'generated',
           'validHours': validHours,
-          'outputFile': outputPath,
+          'outputFile': finalOutputPath,
         },
       };
 

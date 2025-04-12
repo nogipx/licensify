@@ -72,4 +72,14 @@ abstract class BaseLicenseCommand extends BaseCommand {
     }
     return licenseBytes;
   }
+
+  /// Gets configured file extension for license files
+  String getLicenseFileExtension({String? customExtension}) {
+    return customExtension ?? 'licensify';
+  }
+
+  /// Gets configured file extension for license request files
+  String getRequestFileExtension({String? customExtension}) {
+    return customExtension ?? 'bin';
+  }
 }
