@@ -1,3 +1,7 @@
+## 2.2.0 - 2025-04-05
+- **CLI** - Support for custom file extensions in license and request files
+- Add trial flag in license
+
 ## 2.1.3 - 2025-04-04
 - Added support for custom license types from CLI
 - Improved CLI documentation
