@@ -8,73 +8,73 @@ import 'package:licensify/licensify.dart';
 import '../_base/_index.dart';
 
 /// Command to respond to license request
-class RespondCommand extends BaseLicenseCommand {
+class LicenseRespondCommand extends BaseLicenseCommand {
   @override
-  final String name = 'respond';
+  final String name = 'license-respond';
 
   @override
-  final String description = 'Ответ на запрос лицензии (серверная сторона)';
+  final String description = 'Respond to license request (server side)';
 
-  RespondCommand() {
+  LicenseRespondCommand() {
     argParser.addOption(
       'requestFile',
       abbr: 'r',
-      help: 'Путь к файлу запроса на лицензию',
+      help: 'Path to license request file',
       mandatory: true,
     );
 
     argParser.addOption(
       'privateKey',
       abbr: 'k',
-      help: 'Путь к файлу приватного ключа',
+      help: 'Path to private key file',
       mandatory: true,
     );
 
     argParser.addOption(
       'output',
       abbr: 'o',
-      help: 'Путь для сохранения лицензии',
+      help: 'Path to save license',
       defaultsTo: 'license.licensify',
     );
 
     argParser.addOption(
       'extension',
-      help: 'Расширение файла лицензии (без точки)',
+      help: 'License file extension (without dot)',
     );
 
     argParser.addOption(
       'expiration',
-      help: 'Дата истечения лицензии (YYYY-MM-DD)',
+      help: 'License expiration date (YYYY-MM-DD)',
       mandatory: true,
     );
 
     argParser.addOption(
       'type',
-      help: 'Тип лицензии (standard, pro или пользовательский)',
+      help: 'License type (standard, pro or custom)',
       defaultsTo: 'standard',
     );
 
-    argParser.addFlag('trial', help: 'Пробная лицензия', defaultsTo: false);
+    argParser.addFlag('trial', help: 'Trial license', defaultsTo: false);
 
     argParser.addMultiOption(
       'features',
       abbr: 'f',
-      help: 'Фичи лицензии в формате key=value',
+      help: 'License features in key=value format',
     );
 
     argParser.addMultiOption(
       'metadata',
       abbr: 'm',
-      help: 'Метаданные лицензии в формате key=value',
+      help: 'License metadata in key=value format',
     );
 
     argParser.addFlag(
       'encrypt',
-      help: 'Зашифровать файл лицензии',
+      help: 'Encrypt license file',
       defaultsTo: false,
     );
 
-    argParser.addOption('encryptKey', help: 'Ключ для шифрования');
+    argParser.addOption('encryptKey', help: 'Encryption key');
   }
 
   @override
@@ -95,7 +95,7 @@ class RespondCommand extends BaseLicenseCommand {
       // Чтение файла запроса
       final requestFile = File(requestPath);
       if (!await requestFile.exists()) {
-        handleError('Файл запроса не найден: $requestPath');
+        handleError('License request file not found: $requestPath');
         return;
       }
 
@@ -104,7 +104,7 @@ class RespondCommand extends BaseLicenseCommand {
       // Чтение приватного ключа
       final privateKeyFile = File(privateKeyPath);
       if (!await privateKeyFile.exists()) {
-        handleError('Файл приватного ключа не найден: $privateKeyPath');
+        handleError('Private key file not found: $privateKeyPath');
         return;
       }
 
@@ -119,9 +119,7 @@ class RespondCommand extends BaseLicenseCommand {
 
       // Проверка, не просрочен ли запрос
       if (request.isExpired) {
-        print(
-          'ВНИМАНИЕ: Запрос на лицензию просрочен. Продолжаем всё равно...',
-        );
+        print('ATTENTION: License request expired. Continuing...');
       }
 
       // Проверка appId из запроса
@@ -136,9 +134,7 @@ class RespondCommand extends BaseLicenseCommand {
       try {
         expirationDate = DateTime.parse(expirationStr);
       } catch (e) {
-        handleError(
-          'Некорректный формат даты истечения. Используйте YYYY-MM-DD',
-        );
+        handleError('Invalid expiration date format. Use YYYY-MM-DD');
         return;
       }
 
@@ -212,7 +208,7 @@ class RespondCommand extends BaseLicenseCommand {
       final jsonOutput = JsonEncoder.withIndent('  ').convert(licenseData);
       print(jsonOutput);
     } catch (e) {
-      print('Ошибка обработки запроса на лицензию: ${e.toString()}');
+      print('Error processing license request: ${e.toString()}');
     }
   }
 }

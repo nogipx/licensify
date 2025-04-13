@@ -7,78 +7,78 @@ import 'dart:convert';
 import 'package:licensify/licensify.dart';
 import '../_base/_index.dart';
 
-/// Command to generate license
-class GenerateCommand extends BaseLicenseCommand {
+/// Command to create license
+class LicenseCreateCommand extends BaseLicenseCommand {
   @override
-  final String name = 'generate';
+  final String name = 'license-create';
 
   @override
-  final String description = 'Генерация и подписание лицензии';
+  final String description = 'Create and sign license';
 
-  GenerateCommand() {
+  LicenseCreateCommand() {
     argParser.addOption(
       'output',
       abbr: 'o',
-      help: 'Путь для сохранения лицензии',
+      help: 'Path to save license',
       defaultsTo: 'license.licensify',
     );
 
     argParser.addOption(
       'extension',
-      help: 'Расширение файла лицензии (без точки)',
+      help: 'License file extension (without dot)',
     );
 
     argParser.addOption(
       'privateKey',
       abbr: 'k',
-      help: 'Путь к файлу приватного ключа',
+      help: 'Path to private key file',
       mandatory: true,
     );
 
     argParser.addOption(
       'appId',
-      help: 'Идентификатор приложения для лицензии',
+      help: 'Application ID for license',
       mandatory: true,
     );
 
     argParser.addOption(
       'id',
-      help: 'ID лицензии (UUID). Будет сгенерирован, если не указан',
+      help: 'License ID (UUID). Will be generated if not specified',
     );
 
     argParser.addOption(
       'expiration',
-      help: 'Дата истечения лицензии (YYYY-MM-DD)',
+      help: 'License expiration date (YYYY-MM-DD)',
       mandatory: true,
     );
 
     argParser.addOption(
       'type',
-      help: 'Тип лицензии (standard, pro или пользовательский)',
+      help: 'License type (standard, pro or custom)',
       defaultsTo: 'standard',
     );
 
-    argParser.addFlag('trial', help: 'Пробная лицензия', defaultsTo: false);
+    argParser.addFlag('trial', help: 'Trial license', defaultsTo: false);
 
     argParser.addMultiOption(
       'features',
       abbr: 'f',
-      help: 'Фичи лицензии в формате key=value',
+      help: 'License features in key=value format',
     );
 
     argParser.addMultiOption(
       'metadata',
       abbr: 'm',
-      help: 'Метаданные лицензии в формате key=value',
+      help: 'License metadata in key=value format',
     );
 
     argParser.addFlag(
       'encrypt',
-      help: 'Зашифровать файл лицензии',
+      help: 'Encrypt license file',
       defaultsTo: false,
     );
 
-    argParser.addOption('encryptKey', help: 'Ключ для шифрования');
+    argParser.addOption('encryptKey', help: 'Encryption key');
   }
 
   @override
@@ -113,8 +113,7 @@ class GenerateCommand extends BaseLicenseCommand {
       } catch (e) {
         final errorJson = JsonEncoder.withIndent('  ').convert({
           'status': 'error',
-          'message':
-              'Некорректный формат даты истечения. Используйте YYYY-MM-DD',
+          'message': 'Invalid expiration date format. Use YYYY-MM-DD',
           'value': expirationStr,
         });
         print(errorJson);
@@ -136,7 +135,7 @@ class GenerateCommand extends BaseLicenseCommand {
       if (!await privateKeyFile.exists()) {
         final errorJson = JsonEncoder.withIndent('  ').convert({
           'status': 'error',
-          'message': 'Файл приватного ключа не найден',
+          'message': 'Private key file not found',
           'path': privateKeyPath,
         });
         print(errorJson);
@@ -196,7 +195,7 @@ class GenerateCommand extends BaseLicenseCommand {
       // Подготовка данных для вывода
       final result = {
         'status': 'success',
-        'message': 'Лицензия успешно сгенерирована',
+        'message': 'License generated successfully',
         'filePath': finalOutputPath,
         'encrypted': shouldEncrypt,
         'license': licenseDto.toJson(),
@@ -207,7 +206,7 @@ class GenerateCommand extends BaseLicenseCommand {
     } catch (e) {
       final errorJson = JsonEncoder.withIndent('  ').convert({
         'status': 'error',
-        'message': 'Ошибка генерации лицензии',
+        'message': 'Error generating license',
         'error': e.toString(),
       });
       print(errorJson);

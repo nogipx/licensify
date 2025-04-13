@@ -8,33 +8,32 @@ import 'package:licensify/licensify.dart';
 import '../_base/_index.dart';
 
 /// Command to decrypt license request
-class DecryptRequestCommand extends BaseLicenseCommand {
+class RequestReadCommand extends BaseLicenseCommand {
   @override
-  final String name = 'decrypt-request';
+  final String name = 'request-read';
 
   @override
-  final String description =
-      'Расшифровка запроса на лицензию (серверная сторона)';
+  final String description = 'Read license request (server side)';
 
-  DecryptRequestCommand() {
+  RequestReadCommand() {
     argParser.addOption(
       'requestFile',
       abbr: 'r',
-      help: 'Путь к файлу запроса на лицензию',
+      help: 'Path to license request file',
       mandatory: true,
     );
 
     argParser.addOption(
       'privateKey',
       abbr: 'k',
-      help: 'Путь к файлу приватного ключа',
+      help: 'Path to private key file',
       mandatory: true,
     );
 
     argParser.addOption(
       'outputJson',
       abbr: 'o',
-      help: 'Сохранить детали запроса в JSON-файл',
+      help: 'Save request details to JSON file',
     );
   }
 
@@ -50,7 +49,7 @@ class DecryptRequestCommand extends BaseLicenseCommand {
       if (!await requestFile.exists()) {
         final errorJson = JsonEncoder.withIndent('  ').convert({
           'status': 'error',
-          'message': 'Файл запроса не найден',
+          'message': 'Request file not found',
           'path': requestPath,
         });
         print(errorJson);
@@ -64,7 +63,7 @@ class DecryptRequestCommand extends BaseLicenseCommand {
       if (!await privateKeyFile.exists()) {
         final errorJson = JsonEncoder.withIndent('  ').convert({
           'status': 'error',
-          'message': 'Файл приватного ключа не найден',
+          'message': 'Private key file not found',
           'path': privateKeyPath,
         });
         print(errorJson);
@@ -88,16 +87,14 @@ class DecryptRequestCommand extends BaseLicenseCommand {
         final jsonOutput = JsonEncoder.withIndent('  ').convert(requestDetails);
         final outputFile = File(outputJsonPath);
         await outputFile.writeAsString(jsonOutput);
-        print(
-          'Информация о запросе на лицензию сохранена в файл: $outputJsonPath',
-        );
+        print('License request information saved to file: $outputJsonPath');
       } else {
         // Просто выводим JSON в консоль
         final jsonOutput = JsonEncoder.withIndent('  ').convert(requestDetails);
         print(jsonOutput);
       }
     } catch (e) {
-      print('Ошибка расшифровки запроса на лицензию: ${e.toString()}');
+      print('Error decrypting license request: ${e.toString()}');
     }
   }
 }

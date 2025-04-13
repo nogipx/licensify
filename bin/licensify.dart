@@ -8,18 +8,27 @@ import 'dart:convert';
 import 'package:args/command_runner.dart';
 
 // Import commands
-import 'commands/client_commands.dart';
-import 'commands/server_commands.dart';
+import 'commands/_index.dart';
 
 void main(List<String> args) async {
-  final runner =
-      CommandRunner<void>(
-          'licensify',
-          'Инструмент для управления лицензиями и планами лицензирования',
-        )
-        // Add top-level commands
-        ..addCommand(ClientCommand())
-        ..addCommand(ServerCommand());
+  final runner = CommandRunner<void>(
+    'licensify',
+    'Tool for managing license process',
+  );
+
+  final commands = [
+    KeygenCommand(),
+    LicenseCreateCommand(),
+    LicenseReadCommand(),
+    LicenseRespondCommand(),
+    LicenseVerifyCommand(),
+    RequestCreateCommand(),
+    RequestReadCommand(),
+  ];
+
+  for (final command in commands) {
+    runner.addCommand(command);
+  }
 
   try {
     await runner.run(args);

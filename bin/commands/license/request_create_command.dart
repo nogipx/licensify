@@ -8,48 +8,44 @@ import 'package:licensify/licensify.dart';
 import '../_base/_index.dart';
 
 /// Command to create license request
-class RequestCommand extends BaseLicenseCommand {
+class RequestCreateCommand extends BaseLicenseCommand {
   @override
-  final String name = 'request';
+  final String name = 'request-create';
 
   @override
-  final String description =
-      'Создание запроса на лицензию (клиентская сторона)';
+  final String description = 'Create license request (client side)';
 
-  RequestCommand() {
+  RequestCreateCommand() {
     argParser.addOption(
       'output',
       abbr: 'o',
-      help: 'Путь для сохранения запроса на лицензию',
+      help: 'Path to save license request',
       defaultsTo: 'license_request.bin',
     );
 
     argParser.addOption(
       'extension',
-      help: 'Расширение файла запроса на лицензию (без точки)',
+      help: 'License request file extension (without dot)',
     );
 
     argParser.addOption(
       'appId',
-      help: 'Идентификатор приложения для запроса',
+      help: 'Application ID for request',
       mandatory: true,
     );
 
-    argParser.addOption(
-      'deviceId',
-      help: 'Идентификатор устройства (будет захеширован)',
-    );
+    argParser.addOption('deviceId', help: 'Device ID (will be hashed)');
 
     argParser.addOption(
       'publicKey',
       abbr: 'k',
-      help: 'Путь к файлу публичного ключа (от издателя лицензии)',
+      help: 'Path to public key file (from license publisher)',
       mandatory: true,
     );
 
     argParser.addOption(
       'validHours',
-      help: 'Срок действия запроса в часах',
+      help: 'Request validity in hours',
       defaultsTo: '48',
     );
   }
@@ -79,7 +75,7 @@ class RequestCommand extends BaseLicenseCommand {
       if (!await publicKeyFile.exists()) {
         final errorJson = JsonEncoder.withIndent('  ').convert({
           'status': 'error',
-          'message': 'Файл публичного ключа не найден',
+          'message': 'Public key file not found',
           'path': publicKeyPath,
         });
         print(errorJson);
@@ -99,7 +95,7 @@ class RequestCommand extends BaseLicenseCommand {
         if (validHours <= 0) {
           final errorJson = JsonEncoder.withIndent('  ').convert({
             'status': 'error',
-            'message': 'Срок действия должен быть положительным числом',
+            'message': 'Request validity must be a positive number',
           });
           print(errorJson);
           return;
@@ -107,7 +103,7 @@ class RequestCommand extends BaseLicenseCommand {
       } catch (e) {
         final errorJson = JsonEncoder.withIndent('  ').convert({
           'status': 'error',
-          'message': 'Некорректный формат срока действия',
+          'message': 'Invalid request validity format',
           'value': validHoursStr,
         });
         print(errorJson);
@@ -142,7 +138,7 @@ class RequestCommand extends BaseLicenseCommand {
       // Подготовка данных для вывода в JSON
       final outputData = {
         'status': 'success',
-        'message': 'Запрос на лицензию успешно создан',
+        'message': 'License request created successfully',
         'requestDetails': {
           'appId': appId,
           'deviceHash': deviceHash,
@@ -158,7 +154,7 @@ class RequestCommand extends BaseLicenseCommand {
     } catch (e) {
       final errorJson = JsonEncoder.withIndent('  ').convert({
         'status': 'error',
-        'message': 'Ошибка создания запроса на лицензию',
+        'message': 'Error creating license request',
         'error': e.toString(),
       });
       print(errorJson);

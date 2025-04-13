@@ -9,30 +9,30 @@ import 'package:licensify/licensify.dart';
 import '../_base/_index.dart';
 
 /// Command to show license data
-class ShowLicenseCommand extends BaseLicenseCommand {
+class LicenseReadCommand extends BaseLicenseCommand {
   @override
-  final String name = 'show';
+  final String name = 'license-read';
 
   @override
-  final String description = 'Просмотр данных лицензии';
+  final String description = 'Read license data';
 
-  ShowLicenseCommand() {
+  LicenseReadCommand() {
     argParser.addOption(
       'license',
       abbr: 'l',
-      help: 'Путь к файлу лицензии',
+      help: 'Path to license file',
       mandatory: true,
     );
 
     argParser.addOption(
       'decryptKey',
-      help: 'Ключ для дешифрования лицензии (если зашифрована)',
+      help: 'Decryption key for license (if encrypted)',
     );
 
     argParser.addOption(
       'outputJson',
       abbr: 'o',
-      help: 'Сохранить результат в JSON-файл',
+      help: 'Save result to JSON file',
     );
   }
 
@@ -48,7 +48,7 @@ class ShowLicenseCommand extends BaseLicenseCommand {
       if (!await licenseFile.exists()) {
         final errorJson = JsonEncoder.withIndent('  ').convert({
           'status': 'error',
-          'message': 'Файл лицензии не найден',
+          'message': 'License file not found',
           'path': licensePath,
         });
         print(errorJson);
@@ -69,7 +69,7 @@ class ShowLicenseCommand extends BaseLicenseCommand {
       // Стандартизированный формат вывода с полями status, message и data
       final response = {
         'status': 'success',
-        'message': 'Информация о лицензии',
+        'message': 'License information',
         'data': licenseDto.toJson(),
       };
 
@@ -83,7 +83,7 @@ class ShowLicenseCommand extends BaseLicenseCommand {
 
         final saveResponse = {
           'status': 'success',
-          'message': 'Информация о лицензии сохранена в файл',
+          'message': 'License information saved to file',
           'filePath': outputJsonPath,
         };
         print(JsonEncoder.withIndent('  ').convert(saveResponse));
@@ -95,7 +95,7 @@ class ShowLicenseCommand extends BaseLicenseCommand {
       // Выводим ошибку в JSON формате
       final errorJson = JsonEncoder.withIndent('  ').convert({
         'status': 'error',
-        'message': 'Ошибка при просмотре данных лицензии',
+        'message': 'Error reading license data',
         'error': e.toString(),
       });
       print(errorJson);

@@ -14,26 +14,26 @@ class KeygenCommand extends BaseLicenseCommand {
 
   @override
   final String description =
-      'Генерация пары ключей ECDSA для создания и проверки лицензий';
+      'Generate ECDSA key pair for license creation and verification';
 
   KeygenCommand() {
     argParser.addOption(
       'output',
       abbr: 'o',
-      help: 'Путь для сохранения ключей',
+      help: 'Path to save keys',
       defaultsTo: './keys',
     );
 
     argParser.addOption(
       'name',
       abbr: 'n',
-      help: 'Базовое имя для файлов ключей',
+      help: 'Base name for key files',
       defaultsTo: 'ecdsa',
     );
 
     argParser.addOption(
       'curve',
-      help: 'ECDSA кривая (p256, p384, p521)',
+      help: 'ECDSA curve (p256, p384, p521)',
       defaultsTo: 'p521',
     );
   }
@@ -80,7 +80,7 @@ class KeygenCommand extends BaseLicenseCommand {
       // Вывод результата в JSON-формате
       final result = {
         'status': 'success',
-        'message': 'Пара ключей ECDSA сгенерирована',
+        'message': 'ECDSA key pair generated',
         'curve': curveStr,
         'keys': {
           'privateKey': {
@@ -98,7 +98,7 @@ class KeygenCommand extends BaseLicenseCommand {
     } catch (e) {
       final errorJson = JsonEncoder.withIndent('  ').convert({
         'status': 'error',
-        'message': 'Ошибка генерации ключевой пары',
+        'message': 'Error generating key pair',
         'error': e.toString(),
       });
       print(errorJson);

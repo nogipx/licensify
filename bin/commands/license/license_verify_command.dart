@@ -9,34 +9,34 @@ import 'package:licensify/licensify.dart';
 import '../_base/_index.dart';
 
 /// Command to verify a license
-class VerifyCommand extends BaseLicenseCommand {
+class LicenseVerifyCommand extends BaseLicenseCommand {
   @override
-  final String name = 'verify';
+  final String name = 'license-verify';
 
   @override
-  final String description = 'Проверка лицензии';
+  final String description = 'Verify license';
 
-  VerifyCommand() {
+  LicenseVerifyCommand() {
     argParser.addOption(
       'license',
       abbr: 'l',
-      help: 'Путь к файлу лицензии',
+      help: 'Path to license file',
       mandatory: true,
     );
 
     argParser.addOption(
       'publicKey',
       abbr: 'k',
-      help: 'Путь к файлу публичного ключа',
+      help: 'Path to public key file',
       mandatory: true,
     );
 
-    argParser.addOption('decryptKey', help: 'Ключ для дешифрования лицензии');
+    argParser.addOption('decryptKey', help: 'Decryption key for license');
 
     argParser.addOption(
       'outputJson',
       abbr: 'o',
-      help: 'Сохранить результат проверки в JSON-файл',
+      help: 'Save result to JSON file',
     );
   }
 
@@ -53,7 +53,7 @@ class VerifyCommand extends BaseLicenseCommand {
       if (!await publicKeyFile.exists()) {
         final errorJson = JsonEncoder.withIndent('  ').convert({
           'status': 'error',
-          'message': 'Файл публичного ключа не найден',
+          'message': 'Public key file not found',
           'path': publicKeyPath,
         });
         print(errorJson);
@@ -68,7 +68,7 @@ class VerifyCommand extends BaseLicenseCommand {
       if (!await licenseFile.exists()) {
         final errorJson = JsonEncoder.withIndent('  ').convert({
           'status': 'error',
-          'message': 'Файл лицензии не найден',
+          'message': 'License file not found',
           'path': licensePath,
         });
         print(errorJson);
@@ -91,8 +91,8 @@ class VerifyCommand extends BaseLicenseCommand {
         'status': validationResult.isValid ? 'success' : 'error',
         'message':
             validationResult.isValid
-                ? 'Лицензия валидна'
-                : 'Лицензия невалидна: ${validationResult.message}',
+                ? 'License is valid'
+                : 'License is invalid: ${validationResult.message}',
         'data': <String, dynamic>{
           'validation': {
             'isValid': validationResult.isValid,
@@ -118,7 +118,7 @@ class VerifyCommand extends BaseLicenseCommand {
 
         final saveResponse = {
           'status': 'success',
-          'message': 'Информация о валидации лицензии сохранена в файл',
+          'message': 'License validation information saved to file',
           'filePath': outputJsonPath,
         };
         print(JsonEncoder.withIndent('  ').convert(saveResponse));
@@ -129,7 +129,7 @@ class VerifyCommand extends BaseLicenseCommand {
     } catch (e) {
       final errorJson = JsonEncoder.withIndent('  ').convert({
         'status': 'error',
-        'message': 'Ошибка проверки лицензии',
+        'message': 'License verification error',
         'error': e.toString(),
       });
       print(errorJson);
