@@ -226,116 +226,55 @@ final isValid = validator.validateLicenseWithSchema(license, schema);
 
 ## 🛠 CLI Tool
 
-Licensify includes a command-line interface for managing licenses without writing code:
+Licensify includes a powerful command-line interface for managing licenses:
 
 ```bash
 # Activate the package globally
 dart pub global activate licensify
 
-# Generate a key pair
-licensify keygen --output ./keys --name customer1
-
-# Generate a license
-licensify generate --privateKey ./keys/customer1.private.pem --appId com.example.app --expiration 2025-01-01 --output license.licensify
-
-# Verify a license
-licensify verify --license license.licensify --publicKey ./keys/customer1.public.pem
-
-# Create a license request
-licensify request --appId com.example.app --publicKey ./keys/customer1.public.pem --output request.bin
-
-# Process a license request and generate a license
-licensify respond --requestFile request.bin --privateKey ./keys/customer1.private.pem --expiration 2025-01-01
+# Get help on available commands
+licensify --help
 ```
-
-For detailed CLI documentation, see the **[Licensify CLI Guide](bin/README.md)** with complete commands reference and usage examples.
 
 ### Available Commands
 
-- `keygen`: Generate a new ECDSA key pair
-- `generate`: Create and sign a new license
-- `verify`: Verify an existing license
-- `request`: Create a license request (client-side)
-- `decrypt-request`: Decrypt and view a license request (server-side)
-- `respond`: Process a license request and generate a license (server-side)
+```bash
+# Generate a key pair
+licensify keygen --output ./keys --name app_keys
 
-## 📖 Documentation
+# Create a license request (client side)
+licensify request-create --appId com.example.app --publicKey ./keys/app.public.pem --output request.bin
 
-### Key Formats and Importing
+# Create a license request with custom extension
+licensify request-create --appId com.example.app --publicKey ./keys/app.public.pem --output request.lreq --extension lreq
 
-```dart
-// Generate ECDSA keys (recommended)
-final ecdsaKeyPair = EcdsaKeyGenerator.generateKeyPairAsPem();
+# Decrypt and view a license request (server side)
+licensify request-read --requestFile request.bin --privateKey ./keys/app.private.pem
 
-// Create keys with explicit type specification
-// Note: RSA keys are supported for generation only
-final publicKey = LicensifyPublicKey.ecdsa(publicKeyPemString);
-final privateKey = LicensifyPrivateKey.ecdsa(privateKeyPemString);
+# Generate a license directly (server side)
+licensify license-create --appId com.example.app --privateKey ./keys/app.private.pem --expiration "2025-12-31" --type pro --output license.licensify
 
-// Import keys with automatic type detection
-final privateKey = LicensifyKeyImporter.importPrivateKeyFromString(pemPrivateKey);
-final publicKey = LicensifyKeyImporter.importPublicKeyFromString(pemPublicKey);
+# Generate a license with custom extension
+licensify license-create --appId com.example.app --privateKey ./keys/app.private.pem --expiration "2025-12-31" --type pro --extension lic --output license.lic
 
-// Import keys from bytes
-final privateKeyBytes = Uint8List.fromList(utf8.encode(privateKeyPem));
-final privateKey = LicensifyKeyImporter.importPrivateKeyFromBytes(privateKeyBytes);
+# Respond to a license request (server side)
+licensify license-respond --requestFile request.bin --privateKey ./keys/app.private.pem --expiration "2025-12-31" --type pro --output license.licensify
 
-// Import key pair with auto type detection and compatibility check
-final keyPair = LicensifyKeyImporter.importKeyPairFromStrings(
-  privateKeyPem: privatePemString, 
-  publicKeyPem: publicPemString,
-);
+# Verify a license
+licensify license-verify --license license.licensify --publicKey ./keys/app.public.pem
 
-// The importer automatically:
-// 1. Detects key type (ECDSA or RSA)
-// 2. Verifies key format correctness
-// 3. Ensures key pair consistency (matching types)
+# Show license details
+licensify license-read --license license.licensify
 ```
 
-### License Types
+### CLI Features
 
-```dart
-// Built-in types
-final standard = LicenseType.standard;
-final pro = LicenseType.pro;
-
-// Custom types
-final enterprise = LicenseType('enterprise');
-final premium = LicenseType('premium');
-
-// Trial license (using isTrial flag)
-final license = License(
-  // ... other license parameters
-  type: LicenseType.standard,
-  isTrial: true,
-);
-```
-
-### License Format
-
-```json
-{
-  "id": "550e8400-e29b-41d4-a716-446655440000",
-  "appId": "com.example.app",
-  "createdAt": "2024-07-25T14:30:00Z",
-  "expirationDate": "2025-07-25T14:30:00Z",
-  "type": "pro",
-  "features": {
-    "maxUsers": 50,
-    "modules": ["analytics", "reporting"]
-  },
-  "metadata": {
-    "customerName": "My Company"
-  },
-  "signature": "Base64EncodedSignature..."
-}
-```
-
-
-
-## License Request Generation
-
-Licensify provides a platform-independent way to generate license requests and decrypt them. This is useful for implementing license activation in your applications.
+- **Comprehensive License Management**: Create, verify, and manage licenses
+- **License Plans**: Create and manage license plans with predefined parameters
+- **Custom License Types**: Define your own license types in plans
+- **Custom File Extensions**: Customize extensions for license and request files
+- **Trial Licenses**: Create and manage trial licenses with automatic expiration
+- **Plan-Based License Generation**: Create licenses based on predefined plans
 
 ### License Request Generation (Client-side)
 
@@ -380,7 +319,8 @@ final file = File('license_request.lreq');
 await file.writeAsBytes(encryptedBytes);
 print('License request saved to: ${file.path}');
 
-// In a real app, you would typically share this file with the licensing server
+// In a real app, you would use the CLI command to generate this request:
+// licensify request-create --appId com.example.app --publicKey ./keys/app.public.pem --output request.lreq --extension lreq
 ```
 
 ### License Request Decryption (Server-side)
@@ -419,68 +359,9 @@ print('Device Hash: ${decryptedRequest.deviceHash}');
 print('Created At: ${decryptedRequest.createdAt}');
 print('Expires At: ${decryptedRequest.expiresAt}');
 
-// Check if the request has expired
-final bool isExpired = DateTime.now().isAfter(decryptedRequest.expiresAt);
-if (isExpired) {
-  print('Request has expired');
-} else {
-  // Generate a license for this device
-  final license = privateKey.licenseGenerator(
-    appId: decryptedRequest.appId,
-    expirationDate: DateTime.now().add(Duration(days: 365)),
-    type: LicenseType.pro,
-    metadata: {
-      'deviceHash': decryptedRequest.deviceHash,
-    }
-  );
-  
-  // Encode the license to bytes and send it back to the user
-  final licenseBytes = LicenseEncoder.encodeToBytes(license);
-  await File('license.lic').writeAsBytes(licenseBytes);
-  print('License generated for device: ${decryptedRequest.deviceHash}');
-}
-```
-
-### Custom Device Information Service
-
-For platform-specific device information, implement the `IDeviceInfoService` interface:
-
-```dart
-import 'package:licensify/licensify.dart';
-import 'package:device_info_plus/device_info_plus.dart';
-import 'dart:io' show Platform;
-
-class FlutterDeviceInfoService implements IDeviceInfoService {
-  final DeviceInfoPlugin _deviceInfo = DeviceInfoPlugin();
-  
-  @override
-  Future<String> getDeviceHash() async {
-    // Implement platform-specific device info collection
-    final Map<String, dynamic> deviceData = await _collectDeviceData();
-    
-    // Generate a hash from the collected data
-    return DeviceHashGenerator.generateHash(deviceData);
-  }
-  
-  Future<Map<String, dynamic>> _collectDeviceData() async {
-    // Implement your platform-specific data collection
-    // Example for Android:
-    if (Platform.isAndroid) {
-      final info = await _deviceInfo.androidInfo;
-      return {
-        'id': info.id,
-        'brand': info.brand,
-        'model': info.model,
-        // Add more identifiers
-      };
-    }
-    
-    // Add implementations for other platforms
-    
-    // Fallback
-    return {'platform': Platform.operatingSystem};
-  }
-}
+// In a real scenario, you would use the CLI commands:
+// licensify request-read --requestFile request.lreq --privateKey ./keys/app.private.pem
+// licensify license-respond --requestFile request.lreq --privateKey ./keys/app.private.pem --expiration "2025-12-31" --type pro --output license.licensify
 ```
 
 ## 🔒 Security
