@@ -3,8 +3,6 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 import 'dart:convert';
-import 'dart:math';
-import 'dart:typed_data';
 
 import 'package:licensify/licensify.dart';
 import 'package:pointycastle/export.dart';
@@ -24,14 +22,22 @@ class LicenseGenerator implements ILicenseGenerator {
   /// Hash algorithm used for signing
   final Digest _digest;
 
+  /// Use case for signing data
+  final ISignDataUseCase _signDataUseCase;
+
   /// Creates a new license generator with the specified private key
   ///
   /// [privateKey] - PEM-encoded private key (RSA or ECDSA)
   /// [digest] - Hash algorithm used for signature (default: SHA-512)
-  LicenseGenerator({required LicensifyPrivateKey privateKey, Digest? digest})
-    : _privateKey = privateKey,
-      _keyType = privateKey.keyType,
-      _digest = digest ?? SHA512Digest();
+  /// [signDataUseCase] - Optional use case for signing data (default: SignDataUseCase())
+  LicenseGenerator({
+    required LicensifyPrivateKey privateKey,
+    Digest? digest,
+    ISignDataUseCase? signDataUseCase,
+  }) : _privateKey = privateKey,
+       _keyType = privateKey.keyType,
+       _digest = digest ?? SHA512Digest(),
+       _signDataUseCase = signDataUseCase ?? SignDataUseCase();
 
   /// Generates a new license with cryptographic signature
   ///
@@ -64,7 +70,7 @@ class LicenseGenerator implements ILicenseGenerator {
     final createdAt = DateTime.now().toUtc().roundToMinutes();
 
     // Convert expiration date to UTC and round to minutes
-    final utcExpirationDate = expirationDate.roundToMinutes();
+    final utcExpirationDate = expirationDate.toUtc().roundToMinutes();
 
     // Serialize features and metadata for signing
     final featuresJson = jsonEncode(features);
@@ -74,8 +80,12 @@ class LicenseGenerator implements ILicenseGenerator {
     final dataToSign =
         '$id:$appId:${utcExpirationDate.toIso8601String()}:${type.name}:$featuresJson:$metadataJson';
 
-    // Generate the signature based on the key type
-    final signature = _generateEcdsaSignature(dataToSign);
+    // Generate the signature using the SignDataUseCase
+    final signature = _signDataUseCase(
+      data: dataToSign,
+      privateKey: _privateKey,
+      digest: _digest,
+    );
 
     // Create a copy of metadata without modifying the original
     final extendedMetadata =
@@ -95,116 +105,5 @@ class LicenseGenerator implements ILicenseGenerator {
       metadata: extendedMetadata,
       isTrial: isTrial,
     );
-  }
-
-  /// Generates an ECDSA signature
-  String _generateEcdsaSignature(String dataToSign) {
-    try {
-      // Parse ECDSA private key from PEM
-      final privateKey = CryptoUtils.ecPrivateKeyFromPem(_privateKey.content);
-
-      // Create a secure random number generator
-      final secureRandom = FortunaRandom();
-      final seedSource = Random.secure();
-      final seeds = List<int>.generate(32, (_) => seedSource.nextInt(256));
-      secureRandom.seed(KeyParameter(Uint8List.fromList(seeds)));
-
-      // Choose the appropriate hashing algorithm for the data
-      final digest = _digest;
-      final dataBytes = Uint8List.fromList(utf8.encode(dataToSign));
-      final hashedData = digest.process(dataBytes);
-
-      // Create ECDSA signer directly - important! Null for Mac algorithm
-      final signer = ECDSASigner(digest);
-
-      // Initialize with private key and randomizer
-      final params = PrivateKeyParameter<ECPrivateKey>(privateKey);
-      final signerParams = ParametersWithRandom(params, secureRandom);
-      signer.init(true, signerParams);
-
-      // Generate signature
-      final signature = signer.generateSignature(hashedData) as ECSignature;
-
-      // Encode r and s components in DER format
-      final rBytes = _encodeBigInt(signature.r);
-      final sBytes = _encodeBigInt(signature.s);
-      final derBytes = _createDerSequence(rBytes, sBytes);
-
-      return base64Encode(derBytes);
-    } catch (e) {
-      throw Exception('Failed to generate ECDSA signature: $e');
-    }
-  }
-
-  /// Helper for encoding BigInt to byte array
-  Uint8List _encodeBigInt(BigInt value) {
-    // Convert to unsigned hexadecimal format
-    var hex = value.toRadixString(16);
-    if (hex.length % 2 == 1) {
-      hex = '0$hex';
-    }
-
-    // Create byte array
-    final bytes = Uint8List(hex.length ~/ 2);
-    for (var i = 0; i < bytes.length; i++) {
-      bytes[i] = int.parse(hex.substring(i * 2, i * 2 + 2), radix: 16);
-    }
-
-    // If the first bit is set (byte >= 128), add 0 at the beginning
-    // to ensure the number is interpreted as positive
-    if (bytes.isNotEmpty && (bytes[0] & 0x80) != 0) {
-      final result = Uint8List(bytes.length + 1);
-      result[0] = 0;
-      result.setRange(1, result.length, bytes);
-      return result;
-    }
-
-    return bytes;
-  }
-
-  /// Creates DER sequence for ECDSA signature
-  Uint8List _createDerSequence(Uint8List r, Uint8List s) {
-    final rBytes = _ensurePositive(r);
-    final sBytes = _ensurePositive(s);
-
-    // Calculate total sequence length
-    final totalLength = 2 + rBytes.length + 2 + sBytes.length;
-
-    // Create buffer for DER sequence
-    final result = BytesBuilder();
-
-    // Add SEQUENCE tag and length
-    result.addByte(0x30); // SEQUENCE tag
-    result.addByte(totalLength);
-
-    // Add r component
-    result.addByte(0x02); // INTEGER tag
-    result.addByte(rBytes.length);
-    result.add(rBytes);
-
-    // Add s component
-    result.addByte(0x02); // INTEGER tag
-    result.addByte(sBytes.length);
-    result.add(sBytes);
-
-    return result.toBytes();
-  }
-
-  /// Ensures that the first bit is not set (positive number in DER)
-  Uint8List _ensurePositive(Uint8List bytes) {
-    if (bytes.isEmpty) {
-      return Uint8List.fromList([0]);
-    }
-
-    // If the highest bit of the first byte is set (negative number in DER),
-    // add a leading zero
-    if (bytes[0] & 0x80 != 0) {
-      final result = Uint8List(bytes.length + 1);
-      result[0] = 0;
-      result.setRange(1, result.length, bytes);
-      return result;
-    }
-
-    return bytes;
   }
 }

@@ -4,3 +4,5 @@
 
 export 'ec_cipher.dart';
 export 'ecdh_crypto_utils.dart';
+export '../../usecases/encrypt_data_usecase.dart';
+export '../../usecases/decrypt_data_usecase.dart';

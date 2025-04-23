@@ -4,4 +4,5 @@
 
 export 'src/crypto/_index.dart';
 export 'src/license/_index.dart';
+export 'src/usecases/_index.dart';
 export 'src/utils/_index.dart';
