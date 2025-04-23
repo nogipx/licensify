@@ -40,6 +40,9 @@ class LicensifyExamples {
 
     // 5. License storage examples
     licenseStorageExamples();
+
+    // 6. Low-level cryptographic use cases
+    lowLevelCryptoExamples();
   }
 
   /// Examples of generating cryptographic keys
@@ -352,6 +355,126 @@ class FileSystemLicenseStorage implements ILicenseStorage {
   }
 }
 ''');
+  }
+
+  /// Examples of low-level cryptographic use cases
+  void lowLevelCryptoExamples() {
+    print('\n\n===== LOW-LEVEL CRYPTOGRAPHIC USE CASES =====');
+
+    // Create instances of the use cases
+    final signDataUseCase = SignDataUseCase();
+    final verifySignatureUseCase = VerifySignatureUseCase();
+    final encryptDataUseCase = EncryptDataUseCase(
+      publicKey: ecdsaKeyPair.publicKey,
+      aesKeySize: 256,
+      hkdfSalt: 'example-salt',
+      hkdfInfo: 'example-info',
+    );
+    final decryptDataUseCase = DecryptDataUseCase(
+      privateKey: ecdsaKeyPair.privateKey,
+      aesKeySize: 256,
+      hkdfSalt: 'example-salt',
+      hkdfInfo: 'example-info',
+    );
+
+    // Example 1: Signing and verifying data
+    print('\n1. Signing and verifying data:');
+    final dataToSign = 'This is a sensitive message that needs to be signed';
+
+    print('Original data: $dataToSign');
+
+    final signature = signDataUseCase(
+      data: dataToSign,
+      privateKey: ecdsaKeyPair.privateKey,
+    );
+
+    print('Signature (Base64): $signature');
+
+    final isValid = verifySignatureUseCase(
+      data: dataToSign,
+      signature: signature,
+      publicKey: ecdsaKeyPair.publicKey,
+    );
+
+    print(
+      'Signature verification result: ${isValid ? '✅ Valid' : '❌ Invalid'}',
+    );
+
+    // Example with tampered data
+    final tamperedData = '$dataToSign (tampered)';
+    final tamperedResult = verifySignatureUseCase(
+      data: tamperedData,
+      signature: signature,
+      publicKey: ecdsaKeyPair.publicKey,
+    );
+
+    print(
+      'Tampered data verification result: ${tamperedResult ? '❌ SECURITY ISSUE!' : '✅ Correctly detected as invalid'}',
+    );
+
+    // Example 2: Encrypting and decrypting string data
+    print('\n2. Encrypting and decrypting string data:');
+    final dataToEncrypt = 'Confidential information that needs to be encrypted';
+
+    print('Original text: $dataToEncrypt');
+
+    final encryptedData = encryptDataUseCase.encryptString(
+      data: dataToEncrypt,
+      magicHeader: 'TEXT',
+    );
+
+    print('Encrypted data size: ${encryptedData.length} bytes');
+
+    final decryptedText = decryptDataUseCase.decryptToString(
+      encryptedData: encryptedData,
+      expectedMagicHeader: 'TEXT',
+    );
+
+    print('Decrypted text: $decryptedText');
+    print(
+      'Decryption successful: ${decryptedText == dataToEncrypt ? '✅ Yes' : '❌ No'}',
+    );
+
+    // Example 3: Advanced use case - Signed JSON message
+    print('\n3. Advanced use case - Signed JSON message:');
+    final message = {
+      'action': 'purchase',
+      'productId': 'pro_license',
+      'amount': 99.99,
+      'currency': 'USD',
+      'timestamp': DateTime.now().toIso8601String(),
+    };
+
+    final jsonData = jsonEncode(message);
+    print('Original message: $jsonData');
+
+    // Sign the message
+    final messageSignature = signDataUseCase(
+      data: jsonData,
+      privateKey: ecdsaKeyPair.privateKey,
+    );
+
+    // Create the complete signed message
+    final signedMessage = {'data': message, 'signature': messageSignature};
+
+    print(
+      'Signed message created (with ${messageSignature.length} bytes signature)',
+    );
+
+    // Later, verify the signature
+    final receivedMessage = signedMessage['data'] as Map<String, dynamic>;
+    final receivedSignature = signedMessage['signature'] as String;
+    final receivedJsonData = jsonEncode(receivedMessage);
+
+    final isValidMessage = verifySignatureUseCase(
+      data: receivedJsonData,
+      signature: receivedSignature,
+      publicKey: ecdsaKeyPair.publicKey,
+    );
+
+    print(
+      'Message signature verification: ${isValidMessage ? '✅ Valid' : '❌ Invalid'}',
+    );
   }
 
   /// Helper method to print license details

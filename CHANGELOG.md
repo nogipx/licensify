@@ -1,4 +1,13 @@
-## 2.2.0 - 2025-04-05
+## 2.3.0 - 2025-04-24
+- **New**: Added low-level cryptographic use cases for custom implementations
+- Added `SignDataUseCase` for signing data with private keys
+- Added `VerifySignatureUseCase` for verifying signatures with public keys
+- Added `EncryptDataUseCase` for encrypting data with public keys
+- Added `DecryptDataUseCase` for decrypting data with private keys
+- Added examples and documentation for the new use cases
+- Refactored internal license generation and validation to use the new use cases
+
+## 2.2.0 - 2025-04-13
 - **CLI** - Support for custom file extensions in license and request files
 - Add trial flag in license
 

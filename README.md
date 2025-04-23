@@ -26,6 +26,7 @@ Licensify is a Dart library for license validation, signing, and management. It 
 - [Installation](#-installation)
 - [Quick Start](#-quick-start)
 - [Usage Examples](#-usage-examples)
+- [Low-Level Cryptographic Use Cases](#low-level-cryptographic-use-cases)
 - [CLI Tool](#-cli-tool)
 - [Documentation](#-documentation)
 - [License Request Generation](#license-request-generation)
@@ -41,6 +42,7 @@ Licensify is a Dart library for license validation, signing, and management. It 
 - **Storage Independence**: Bring your own storage implementation
 - **Cross-Platform**: Works on all platforms including web (WASM)
 - **High Performance**: ECDSA up to 10x faster with 72% smaller key sizes
+- **Reusable Use Cases**: Low-level cryptographic operations for custom implementations
 
 ## 📦 Installation
 
@@ -222,6 +224,158 @@ if (schemaResult.isValid) {
 
 // Comprehensive validation of signature, expiration, and schema
 final isValid = validator.validateLicenseWithSchema(license, schema);
+```
+
+### Low-Level Cryptographic Use Cases
+
+Licensify provides several low-level use cases that can be used directly for advanced cryptographic operations:
+
+#### Signing and Verifying Data
+
+```dart
+import 'package:licensify/licensify.dart';
+
+// Import existing keys
+final privateKey = LicensifyKeyImporter.importPrivateKeyFromString(privateKeyPem);
+final publicKey = LicensifyKeyImporter.importPublicKeyFromString(publicKeyPem);
+
+// Create the use cases
+final signDataUseCase = SignDataUseCase();
+final verifySignatureUseCase = VerifySignatureUseCase();
+
+// Sign data with private key
+final data = 'Data to be signed';
+final signature = signDataUseCase(
+  data: data,
+  privateKey: privateKey,
+  // Optionally specify a different digest algorithm
+  // digest: SHA256Digest(),
+);
+
+// Verify signature with public key
+final isValid = verifySignatureUseCase(
+  data: data,
+  signature: signature,
+  publicKey: publicKey,
+  // Digest should match the one used for signing
+  // digest: SHA256Digest(),
+);
+
+if (isValid) {
+  print('✅ Signature verified successfully');
+} else {
+  print('❌ Signature verification failed');
+}
+```
+
+#### Encrypting and Decrypting Data
+
+```dart
+import 'package:licensify/licensify.dart';
+import 'dart:typed_data';
+import 'dart:convert';
+
+// Import existing keys
+final publicKey = LicensifyKeyImporter.importPublicKeyFromString(publicKeyPem);
+final privateKey = LicensifyKeyImporter.importPrivateKeyFromString(privateKeyPem);
+
+// Create the use cases
+final encryptDataUseCase = EncryptDataUseCase(
+  publicKey: publicKey,
+  // Optional parameters
+  aesKeySize: 256,
+  hkdfSalt: 'custom-salt',
+  hkdfInfo: 'custom-info',
+);
+
+final decryptDataUseCase = DecryptDataUseCase(
+  privateKey: privateKey,
+  // Should match the encryption parameters
+  aesKeySize: 256,
+  hkdfSalt: 'custom-salt',
+  hkdfInfo: 'custom-info',
+);
+
+// Encrypt string data
+final dataToEncrypt = 'Sensitive information';
+final encryptedBytes = encryptDataUseCase.encryptString(
+  data: dataToEncrypt,
+  // Optional: add a magic header for format identification
+  magicHeader: 'TEXT',
+  formatVersion: 1,
+);
+
+// Decrypt data back to string
+final decryptedString = decryptDataUseCase.decryptToString(
+  encryptedData: encryptedBytes,
+  // Optional: validate the expected format
+  expectedMagicHeader: 'TEXT',
+);
+
+print('Original: $dataToEncrypt');
+print('Decrypted: $decryptedString');
+
+// Working with binary data
+final binaryData = Uint8List.fromList([1, 2, 3, 4, 5]);
+final encryptedBinaryData = encryptDataUseCase(
+  data: binaryData,
+  magicHeader: 'BIN1',
+);
+
+final decryptedBinaryData = decryptDataUseCase(
+  encryptedData: encryptedBinaryData,
+  expectedMagicHeader: 'BIN1',
+);
+```
+
+### Advanced Use Cases
+
+These low-level use cases can be combined to create custom cryptographic solutions:
+
+```dart
+import 'package:licensify/licensify.dart';
+import 'dart:convert';
+
+// Example: Create a signed message
+final message = {
+  'action': 'purchase',
+  'item': 'Premium Subscription',
+  'amount': 99.99,
+  'userId': 'user123',
+  'timestamp': DateTime.now().toIso8601String(),
+};
+
+// Convert to JSON string
+final jsonData = jsonEncode(message);
+
+// Sign the message
+final signature = signDataUseCase(
+  data: jsonData,
+  privateKey: privateKey,
+);
+
+// Create the complete signed message
+final signedMessage = {
+  'data': message,
+  'signature': signature,
+};
+
+// Later, verify the signature
+final receivedMessage = signedMessage['data'] as Map<String, dynamic>;
+final receivedSignature = signedMessage['signature'] as String;
+final receivedJsonData = jsonEncode(receivedMessage);
+
+final isValidSignature = verifySignatureUseCase(
+  data: receivedJsonData,
+  signature: receivedSignature,
+  publicKey: publicKey,
+);
+
+if (isValidSignature) {
+  print('✅ Message is authentic');
+} else {
+  print('❌ Message has been tampered with');
+}
 ```
 
 ## 🛠 CLI Tool
