@@ -64,6 +64,16 @@ class License {
   int get remainingDays =>
       expirationDate.difference(DateTime.now().toUtc()).inDays;
 
+  Future<LicenseStatus> getLicenseStatus({
+    required ILicenseValidator licenseValidator,
+    IDeviceHashGenerator? deviceHashGenerator,
+  }) async {
+    return GetLicenseStatusUseCase(
+      licenseValidator: licenseValidator,
+      deviceHashGenerator: deviceHashGenerator,
+    ).call(this);
+  }
+
   /// Creates a copy of this instance with optional changes
   License copyWith({
     String? id,

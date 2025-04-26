@@ -26,6 +26,9 @@ abstract class LicenseStatus {
   /// Returns true if the license schema is invalid
   bool get isInvalidSchema => this is InvalidLicenseSchemaStatus;
 
+  /// Returns true if the license device hash is invalid
+  bool get isInvalidDeviceHash => this is InvalidLicenseDeviceHashStatus;
+
   /// Returns true if an error occurred during license validation
   bool get isError => this is ErrorLicenseStatus;
 
@@ -76,6 +79,12 @@ class InvalidLicenseSchemaStatus extends LicenseStatus {
 
   /// Creates an invalid license schema status with the specified schema validation result
   const InvalidLicenseSchemaStatus(this.schemaValidationResult);
+}
+
+/// Status indicating the license device hash is invalid
+class InvalidLicenseDeviceHashStatus extends LicenseStatus {
+  /// Creates an invalid license device hash status
+  const InvalidLicenseDeviceHashStatus();
 }
 
 /// Status indicating an error occurred during license checking

@@ -2,5 +2,6 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-export 'ec_cipher.dart';
-export 'ecdh_crypto_utils.dart';
+import 'dart:async';
+
+typedef IDeviceHashGenerator = FutureOr<String> Function();

@@ -1,3 +1,6 @@
+## 2.3.1 - 2025-04-26
+- **New**: Added `GetLicenseStatusUseCase` for getting license status
+
 ## 2.3.0 - 2025-04-24
 - **New**: Added low-level cryptographic use cases for custom implementations
 - Added `SignDataUseCase` for signing data with private keys

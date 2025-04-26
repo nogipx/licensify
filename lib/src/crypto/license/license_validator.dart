@@ -41,9 +41,7 @@ class LicenseValidator implements ILicenseValidator {
 
   @override
   ValidationResult call(License license, {LicenseSchema? schema}) {
-    if (_keyType == LicensifyKeyType.rsa) {
-      throw UnsupportedError('RSA is deprecated');
-    }
+    _checkKeyType();
 
     // First validate signature and expiration
     // Validate signature
@@ -72,6 +70,7 @@ class LicenseValidator implements ILicenseValidator {
 
   @override
   ValidationResult validateExpiration(License license) {
+    _checkKeyType();
     // License is valid if expiration date hasn't passed
     final isValid = !license.isExpired;
     return ValidationResult(
@@ -82,12 +81,14 @@ class LicenseValidator implements ILicenseValidator {
 
   @override
   SchemaValidationResult validateSchema(License license, LicenseSchema schema) {
+    _checkKeyType();
     // Use the schema's validateLicense method to validate the license
     return schema.validateLicense(license);
   }
 
   @override
   ValidationResult validateSignature(License license) {
+    _checkKeyType();
     try {
       // Get rounded expiration date - this should trim to minutes only
       final roundedExpirationDate = license.expirationDate.roundToMinutes();
@@ -120,6 +121,12 @@ class LicenseValidator implements ILicenseValidator {
         isValid: false,
         message: 'Signature verification error: $e',
       );
+    }
+  }
+
+  void _checkKeyType() {
+    if (_keyType == LicensifyKeyType.rsa) {
+      throw UnsupportedError('RSA is deprecated');
     }
   }
 
