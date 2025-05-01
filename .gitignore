@@ -14,5 +14,6 @@ coverage/
 *.licensify
 *.bin
 bin/licensify
+build/
 
 test_cli/tmp/*

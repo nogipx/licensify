@@ -4,3 +4,4 @@
 
 export 'ec_cipher.dart';
 export 'ecdh_crypto_utils.dart';
+export 'ecdsa_params_converter.dart';

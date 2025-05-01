@@ -1,3 +1,11 @@
+## 2.4.0 - 2025-05-02
+- **New**: Added support for importing ECDSA keys from raw parameters
+- Added `EcdsaParamsConverter` utility for converting parameters to PEM format
+- Added methods for importing ECDSA public keys from x, y coordinates and curve name
+- Added methods for importing ECDSA private keys from scalar (d) value and curve name
+- Added method for creating key pairs from private scalar value with automatic public key derivation
+- Supported curves: prime256v1/secp256r1/P-256, secp256k1, secp384r1/P-384, secp521r1/P-521
+
 ## 2.3.1 - 2025-04-26
 - **New**: Added `GetLicenseStatusUseCase` for getting license status
 

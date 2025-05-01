@@ -43,6 +43,9 @@ class LicensifyExamples {
 
     // 6. Low-level cryptographic use cases
     lowLevelCryptoExamples();
+
+    // 7. Import ECDSA keys from parameters
+    importEcdsaKeysFromParameters();
   }
 
   /// Examples of generating cryptographic keys
@@ -475,6 +478,95 @@ class FileSystemLicenseStorage implements ILicenseStorage {
     print(
       'Message signature verification: ${isValidMessage ? '✅ Valid' : '❌ Invalid'}',
     );
+  }
+
+  /// Пример импорта ECDSA ключей из параметров (координат и скаляра)
+  void importEcdsaKeysFromParameters() {
+    print('\n\n===== IMPORT ECDSA KEYS FROM PARAMETERS =====\n');
+
+    // Параметры ключей (обычно получаемые из внешних источников)
+    final privateScalar =
+        'd1b71758e219652b8c4ff3edd77a337d536c65a4278c93a41887d132b1cb8673';
+    final curveName =
+        'prime256v1'; // также можно использовать 'secp256r1' или 'p-256'
+
+    // Создание пары ключей из приватного скаляра
+    // Публичный ключ автоматически вычисляется из приватного
+    final keyPair = LicensifyKeyImporter.importEcdsaKeyPairFromPrivateScalar(
+      d: privateScalar,
+      curveName: curveName,
+    );
+    print('Импортирована пара ECDSA ключей: ${keyPair.keyType}');
+
+    // Теперь получаем координаты публичного ключа
+    final coordinates = EcdsaParamsConverter.derivePublicKeyCoordinates(
+      d: privateScalar,
+      curveName: curveName,
+    );
+    print('Вычисленные координаты публичного ключа:');
+    print('x: ${coordinates['x']}');
+    print('y: ${coordinates['y']}');
+
+    // Импорт публичного ключа из координат x, y и названия кривой
+    final publicKey = LicensifyKeyImporter.importEcdsaPublicKeyFromCoordinates(
+      x: coordinates['x']!,
+      y: coordinates['y']!,
+      curveName: curveName,
+    );
+    print('Импортирован публичный ECDSA ключ: ${publicKey.keyType}');
+
+    // Импорт приватного ключа из скаляра d и названия кривой
+    final privateKey = LicensifyKeyImporter.importEcdsaPrivateKeyFromScalar(
+      d: privateScalar,
+      curveName: curveName,
+    );
+    print('Импортирован приватный ECDSA ключ: ${privateKey.keyType}');
+
+    // Пример подписи данных с импортированным ключом
+    final data = 'Test data for signing';
+    final signDataUseCase = SignDataUseCase();
+    final verifySignatureUseCase = VerifySignatureUseCase();
+
+    // Подписываем данные приватным ключом
+    final signature = signDataUseCase(data: data, privateKey: privateKey);
+    print('Создана подпись: ${signature.substring(0, 20)}...');
+
+    // Проверяем подпись публичным ключом
+    final isValid = verifySignatureUseCase(
+      data: data,
+      signature: signature,
+      publicKey: publicKey,
+    );
+    print('Проверка подписи: ${isValid ? "верна" : "неверна"}');
+
+    // Для проверки используем пару, созданную вместе
+    print('\nПроверка подписи с ключами из одной пары:');
+
+    final pairSignature = signDataUseCase(
+      data: data,
+      privateKey: keyPair.privateKey,
+    );
+
+    final pairIsValid = verifySignatureUseCase(
+      data: data,
+      signature: pairSignature,
+      publicKey: keyPair.publicKey,
+    );
+
+    print('Проверка подписи: ${pairIsValid ? "верна" : "неверна"}');
+
+    // Пример использования разных кривых
+    final supportedCurves = [
+      'prime256v1', // также известна как 'secp256r1' или 'P-256'
+      'secp256k1', // популярная в блокчейне
+      'secp384r1', // также известна как 'P-384'
+      'secp521r1', // также известна как 'P-521'
+    ];
+
+    print('\nПоддерживаемые кривые:');
+    for (final curve in supportedCurves) {
+      print('- $curve');
+    }
   }
 
   /// Helper method to print license details

@@ -16,6 +16,11 @@ void main() {
     late Uint8List ecdsaPrivateKeyBytes;
     late Uint8List ecdsaPublicKeyBytes;
 
+    // Тестовые параметры для ECDSA ключей
+    const testPrivateScalar =
+        'd1b71758e219652b8c4ff3edd77a337d536c65a4278c93a41887d132b1cb8673';
+    const testCurveName = 'prime256v1';
+
     setUpAll(() {
       // Генерируем тестовые ключи
       rsaKeyPair = RsaKeyGenerator.generateKeyPairAsPem();
@@ -163,6 +168,118 @@ void main() {
         ),
         throwsA(isA<FormatException>()),
       );
+    });
+
+    // Новые тесты для новых методов
+
+    group('Импорт из параметров ECDSA', () {
+      test('importEcdsaPublicKeyFromCoordinates создает корректный ключ', () {
+        // Сначала получаем координаты из приватного ключа для теста
+        final coordinates = EcdsaParamsConverter.derivePublicKeyCoordinates(
+          d: testPrivateScalar,
+          curveName: testCurveName,
+        );
+
+        // Act
+        final publicKey =
+            LicensifyKeyImporter.importEcdsaPublicKeyFromCoordinates(
+              x: coordinates['x']!,
+              y: coordinates['y']!,
+              curveName: testCurveName,
+            );
+
+        // Assert
+        expect(publicKey, isA<LicensifyPublicKey>());
+        expect(publicKey.keyType, equals(LicensifyKeyType.ecdsa));
+        expect(publicKey.content, contains('-----BEGIN PUBLIC KEY-----'));
+        expect(publicKey.content, contains('-----END PUBLIC KEY-----'));
+      });
+
+      test('importEcdsaPrivateKeyFromScalar создает корректный ключ', () {
+        // Act
+        final privateKey = LicensifyKeyImporter.importEcdsaPrivateKeyFromScalar(
+          d: testPrivateScalar,
+          curveName: testCurveName,
+        );
+
+        // Assert
+        expect(privateKey, isA<LicensifyPrivateKey>());
+        expect(privateKey.keyType, equals(LicensifyKeyType.ecdsa));
+        expect(privateKey.content, contains('-----BEGIN EC PRIVATE KEY-----'));
+        expect(privateKey.content, contains('-----END EC PRIVATE KEY-----'));
+      });
+
+      test(
+        'importEcdsaKeyPairFromPrivateScalar создает корректную пару ключей',
+        () {
+          // Act
+          final keyPair =
+              LicensifyKeyImporter.importEcdsaKeyPairFromPrivateScalar(
+                d: testPrivateScalar,
+                curveName: testCurveName,
+              );
+
+          // Assert
+          expect(keyPair, isA<LicensifyKeyPair>());
+          expect(keyPair.keyType, equals(LicensifyKeyType.ecdsa));
+          expect(keyPair.isConsistent, isTrue);
+          expect(keyPair.privateKey.keyType, equals(LicensifyKeyType.ecdsa));
+          expect(keyPair.publicKey.keyType, equals(LicensifyKeyType.ecdsa));
+
+          // Проверяем, что публичный ключ соответствует приватному
+          // Используем ту же пару для подписи и проверки
+          final testData = 'test data for signing';
+          final signDataUseCase = SignDataUseCase();
+          final verifySignatureUseCase = VerifySignatureUseCase();
+
+          // Подписываем данные приватным ключом
+          final signature = signDataUseCase(
+            data: testData,
+            privateKey: keyPair.privateKey,
+          );
+
+          // Проверяем подпись публичным ключом той же пары
+          final isValid = verifySignatureUseCase(
+            data: testData,
+            signature: signature,
+            publicKey: keyPair.publicKey,
+          );
+
+          expect(
+            isValid,
+            isTrue,
+            reason: 'Signature should be valid with corresponding public key',
+          );
+        },
+      );
+
+      test('ключи из параметров работают с операциями подписи/проверки', () {
+        // Arrange - получаем согласованную пару ключей
+        final keyPair =
+            LicensifyKeyImporter.importEcdsaKeyPairFromPrivateScalar(
+              d: testPrivateScalar,
+              curveName: testCurveName,
+            );
+
+        final testData = 'data to be signed';
+        final signDataUseCase = SignDataUseCase();
+        final verifySignatureUseCase = VerifySignatureUseCase();
+
+        // Act
+        final signature = signDataUseCase(
+          data: testData,
+          privateKey: keyPair.privateKey,
+        );
+
+        final isValid = verifySignatureUseCase(
+          data: testData,
+          signature: signature,
+          publicKey: keyPair.publicKey,
+        );
+
+        // Assert
+        expect(isValid, isTrue, reason: 'Signature should be valid');
+      });
     });
   });
 }

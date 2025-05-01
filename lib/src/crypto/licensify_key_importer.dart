@@ -82,6 +82,83 @@ abstract final class LicensifyKeyImporter {
     return importPublicKeyFromString(pemContent);
   }
 
+  /// Creates a ECDSA public key from x, y coordinates and curve name
+  ///
+  /// [x] - X coordinate as hexadecimal string
+  /// [y] - Y coordinate as hexadecimal string
+  /// [curveName] - Name of the curve (e.g., 'prime256v1', 'secp256k1', 'secp384r1')
+  ///
+  /// Returns [LicensifyPublicKey] of ECDSA type
+  static LicensifyPublicKey importEcdsaPublicKeyFromCoordinates({
+    required String x,
+    required String y,
+    required String curveName,
+  }) {
+    // Convert coordinates to PEM format
+    final pemString = EcdsaParamsConverter.publicKeyFromCoordinates(
+      x: x,
+      y: y,
+      curveName: curveName,
+    );
+
+    // Import using the existing method
+    return importPublicKeyFromString(pemString);
+  }
+
+  /// Creates a ECDSA private key from private scalar and curve name
+  ///
+  /// [d] - Private key value as hexadecimal string
+  /// [curveName] - Name of the curve (e.g., 'prime256v1', 'secp256k1', 'secp384r1')
+  ///
+  /// Returns [LicensifyPrivateKey] of ECDSA type
+  static LicensifyPrivateKey importEcdsaPrivateKeyFromScalar({
+    required String d,
+    required String curveName,
+  }) {
+    // Convert scalar to PEM format
+    final pemString = EcdsaParamsConverter.privateKeyFromScalar(
+      d: d,
+      curveName: curveName,
+    );
+
+    // Import using the existing method
+    return importPrivateKeyFromString(pemString);
+  }
+
+  /// Creates a ECDSA key pair from private scalar value
+  ///
+  /// Automatically derives the public key from the private key.
+  ///
+  /// [d] - Private key value as hexadecimal string
+  /// [curveName] - Name of the curve (e.g., 'prime256v1', 'secp256k1', 'secp384r1')
+  ///
+  /// Returns [LicensifyKeyPair] containing both keys
+  static LicensifyKeyPair importEcdsaKeyPairFromPrivateScalar({
+    required String d,
+    required String curveName,
+  }) {
+    // Get the private key
+    final privateKey = importEcdsaPrivateKeyFromScalar(
+      d: d,
+      curveName: curveName,
+    );
+
+    // Derive public key coordinates
+    final coordinates = EcdsaParamsConverter.derivePublicKeyCoordinates(
+      d: d,
+      curveName: curveName,
+    );
+
+    // Create public key
+    final publicKey = importEcdsaPublicKeyFromCoordinates(
+      x: coordinates['x']!,
+      y: coordinates['y']!,
+      curveName: curveName,
+    );
+
+    return LicensifyKeyPair(privateKey: privateKey, publicKey: publicKey);
+  }
+
   /// Imports a key pair from PEM strings
   ///
   /// [privateKeyPem] - PEM content of the private key
