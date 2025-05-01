@@ -1,3 +1,6 @@
+## 2.4.1 - 2025-05-02
+- **New**: Added support for importing ECDSA keys from base64 parameters
+
 ## 2.4.0 - 2025-05-02
 - **New**: Added support for importing ECDSA keys from raw parameters
 - Added `EcdsaParamsConverter` utility for converting parameters to PEM format

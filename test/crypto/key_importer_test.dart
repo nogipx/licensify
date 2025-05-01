@@ -195,12 +195,56 @@ void main() {
         expect(publicKey.content, contains('-----END PUBLIC KEY-----'));
       });
 
+      test(
+        'importEcdsaPublicKeyFromBase64Coordinates создает корректный ключ',
+        () {
+          // Сначала получаем координаты из приватного ключа для теста в base64
+          final coordinates =
+              EcdsaParamsConverter.derivePublicKeyBase64Coordinates(
+                dBase64: base64.encode(utf8.encode(testPrivateScalar)),
+                curveName: testCurveName,
+              );
+
+          // Act
+          final publicKey =
+              LicensifyKeyImporter.importEcdsaPublicKeyFromBase64Coordinates(
+                xBase64: coordinates['x']!,
+                yBase64: coordinates['y']!,
+                curveName: testCurveName,
+              );
+
+          // Assert
+          expect(publicKey, isA<LicensifyPublicKey>());
+          expect(publicKey.keyType, equals(LicensifyKeyType.ecdsa));
+          expect(publicKey.content, contains('-----BEGIN PUBLIC KEY-----'));
+          expect(publicKey.content, contains('-----END PUBLIC KEY-----'));
+        },
+      );
+
       test('importEcdsaPrivateKeyFromScalar создает корректный ключ', () {
         // Act
         final privateKey = LicensifyKeyImporter.importEcdsaPrivateKeyFromScalar(
           d: testPrivateScalar,
           curveName: testCurveName,
         );
+
+        // Assert
+        expect(privateKey, isA<LicensifyPrivateKey>());
+        expect(privateKey.keyType, equals(LicensifyKeyType.ecdsa));
+        expect(privateKey.content, contains('-----BEGIN EC PRIVATE KEY-----'));
+        expect(privateKey.content, contains('-----END EC PRIVATE KEY-----'));
+      });
+
+      test('importEcdsaPrivateKeyFromBase64Scalar создает корректный ключ', () {
+        // Преобразуем скаляр в base64
+        final dBase64 = base64.encode(utf8.encode(testPrivateScalar));
+
+        // Act
+        final privateKey =
+            LicensifyKeyImporter.importEcdsaPrivateKeyFromBase64Scalar(
+              dBase64: dBase64,
+              curveName: testCurveName,
+            );
 
         // Assert
         expect(privateKey, isA<LicensifyPrivateKey>());
@@ -245,13 +289,119 @@ void main() {
             publicKey: keyPair.publicKey,
           );
 
-          expect(
-            isValid,
-            isTrue,
-            reason: 'Signature should be valid with corresponding public key',
-          );
+          expect(isValid, isTrue, reason: 'Должна быть валидная подпись');
         },
       );
+
+      test(
+        'importEcdsaKeyPairFromBase64PrivateScalar создает корректную пару ключей',
+        () {
+          // Преобразуем скаляр в base64
+          final dBase64 = base64.encode(utf8.encode(testPrivateScalar));
+
+          // Act
+          final keyPair =
+              LicensifyKeyImporter.importEcdsaKeyPairFromBase64PrivateScalar(
+                dBase64: dBase64,
+                curveName: testCurveName,
+              );
+
+          // Assert
+          expect(keyPair, isA<LicensifyKeyPair>());
+          expect(keyPair.keyType, equals(LicensifyKeyType.ecdsa));
+          expect(keyPair.isConsistent, isTrue);
+          expect(keyPair.privateKey.keyType, equals(LicensifyKeyType.ecdsa));
+          expect(keyPair.publicKey.keyType, equals(LicensifyKeyType.ecdsa));
+
+          // Проверяем, что публичный ключ соответствует приватному
+          // Используем ту же пару для подписи и проверки
+          final testData = 'test data for signing';
+          final signDataUseCase = SignDataUseCase();
+          final verifySignatureUseCase = VerifySignatureUseCase();
+
+          // Подписываем данные приватным ключом
+          final signature = signDataUseCase(
+            data: testData,
+            privateKey: keyPair.privateKey,
+          );
+
+          // Проверяем подпись публичным ключом той же пары
+          final isValid = verifySignatureUseCase(
+            data: testData,
+            signature: signature,
+            publicKey: keyPair.publicKey,
+          );
+
+          expect(isValid, isTrue, reason: 'Должна быть валидная подпись');
+        },
+      );
+
+      test('Проверка согласованности методов hex и base64', () {
+        // Преобразуем скаляр в base64
+        final dBase64 = base64.encode(_hexToBytes(testPrivateScalar));
+
+        // Создаем ключи разными способами
+        final hexKeyPair =
+            LicensifyKeyImporter.importEcdsaKeyPairFromPrivateScalar(
+              d: testPrivateScalar,
+              curveName: testCurveName,
+            );
+
+        final base64KeyPair =
+            LicensifyKeyImporter.importEcdsaKeyPairFromBase64PrivateScalar(
+              dBase64: dBase64,
+              curveName: testCurveName,
+            );
+
+        // Проверяем, что оба ключа корректные
+        expect(hexKeyPair.privateKey.keyType, equals(LicensifyKeyType.ecdsa));
+        expect(
+          base64KeyPair.privateKey.keyType,
+          equals(LicensifyKeyType.ecdsa),
+        );
+
+        // Тестируем с отдельными данными для каждой пары
+        final testData = 'data for ${hexKeyPair.hashCode}';
+        final testData2 = 'data for ${base64KeyPair.hashCode}';
+
+        final signDataUseCase = SignDataUseCase();
+        final verifySignatureUseCase = VerifySignatureUseCase();
+
+        // Проверка подписи с hex-ключами
+        final signatureHex = signDataUseCase(
+          data: testData,
+          privateKey: hexKeyPair.privateKey,
+        );
+
+        final isValidHex = verifySignatureUseCase(
+          data: testData,
+          signature: signatureHex,
+          publicKey: hexKeyPair.publicKey,
+        );
+
+        // Проверка подписи с base64-ключами
+        final signatureBase64 = signDataUseCase(
+          data: testData2,
+          privateKey: base64KeyPair.privateKey,
+        );
+
+        final isValidBase64 = verifySignatureUseCase(
+          data: testData2,
+          signature: signatureBase64,
+          publicKey: base64KeyPair.publicKey,
+        );
+
+        expect(
+          isValidHex,
+          isTrue,
+          reason: 'Подпись с hex ключами должна быть валидной',
+        );
+        expect(
+          isValidBase64,
+          isTrue,
+          reason: 'Подпись с base64 ключами должна быть валидной',
+        );
+      });
 
       test('ключи из параметров работают с операциями подписи/проверки', () {
         // Arrange - получаем согласованную пару ключей
@@ -282,4 +432,17 @@ void main() {
       });
     });
   });
+}
+
+// Вспомогательные функции
+List<int> _hexToBytes(String hex) {
+  final cleanHex = hex.startsWith('0x') ? hex.substring(2) : hex;
+  final result = <int>[];
+
+  for (int i = 0; i < cleanHex.length; i += 2) {
+    final byteHex = cleanHex.substring(i, i + 2);
+    result.add(int.parse(byteHex, radix: 16));
+  }
+
+  return result;
 }

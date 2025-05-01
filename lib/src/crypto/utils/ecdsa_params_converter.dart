@@ -55,6 +55,58 @@ abstract class EcdsaParamsConverter {
     return _formatPem(base64String, isPrivate: false);
   }
 
+  /// Creates PEM-formatted public key from x and y coordinates in base64 format
+  ///
+  /// [xBase64] - X coordinate as base64 string
+  /// [yBase64] - Y coordinate as base64 string
+  /// [curveName] - Name of the curve (e.g., 'prime256v1', 'secp256k1')
+  ///
+  /// Returns PEM string with the public key
+  static String publicKeyFromBase64Coordinates({
+    required String xBase64,
+    required String yBase64,
+    required String curveName,
+  }) {
+    try {
+      // Decode base64 to bytes
+      final xBytes = base64.decode(xBase64);
+      final yBytes = base64.decode(yBase64);
+
+      // Convert bytes to BigInt
+      final xBigInt = _bytesToBigInt(xBytes);
+      final yBigInt = _bytesToBigInt(yBytes);
+
+      // Create ASN.1 structure
+      final asn1Sequence = ASN1Sequence();
+
+      // Add algorithm identifier
+      final algorithmSequence = ASN1Sequence();
+
+      // Algorithm ID (1.2.840.10045.2.1 - EC Public Key)
+      algorithmSequence.add(ASN1ObjectIdentifier(_ecPublicKeyOid));
+
+      // Curve identifier OID
+      algorithmSequence.add(ASN1ObjectIdentifier(_getCurveOid(curveName)));
+
+      asn1Sequence.add(algorithmSequence);
+
+      // Add EC point as bit string
+      final point = _encodePoint(xBigInt, yBigInt);
+      asn1Sequence.add(ASN1BitString(point));
+
+      // Encode and convert to base64
+      final derBytes = asn1Sequence.encodedBytes;
+      final base64String = base64.encode(derBytes);
+
+      // Format as PEM
+      return _formatPem(base64String, isPrivate: false);
+    } catch (e) {
+      throw FormatException(
+        'Failed to parse base64 coordinates: ${e.toString()}',
+      );
+    }
+  }
+
   /// Creates PEM-formatted private key from private scalar and curve name
   ///
   /// [d] - Private key as hexadecimal string
@@ -93,6 +145,52 @@ abstract class EcdsaParamsConverter {
     return _formatPem(base64String, isPrivate: true);
   }
 
+  /// Creates PEM-formatted private key from private scalar in base64 format
+  ///
+  /// [dBase64] - Private key as base64 string
+  /// [curveName] - Name of the curve (e.g., 'prime256v1', 'secp256k1')
+  ///
+  /// Returns PEM string with the private key
+  static String privateKeyFromBase64Scalar({
+    required String dBase64,
+    required String curveName,
+  }) {
+    try {
+      // Decode base64 to bytes
+      final dBytes = base64.decode(dBase64);
+
+      // Convert bytes to BigInt
+      final dBigInt = _bytesToBigInt(dBytes);
+
+      // Create ASN.1 structure for EC private key (RFC 5915)
+      final asn1Sequence = ASN1Sequence();
+
+      // Version
+      asn1Sequence.add(ASN1Integer(BigInt.one));
+
+      // Private key value
+      final privateKeyBytes = _bigIntToBytes(dBigInt);
+      asn1Sequence.add(ASN1OctetString(privateKeyBytes));
+
+      // Add curve information (optional)
+      final curveOid = _getCurveOid(curveName);
+
+      // Explicit tagging - create a constructed context-specific tag (0)
+      final curveOidValue = ASN1ObjectIdentifier(curveOid);
+      final params = ASN1Sequence()..add(curveOidValue);
+      asn1Sequence.add(params);
+
+      // Encode and convert to base64
+      final derBytes = asn1Sequence.encodedBytes;
+      final base64String = base64.encode(derBytes);
+
+      // Format as PEM
+      return _formatPem(base64String, isPrivate: true);
+    } catch (e) {
+      throw FormatException('Failed to parse base64 scalar: ${e.toString()}');
+    }
+  }
+
   /// Calculates public key coordinates from private key and curve
   ///
   /// [d] - Private key as hexadecimal string
@@ -127,6 +225,56 @@ abstract class EcdsaParamsConverter {
     final y = bigY.toRadixString(16);
 
     return {'x': x, 'y': y};
+  }
+
+  /// Calculates public key coordinates from private key in base64 format
+  ///
+  /// [dBase64] - Private key as base64 string
+  /// [curveName] - Name of the curve
+  ///
+  /// Returns map with 'x' and 'y' coordinates as base64 strings
+  static Map<String, String> derivePublicKeyBase64Coordinates({
+    required String dBase64,
+    required String curveName,
+  }) {
+    try {
+      // Decode base64 to bytes
+      final dBytes = base64.decode(dBase64);
+
+      // Convert bytes to BigInt
+      final dBigInt = _bytesToBigInt(dBytes);
+      final domainParams = _getCurve(curveName);
+
+      // Calculate public key point - safely handle null
+      final point = domainParams.G;
+
+      // Calculate public point
+      final ECPoint pubPoint = (point * dBigInt) as ECPoint;
+      if (pubPoint.x == null || pubPoint.y == null) {
+        throw StateError('Invalid point calculation result');
+      }
+
+      // Extract coordinates as BigIntegers
+      final bigX = pubPoint.x!.toBigInteger();
+      final bigY = pubPoint.y!.toBigInteger();
+
+      if (bigX == null || bigY == null) {
+        throw StateError('Could not extract coordinates from point');
+      }
+
+      // Convert BigIntegers to bytes, then to base64
+      final xBytes = _bigIntToBytes(bigX);
+      final yBytes = _bigIntToBytes(bigY);
+
+      final xBase64 = base64.encode(xBytes);
+      final yBase64 = base64.encode(yBytes);
+
+      return {'x': xBase64, 'y': yBase64};
+    } catch (e) {
+      throw FormatException(
+        'Failed to derive coordinates from base64 scalar: ${e.toString()}',
+      );
+    }
   }
 
   /// Formats base64 encoded content as PEM
@@ -195,6 +343,16 @@ abstract class EcdsaParamsConverter {
       result[i ~/ 2] = int.parse(hex.substring(i, i + 2), radix: 16);
     }
 
+    return result;
+  }
+
+  /// Converts byte array to BigInt
+  static BigInt _bytesToBigInt(Uint8List bytes) {
+    BigInt result = BigInt.zero;
+    for (int i = 0; i < bytes.length; i++) {
+      result = result << 8;
+      result = result | BigInt.from(bytes[i]);
+    }
     return result;
   }
 
