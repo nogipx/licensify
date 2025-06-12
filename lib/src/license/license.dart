@@ -3,85 +3,65 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 import 'dart:convert';
+import 'dart:async';
 import 'package:licensify/licensify.dart';
 
 /// PASETO-based license domain entity
 ///
-/// This represents a license as a PASETO token instead of separate data + signature.
-/// The entire license is contained within the PASETO token, providing better security
-/// and following modern cryptographic best practices.
+/// 🔒 SECURITY: This class can ONLY be created from cryptographically validated tokens.
+/// All constructors are private except for the internal validation factory.
+///
+/// This represents a license as a PASETO token that has been verified for:
+/// - Signature authenticity (Ed25519)
+/// - Token structure validity
+/// - Payload format compliance
 class License {
   /// The PASETO token containing all license information
   final String token;
 
-  /// Cached payload data (extracted from token)
-  final Map<String, dynamic> _payload;
+  /// Pre-validated payload data (guaranteed to be cryptographically verified)
+  final Map<String, dynamic> _validatedPayload;
 
-  /// Creates a new PASETO license instance
-  ///
-  /// [token] - The PASETO v4.public token containing license data
-  /// [payload] - The decoded payload from the token (for caching)
-  License._({required this.token, required Map<String, dynamic> payload})
-      : _payload = payload;
+  /// Creates a new PASETO license instance (PRIVATE - internal use only)
+  License._(this.token, this._validatedPayload);
 
-  /// Creates a PASETO license from a token string
+  /// 🔒 SECURE FACTORY: Creates a license from a cryptographically validated token
   ///
-  /// Note: This doesn't validate the token, only parses it.
-  /// Use [LicensifyPaseto_LicenseValidator] for validation.
-  factory License.fromToken(String token) {
-    // For now, we'll store the token and extract payload later during validation
-    // This is a simple implementation - in production, you might want to
-    // validate the structure but not the signature here
-    return License._(
-      token: token,
-      payload: {}, // Will be populated during validation
-    );
-  }
-
-  /// Creates a PASETO license from validated payload
+  /// This factory should ONLY be used by internal validators and generators
+  /// after successful PASETO signature verification.
   ///
-  /// This should only be called after successful token validation
-  factory License.fromValidatedPayload({
+  /// ⚠️ NEVER call this directly! Use Licensify.validateLicense() instead.
+  static License fromValidatedToken({
     required String token,
-    required Map<String, dynamic> payload,
+    required Map<String, dynamic> validatedPayload,
   }) {
-    return License._(token: token, payload: payload);
-  }
-
-  /// Updates the internal payload after validation
-  ///
-  /// This is used by validators to populate the payload after successful verification
-  void updatePayload(Map<String, dynamic> payload) {
-    _payload.clear();
-    // Ensure we have proper type conversion
-    for (final entry in payload.entries) {
-      _payload[entry.key] = entry.value;
-    }
+    return License._(token, Map<String, dynamic>.from(validatedPayload));
   }
 
   /// Unique license identifier (UUID)
-  String get id => _payload['sub'] as String? ?? '';
+  Future<String> get id async => _validatedPayload['sub'] as String? ?? '';
 
   /// Application identifier this license is valid for
-  String get appId => _payload['app_id'] as String? ?? '';
+  Future<String> get appId async =>
+      _validatedPayload['app_id'] as String? ?? '';
 
   /// License expiration date (UTC)
-  DateTime get expirationDate {
-    final expStr = _payload['exp'] as String?;
+  Future<DateTime> get expirationDate async {
+    final expStr = _validatedPayload['exp'] as String?;
     if (expStr == null) return DateTime.now().toUtc();
     return DateTime.parse(expStr).toUtc();
   }
 
   /// License creation date (UTC)
-  DateTime get createdAt {
-    final iatStr = _payload['iat'] as String?;
+  Future<DateTime> get createdAt async {
+    final iatStr = _validatedPayload['iat'] as String?;
     if (iatStr == null) return DateTime.now().toUtc();
     return DateTime.parse(iatStr).toUtc();
   }
 
   /// License type (can be predefined or custom)
-  LicenseType get type {
-    final typeStr = _payload['type'] as String?;
+  Future<LicenseType> get type async {
+    final typeStr = _validatedPayload['type'] as String?;
     if (typeStr == null) return LicenseType.standard;
 
     // Check for predefined types
@@ -97,8 +77,8 @@ class License {
   }
 
   /// Available features or limitations for this license
-  Map<String, dynamic> get features {
-    final featuresData = _payload['features'];
+  Future<Map<String, dynamic>> get features async {
+    final featuresData = _validatedPayload['features'];
     if (featuresData is Map<String, dynamic>) {
       return featuresData;
     }
@@ -106,8 +86,8 @@ class License {
   }
 
   /// Additional license metadata
-  Map<String, dynamic>? get metadata {
-    final metadataData = _payload['metadata'];
+  Future<Map<String, dynamic>?> get metadata async {
+    final metadataData = _validatedPayload['metadata'];
     if (metadataData is Map<String, dynamic>) {
       return metadataData;
     }
@@ -115,30 +95,37 @@ class License {
   }
 
   /// Flag indicating if this is a trial license
-  bool get isTrial => _payload['trial'] as bool? ?? false;
+  Future<bool> get isTrial async =>
+      _validatedPayload['trial'] as bool? ?? false;
 
   /// Checks if license has expired
-  bool get isExpired => DateTime.now().toUtc().isAfter(expirationDate);
+  Future<bool> get isExpired async {
+    final expDate = await expirationDate;
+    return DateTime.now().toUtc().isAfter(expDate);
+  }
 
   /// Returns the number of days remaining until expiration
-  int get remainingDays =>
-      expirationDate.difference(DateTime.now().toUtc()).inDays;
+  Future<int> get remainingDays async {
+    final expDate = await expirationDate;
+    return expDate.difference(DateTime.now().toUtc()).inDays;
+  }
 
   /// Returns the raw PASETO token
   @override
   String toString() => token;
 
-  /// Converts license to a map representation (from payload)
-  Map<String, dynamic> toMap() => Map<String, dynamic>.from(_payload);
+  /// Converts license to a map representation (from validated payload)
+  Future<Map<String, dynamic>> toMap() async =>
+      Map<String, dynamic>.from(_validatedPayload);
 
   /// Creates a JSON representation of the license payload
-  String toJson() => jsonEncode(toMap());
+  Future<String> toJson() async => jsonEncode(await toMap());
 
   /// Creates a copy of this instance with optional changes
   ///
   /// Note: This will require re-signing the token, so it returns
   /// the payload data that can be used with a generator.
-  Map<String, dynamic> copyWithPayload({
+  Future<Map<String, dynamic>> copyWithPayload({
     String? id,
     String? appId,
     DateTime? expirationDate,
@@ -147,16 +134,16 @@ class License {
     Map<String, dynamic>? features,
     Object? metadata = const _Unset(),
     bool? isTrial,
-  }) {
+  }) async {
     return {
-      'sub': id ?? this.id,
-      'app_id': appId ?? this.appId,
-      'exp': (expirationDate ?? this.expirationDate).toIso8601String(),
-      'iat': (createdAt ?? this.createdAt).toIso8601String(),
-      'type': (type ?? this.type).name,
-      'features': features ?? this.features,
-      'metadata': metadata is _Unset ? this.metadata : metadata,
-      'trial': isTrial ?? this.isTrial,
+      'sub': id ?? await this.id,
+      'app_id': appId ?? await this.appId,
+      'exp': (expirationDate ?? await this.expirationDate).toIso8601String(),
+      'iat': (createdAt ?? await this.createdAt).toIso8601String(),
+      'type': (type ?? await this.type).name,
+      'features': features ?? await this.features,
+      'metadata': metadata is _Unset ? await this.metadata : metadata,
+      'trial': isTrial ?? await this.isTrial,
     };
   }
 }

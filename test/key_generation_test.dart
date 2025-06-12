@@ -79,9 +79,12 @@ void main() {
         // Assert
         expect(license.token, startsWith('v4.public.'));
         expect(validationResult.isValid, isTrue);
-        expect(license.appId, equals('com.example.test'));
-        expect(license.type, equals(LicenseType.pro));
-        expect(license.features['premium'], isTrue);
+        expect(await license.appId, equals('com.example.test'));
+        expect(await license.type, equals(LicenseType.pro));
+        expect((await license.features)['premium'], isTrue);
+
+        // Verify license content
+        expect((await license.toMap())['app_id'], equals('com.example.test'));
       } finally {
         // Cleanup
         keyPair.privateKey.dispose();
@@ -144,8 +147,8 @@ void main() {
       expect(result.license.token, startsWith('v4.public.'));
       expect(result.publicKeyBytes.length, equals(32));
       expect(validationResult.isValid, isTrue);
-      expect(result.license.appId, equals('com.example.auto'));
-      expect(result.license.features['auto_generated'], isTrue);
+      expect(await result.license.appId, equals('com.example.auto'));
+      expect((await result.license.features)['auto_generated'], isTrue);
     });
 
     test('should_work_with_auto_generated_encryption_key', () async {

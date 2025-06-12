@@ -6,6 +6,9 @@ part of '_index.dart';
 
 /// Interface for PASETO license validator
 abstract interface class ILicenseValidator {
+  /// Validates a license token and returns a validated license
+  Future<License> validateToken(String token);
+
   /// Validates the complete license (signature and expiration)
   Future<LicenseValidationResult> validate(License license);
 
@@ -13,7 +16,7 @@ abstract interface class ILicenseValidator {
   Future<LicenseValidationResult> validateSignature(License license);
 
   /// Validates only the expiration date of the license
-  LicenseValidationResult validateExpiration(License license);
+  Future<LicenseValidationResult> validateExpiration(License license);
 }
 
 /// PASETO-based license validator
@@ -37,6 +40,44 @@ class _LicenseValidator implements ILicenseValidator {
     }
   }
 
+  /// Validates a license token and returns a validated license
+  ///
+  /// This method:
+  /// 1. Verifies the PASETO v4.public token signature
+  /// 2. Validates payload structure and expiration
+  /// 3. Returns a new License object with validated data
+  ///
+  /// Throws an exception if validation fails
+  @override
+  Future<License> validateToken(String token) async {
+    // Verify the PASETO token and extract payload
+    final result = await _PasetoV4.verifyPublic(
+      token: token,
+      publicKeyBytes: _publicKey.keyBytes,
+    );
+
+    // Validate payload structure
+    final payload = result.payload;
+    final validationError = _validatePayloadStructure(payload);
+    if (validationError != null) {
+      throw Exception('Invalid payload structure: $validationError');
+    }
+
+    // Create validated license
+    final license = License.fromValidatedToken(
+      token: token,
+      validatedPayload: payload,
+    );
+
+    // Check expiration
+    if (await license.isExpired) {
+      final expDate = await license.expirationDate;
+      throw Exception('License expired on ${expDate.toIso8601String()}');
+    }
+
+    return license;
+  }
+
   /// Validates the complete license (signature and expiration)
   ///
   /// This method performs:
@@ -55,7 +96,7 @@ class _LicenseValidator implements ILicenseValidator {
       }
 
       // Then validate expiration
-      final expirationResult = validateExpiration(license);
+      final expirationResult = await validateExpiration(license);
       if (!expirationResult.isValid) {
         return expirationResult;
       }
@@ -75,9 +116,9 @@ class _LicenseValidator implements ILicenseValidator {
   /// This method:
   /// 1. Verifies the PASETO v4.public token signature
   /// 2. Extracts and validates the payload structure
-  /// 3. Updates the license with validated payload
   ///
   /// Returns [LicenseValidationResult] with validation status
+  /// Note: This method assumes the license already has validated payload
   @override
   Future<LicenseValidationResult> validateSignature(License license) async {
     try {
@@ -100,9 +141,6 @@ class _LicenseValidator implements ILicenseValidator {
         );
       }
 
-      // Update the license with validated payload
-      license.updatePayload(payload);
-
       return const LicenseValidationResult(
           isValid: true, message: 'Valid signature');
     } catch (e) {
@@ -120,13 +158,13 @@ class _LicenseValidator implements ILicenseValidator {
   ///
   /// Returns [LicenseValidationResult] with validation status
   @override
-  LicenseValidationResult validateExpiration(License license) {
+  Future<LicenseValidationResult> validateExpiration(License license) async {
     try {
-      if (license.isExpired) {
+      if (await license.isExpired) {
+        final expDate = await license.expirationDate;
         return LicenseValidationResult(
           isValid: false,
-          message:
-              'License expired on ${license.expirationDate.toIso8601String()}',
+          message: 'License expired on ${expDate.toIso8601String()}',
         );
       }
 

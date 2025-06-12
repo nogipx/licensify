@@ -74,10 +74,10 @@ Future<void> basicLicensingWorkflow() async {
     );
 
     print('✅ Лицензия создана');
-    print('   App ID: ${license.appId}');
-    print('   Тип: ${license.type.name}');
-    print('   Срок: ${license.expirationDate}');
-    print('   Пробная: ${license.isTrial}');
+    print('   App ID: ${await license.appId}');
+    print('   Тип: ${(await license.type).name}');
+    print('   Срок: ${await license.expirationDate}');
+    print('   Пробная: ${await license.isTrial}');
     print('   Токен: ${license.token.substring(0, 50)}...');
 
     // 3. Проверяем лицензию
@@ -186,8 +186,8 @@ Future<void> advancedSecureOperations() async {
   );
 
   print('✅ Лицензия создана с автогенерацией ключей');
-  print('   App ID: ${result.license.appId}');
-  print('   Тип: ${result.license.type.name}');
+  print('   App ID: ${await result.license.appId}');
+  print('   Тип: ${(await result.license.type).name}');
   print('   Публичный ключ: ${result.publicKeyBytes.length} байт');
 
   // 2. Валидация с байтами ключа
@@ -263,7 +263,7 @@ Future<void> securityBestPractices() async {
       );
 
       print('   ✅ Временная лицензия $i создана');
-      print('      Срок действия: ${tempLicense.expirationDate}');
+      print('      Срок действия: ${await tempLicense.expirationDate}');
     } finally {
       // Сразу очищаем ключи после использования
       tempKeys.privateKey.dispose();

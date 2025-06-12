@@ -86,12 +86,12 @@ void main() {
           );
 
           // Assert
-          expect(license.appId, appId);
-          expect(license.type.name, 'pro');
-          expect(license.features['premium'], isTrue);
-          expect(license.features['api_access'], isTrue);
-          expect(license.metadata!['customer'], 'Test Corp');
-          expect(license.isTrial, isFalse);
+          expect(await license.appId, appId);
+          expect((await license.type).name, 'pro');
+          expect((await license.features)['premium'], isTrue);
+          expect((await license.features)['api_access'], isTrue);
+          expect((await license.metadata)?['customer'], 'Test Corp');
+          expect(await license.isTrial, isFalse);
           expect(license.token, isNotEmpty);
           expect(license.token, startsWith('v4.public.'));
         } finally {
@@ -112,10 +112,10 @@ void main() {
         );
 
         // Assert
-        expect(result.license.appId, 'com.test.auto-app');
-        expect(result.license.type.name, 'trial');
-        expect(result.license.isTrial, isTrue);
-        expect(result.license.features['limited_access'], isTrue);
+        expect(await result.license.appId, 'com.test.auto-app');
+        expect((await result.license.type).name, 'trial');
+        expect(await result.license.isTrial, isTrue);
+        expect((await result.license.features)['limited_access'], isTrue);
         expect(result.publicKeyBytes.length, 32);
         expect(result.license.token, startsWith('v4.public.'));
       });
@@ -136,10 +136,10 @@ void main() {
           );
 
           // Assert
-          expect(license.appId, 'com.test.trial');
-          expect(license.type.name, 'trial');
-          expect(license.isTrial, isTrue);
-          expect(license.features['basic_access'], isTrue);
+          expect(await license.appId, 'com.test.trial');
+          expect((await license.type).name, 'trial');
+          expect(await license.isTrial, isTrue);
+          expect((await license.features)['basic_access'], isTrue);
         } finally {
           keys.privateKey.dispose();
           keys.publicKey.dispose();
@@ -241,6 +241,31 @@ void main() {
         } finally {
           keys.privateKey.dispose();
           keys.publicKey.dispose();
+        }
+      });
+
+      test('should handle invalid license tokens gracefully', () async {
+        // Act - пытаемся валидировать лицензию с неправильным ключом
+        final validLicense = await Licensify.createLicenseWithKeys(
+          appId: 'com.test.invalid',
+          expirationDate: DateTime.now().add(Duration(days: 1)),
+          type: LicenseType.standard,
+        );
+
+        final wrongKeys = await Licensify.generateSigningKeys();
+
+        try {
+          final result = await Licensify.validateLicense(
+            license: validLicense.license,
+            publicKey: wrongKeys.publicKey,
+          );
+
+          // Assert - валидация должна провалиться
+          expect(result.isValid, isFalse);
+          expect(result.message, contains('verification error'));
+        } finally {
+          wrongKeys.privateKey.dispose();
+          wrongKeys.publicKey.dispose();
         }
       });
     });
@@ -346,24 +371,28 @@ void main() {
     });
 
     group('🛠️ Utility Functions', () {
-      test('should parse license token', () async {
+      test('should validate license token securely', () async {
         // Arrange
         final keys = await Licensify.generateSigningKeys();
         final originalLicense = await Licensify.createLicense(
           privateKey: keys.privateKey,
-          appId: 'com.test.parse',
+          appId: 'com.test.validate',
           expirationDate: DateTime.now().add(Duration(days: 10)),
           type: LicenseType('custom'),
-          features: {'parse_test': true},
+          features: {'validate_test': true},
         );
 
         try {
-          // Act
-          final parsedLicense = Licensify.parseLicense(originalLicense.token);
+          // Act - используем безопасную валидацию вместо небезопасного парсинга
+          final result = await Licensify.validateLicense(
+            license: originalLicense,
+            publicKey: keys.publicKey,
+          );
 
           // Assert
-          expect(parsedLicense.token, originalLicense.token);
-          // Note: parseLicense только парсит структуру, для доступа к данным нужна валидация
+          expect(result.isValid, isTrue);
+          expect(await originalLicense.appId, 'com.test.validate');
+          expect((await originalLicense.features)['validate_test'], isTrue);
         } finally {
           keys.privateKey.dispose();
           keys.publicKey.dispose();
@@ -393,7 +422,7 @@ void main() {
           );
 
           // Assert - лицензия создана успешно
-          expect(license.appId, 'com.test.security');
+          expect(await license.appId, 'com.test.security');
 
           // Act - проверяем лицензию с secure операцией
           final result = await Licensify.validateLicense(
@@ -423,7 +452,7 @@ void main() {
             type: LicenseType('test'),
           );
 
-          expect(result.license.appId, 'com.test.multiple-$i');
+          expect(await result.license.appId, 'com.test.multiple-$i');
           expect(result.publicKeyBytes.length, 32);
 
           // Валидируем каждую лицензию
@@ -438,14 +467,6 @@ void main() {
     });
 
     group('🚨 Error Handling', () {
-      test('should handle invalid license tokens gracefully', () {
-        // Act - parseLicense не бросает исключения, но создает пустой объект
-        final parsed = Licensify.parseLicense('invalid-token');
-
-        // Assert - токен сохраняется, но данные недоступны без валидации
-        expect(parsed.token, 'invalid-token');
-      });
-
       test('should fail validation with wrong public key', () async {
         // Arrange
         final correctKeys = await Licensify.generateSigningKeys();

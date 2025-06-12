@@ -100,14 +100,20 @@ class _LicenseGenerator implements ILicenseGenerator {
 
     try {
       // Sign the payload with PASETO v4.public
-      final token = await _PasetoV4.signPublic(
-        payload: payload,
-        privateKeyBytes: _privateKey.keyBytes,
-        footer: footer,
-      );
+      final token =
+          await _privateKey.executeWithKeyBytesAsync((keyBytes) async {
+        return await _PasetoV4.signPublic(
+          payload: payload,
+          privateKeyBytes: keyBytes,
+          footer: footer,
+        );
+      });
 
-      // Create and return the PASETO license
-      return License.fromValidatedPayload(token: token, payload: payload);
+      // Create and return the PASETO license with validated payload
+      return License.fromValidatedToken(
+        token: token,
+        validatedPayload: payload,
+      );
     } catch (e) {
       throw Exception('Failed to generate PASETO license: $e');
     }
@@ -128,7 +134,10 @@ class _LicenseGenerator implements ILicenseGenerator {
         footer: footer,
       );
 
-      return License.fromValidatedPayload(token: token, payload: payload);
+      return License.fromValidatedToken(
+        token: token,
+        validatedPayload: payload,
+      );
     } catch (e) {
       throw Exception('Failed to generate PASETO license from payload: $e');
     }

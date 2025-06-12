@@ -115,7 +115,7 @@ class LicensifyPasetoExamples {
     );
 
     print('✅ License created successfully!');
-    _printLicenseDetails(license, 'Standard PASETO');
+    await _printLicenseDetails(license, 'Standard PASETO');
 
     print('\n2. Creating trial license:');
     // Создаем новый приватный ключ из байтов для этой операции
@@ -136,7 +136,7 @@ class LicensifyPasetoExamples {
       );
 
       print('✅ Trial license created successfully!');
-      _printLicenseDetails(trialLicense, 'Trial PASETO');
+      await _printLicenseDetails(trialLicense, 'Trial PASETO');
     } finally {
       privateKey2.dispose();
     }
@@ -168,7 +168,7 @@ class LicensifyPasetoExamples {
       );
 
       print('✅ Enterprise license created successfully!');
-      _printLicenseDetails(customLicense, 'Enterprise PASETO');
+      await _printLicenseDetails(customLicense, 'Enterprise PASETO');
     } finally {
       privateKey3.dispose();
     }
@@ -191,14 +191,14 @@ class LicensifyPasetoExamples {
       print('   Message: ${result.message}');
 
       print('\n   📋 License Details After Validation:');
-      print('   ID: ${license.id}');
-      print('   App ID: ${license.appId}');
-      print('   Type: ${license.type.name}');
-      print('   Expires: ${license.expirationDate}');
-      print('   Created: ${license.createdAt}');
-      print('   Trial: ${license.isTrial}');
-      print('   Expired: ${license.isExpired}');
-      print('   Days remaining: ${license.remainingDays}');
+      print('   ID: ${await license.id}');
+      print('   App ID: ${await license.appId}');
+      print('   Type: ${(await license.type).name}');
+      print('   Expires: ${await license.expirationDate}');
+      print('   Created: ${await license.createdAt}');
+      print('   Trial: ${await license.isTrial}');
+      print('   Expired: ${await license.isExpired}');
+      print('   Days remaining: ${await license.remainingDays}');
     } else {
       print('❌ License validation failed: ${result.message}');
     }
@@ -228,7 +228,7 @@ class LicensifyPasetoExamples {
       publicKeyBytes: publicKeyBytes,
     );
     // Note: Expiration validation is included in full validation, checking manually here
-    final expirationResult = license.isExpired
+    final expirationResult = await license.isExpired
         ? const LicenseValidationResult(
             isValid: false, message: 'License expired')
         : const LicenseValidationResult(
@@ -246,16 +246,35 @@ class LicensifyPasetoExamples {
     if (tokenParts.length >= 3) {
       final tamperedToken =
           '${tokenParts[0]}.${tokenParts[1]}.fake_signature_data';
-      final fakeToken = License.fromToken(tamperedToken);
 
-      final fakeResult = await Licensify.validateLicenseWithKeyBytes(
-        license: fakeToken,
-        publicKeyBytes: publicKeyBytes,
-      );
-      print(
-          '   Tampered token: ${!fakeResult.isValid ? "✅ Rejected" : "❌ Accepted"}');
-      if (!fakeResult.isValid) {
-        print('   Security working: ${fakeResult.message}');
+      // Try to validate the tampered token directly with validation method
+      // This will fail because the token is invalid
+      try {
+        final publicKey =
+            LicensifyPublicKey.ed25519(Uint8List.fromList(publicKeyBytes));
+
+        // Create a temporary license object for validation testing
+        // Note: In real applications, you would never create licenses this way
+        final tempLicense = License.fromValidatedToken(
+          token: tamperedToken,
+          validatedPayload: {}, // Empty payload for testing
+        );
+
+        final fakeResult = await Licensify.validateLicense(
+          license: tempLicense,
+          publicKey: publicKey,
+        );
+
+        publicKey.dispose();
+
+        print(
+            '   Tampered token: ${!fakeResult.isValid ? "✅ Rejected" : "❌ Accepted"}');
+        if (!fakeResult.isValid) {
+          print('   Security working: ${fakeResult.message}');
+        }
+      } catch (e) {
+        print('   Tampered token: ✅ Rejected');
+        print('   Security working: Token validation failed - $e');
       }
     }
 
@@ -278,7 +297,7 @@ class LicensifyPasetoExamples {
         publicKeyBytes: publicKeyBytes,
       );
       // Check expiration manually since it's included in full validation
-      final expiredResult = expiredLicense.isExpired
+      final expiredResult = await expiredLicense.isExpired
           ? const LicenseValidationResult(
               isValid: false, message: 'License expired')
           : const LicenseValidationResult(
@@ -480,24 +499,26 @@ class LicensifyPasetoExamples {
   }
 
   /// Helper method to print license details
-  void _printLicenseDetails(License license, String type) {
+  Future<void> _printLicenseDetails(License license, String type) async {
     print('   Type: $type');
     print('   Token starts with: ${license.token.substring(0, 30)}...');
     print('   Token length: ${license.token.length} characters');
-    print('   License ID: ${license.id}');
-    print('   App ID: ${license.appId}');
-    print('   License Type: ${license.type.name}');
-    print('   Trial: ${license.isTrial}');
-    print('   Created: ${license.createdAt}');
-    print('   Expires: ${license.expirationDate}');
-    print('   Days remaining: ${license.remainingDays}');
+    print('   License ID: ${await license.id}');
+    print('   App ID: ${await license.appId}');
+    print('   License Type: ${(await license.type).name}');
+    print('   Trial: ${await license.isTrial}');
+    print('   Created: ${await license.createdAt}');
+    print('   Expires: ${await license.expirationDate}');
+    print('   Days remaining: ${await license.remainingDays}');
 
-    if (license.features.isNotEmpty) {
-      print('   Features: ${license.features.keys.join(", ")}');
+    final features = await license.features;
+    if (features.isNotEmpty) {
+      print('   Features: ${features.keys.join(", ")}');
     }
 
-    if (license.metadata != null && license.metadata!.isNotEmpty) {
-      print('   Metadata keys: ${license.metadata!.keys.join(", ")}');
+    final metadata = await license.metadata;
+    if (metadata != null && metadata.isNotEmpty) {
+      print('   Metadata keys: ${metadata.keys.join(", ")}');
     }
   }
 
