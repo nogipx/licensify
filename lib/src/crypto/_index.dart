@@ -20,3 +20,5 @@ part 'keys/licensify_private_key.dart';
 part 'keys/licensify_public_key.dart';
 part 'keys/licensify_symmetric_key.dart';
 part 'paseto_v4.dart';
+
+part '../licensify.dart';

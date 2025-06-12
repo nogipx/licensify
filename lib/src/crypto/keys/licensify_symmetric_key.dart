@@ -17,13 +17,5 @@ final class LicensifySymmetricKey extends LicensifyKey {
     );
   }
 
-  /// Creates a combined local crypto handler for both encryption and decryption
-  LicensifySymmetricCrypto get crypto {
-    if (keyType != LicensifyKeyType.xchacha20Local) {
-      throw UnsupportedError(
-        'Only XChaCha20 symmetric keys are supported for local crypto operations.',
-      );
-    }
-    return LicensifySymmetricCrypto(symmetricKey: this);
-  }
+  // Геттер crypto убран - используйте Licensify.encryptData() и Licensify.decryptData() вместо него
 }

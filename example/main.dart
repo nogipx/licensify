@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:licensify/licensify.dart';
 
 /// Comprehensive example of Licensify PASETO package usage
@@ -20,6 +21,8 @@ void main() async {
 /// Main class containing all PASETO examples
 class LicensifyPasetoExamples {
   late final LicensifyKeyPair keyPair;
+  late final List<int> privateKeyBytes;
+  late final List<int> publicKeyBytes;
   late final License license;
 
   /// Run all examples in sequence
@@ -59,11 +62,15 @@ class LicensifyPasetoExamples {
 
     keyPair = await LicensifyKey.generatePublicKeyPair();
 
+    // Сохраняем байты ключей для повторного использования
+    privateKeyBytes = List<int>.from(keyPair.privateKey.keyBytes);
+    publicKeyBytes = List<int>.from(keyPair.publicKey.keyBytes);
+
     final endTime = DateTime.now();
 
     print('✅ Generated Ed25519 key pair');
     print('   Private key: ${keyPair.privateKey.keyBytes.length} bytes');
-    print('   Public key:  ${keyPair.publicKey!.keyBytes.length} bytes');
+    print('   Public key:  ${keyPair.publicKey.keyBytes.length} bytes');
     print(
         '   Generation time: ${endTime.difference(startTime).inMilliseconds}ms');
     print('   Key type: ${keyPair.keyType}');
@@ -74,6 +81,9 @@ class LicensifyPasetoExamples {
     print('✅ Generated XChaCha20 symmetric key');
     print('   Key size: ${symmetricKey.keyBytes.length} bytes');
     print('   Key type: ${symmetricKey.keyType}');
+
+    // Очищаем временный ключ
+    symmetricKey.dispose();
   }
 
   /// Examples of creating PASETO licenses
@@ -81,10 +91,9 @@ class LicensifyPasetoExamples {
     print('\n\n📝 LICENSE CREATION EXAMPLES');
     print('============================\n');
 
-    final generator = LicenseGenerator(privateKey: keyPair.privateKey);
-
     print('1. Creating standard PASETO license:');
-    license = await generator.call(
+    license = await Licensify.createLicense(
+      privateKey: keyPair.privateKey,
       appId: 'com.example.myapp',
       expirationDate: DateTime.now().add(const Duration(days: 365)),
       type: LicenseType.pro,
@@ -109,44 +118,60 @@ class LicensifyPasetoExamples {
     _printLicenseDetails(license, 'Standard PASETO');
 
     print('\n2. Creating trial license:');
-    final trialLicense = await generator.call(
-      appId: 'com.example.trial',
-      expirationDate: DateTime.now().add(const Duration(days: 30)),
-      type: LicenseType.standard,
-      features: {
-        'max_users': 5,
-        'api_access': false,
-        'trial_limitations': true,
-      },
-      isTrial: true,
-    );
+    // Создаем новый приватный ключ из байтов для этой операции
+    final privateKey2 =
+        LicensifyPrivateKey.ed25519(Uint8List.fromList(privateKeyBytes));
+    try {
+      final trialLicense = await Licensify.createLicense(
+        privateKey: privateKey2,
+        appId: 'com.example.trial',
+        expirationDate: DateTime.now().add(const Duration(days: 30)),
+        type: LicenseType.standard,
+        features: {
+          'max_users': 5,
+          'api_access': false,
+          'trial_limitations': true,
+        },
+        isTrial: true,
+      );
 
-    print('✅ Trial license created successfully!');
-    _printLicenseDetails(trialLicense, 'Trial PASETO');
+      print('✅ Trial license created successfully!');
+      _printLicenseDetails(trialLicense, 'Trial PASETO');
+    } finally {
+      privateKey2.dispose();
+    }
 
     print('\n3. Creating custom license type:');
-    final customLicense = await generator.call(
-      appId: 'com.example.enterprise',
-      expirationDate: DateTime.now().add(const Duration(days: 730)),
-      type: LicenseType('enterprise'),
-      features: {
-        'max_users': 1000,
-        'api_access': true,
-        'advanced_reports': true,
-        'custom_themes': true,
-        'white_label': true,
-        'sso_support': true,
-        'priority_support': true,
-      },
-      metadata: {
-        'customer_tier': 'enterprise',
-        'dedicated_support': true,
-        'sla_level': 'premium',
-      },
-    );
+    // Создаем еще один новый приватный ключ из байтов
+    final privateKey3 =
+        LicensifyPrivateKey.ed25519(Uint8List.fromList(privateKeyBytes));
+    try {
+      final customLicense = await Licensify.createLicense(
+        privateKey: privateKey3,
+        appId: 'com.example.enterprise',
+        expirationDate: DateTime.now().add(const Duration(days: 730)),
+        type: LicenseType('enterprise'),
+        features: {
+          'max_users': 1000,
+          'api_access': true,
+          'advanced_reports': true,
+          'custom_themes': true,
+          'white_label': true,
+          'sso_support': true,
+          'priority_support': true,
+        },
+        metadata: {
+          'customer_tier': 'enterprise',
+          'dedicated_support': true,
+          'sla_level': 'premium',
+        },
+      );
 
-    print('✅ Enterprise license created successfully!');
-    _printLicenseDetails(customLicense, 'Enterprise PASETO');
+      print('✅ Enterprise license created successfully!');
+      _printLicenseDetails(customLicense, 'Enterprise PASETO');
+    } finally {
+      privateKey3.dispose();
+    }
   }
 
   /// Examples of validating PASETO licenses
@@ -154,10 +179,12 @@ class LicensifyPasetoExamples {
     print('\n\n🔍 LICENSE VALIDATION EXAMPLES');
     print('===============================\n');
 
-    final validator = LicenseValidator(publicKey: keyPair.publicKey!);
-
     print('1. Complete license validation:');
-    final result = await validator.validate(license);
+    // Используем байты публичного ключа для валидации
+    final result = await Licensify.validateLicenseWithKeyBytes(
+      license: license,
+      publicKeyBytes: publicKeyBytes,
+    );
 
     if (result.isValid) {
       print('✅ License is completely valid');
@@ -178,15 +205,34 @@ class LicensifyPasetoExamples {
 
     print('\n2. Separate validation checks:');
 
-    // Test signature validation
-    final signatureResult = await validator.validateSignature(license);
-    print('   Signature: ${signatureResult.isValid ? "✅ Valid" : "❌ Invalid"}');
-    if (!signatureResult.isValid) {
-      print('   Error: ${signatureResult.message}');
+    // Test signature validation - создаем новый публичный ключ
+    final publicKey =
+        LicensifyPublicKey.ed25519(Uint8List.fromList(publicKeyBytes));
+    try {
+      final signatureResult = await Licensify.validateSignature(
+        license: license,
+        publicKey: publicKey,
+      );
+      print(
+          '   Signature: ${signatureResult.isValid ? "✅ Valid" : "❌ Invalid"}');
+      if (!signatureResult.isValid) {
+        print('   Error: ${signatureResult.message}');
+      }
+    } finally {
+      publicKey.dispose();
     }
 
-    // Test expiration validation
-    final expirationResult = validator.validateExpiration(license);
+    // Test expiration validation - используем байты ключа для повторной валидации
+    await Licensify.validateLicenseWithKeyBytes(
+      license: license,
+      publicKeyBytes: publicKeyBytes,
+    );
+    // Note: Expiration validation is included in full validation, checking manually here
+    final expirationResult = license.isExpired
+        ? const LicenseValidationResult(
+            isValid: false, message: 'License expired')
+        : const LicenseValidationResult(
+            isValid: true, message: 'License not expired');
     print(
         '   Expiration: ${expirationResult.isValid ? "✅ Not expired" : "❌ Expired"}');
     if (!expirationResult.isValid) {
@@ -202,7 +248,10 @@ class LicensifyPasetoExamples {
           '${tokenParts[0]}.${tokenParts[1]}.fake_signature_data';
       final fakeToken = License.fromToken(tamperedToken);
 
-      final fakeResult = await validator.validate(fakeToken);
+      final fakeResult = await Licensify.validateLicenseWithKeyBytes(
+        license: fakeToken,
+        publicKeyBytes: publicKeyBytes,
+      );
       print(
           '   Tampered token: ${!fakeResult.isValid ? "✅ Rejected" : "❌ Accepted"}');
       if (!fakeResult.isValid) {
@@ -212,20 +261,35 @@ class LicensifyPasetoExamples {
 
     print('\n4. Testing expired license:');
 
-    final generator = LicenseGenerator(privateKey: keyPair.privateKey);
-    final expiredLicense = await generator.call(
-      appId: 'com.example.expired',
-      expirationDate: DateTime.now().subtract(const Duration(days: 1)),
-      type: LicenseType.standard,
-    );
+    // Создаем новый приватный ключ для создания просроченной лицензии
+    final privateKey4 =
+        LicensifyPrivateKey.ed25519(Uint8List.fromList(privateKeyBytes));
+    try {
+      final expiredLicense = await Licensify.createLicense(
+        privateKey: privateKey4,
+        appId: 'com.example.expired',
+        expirationDate: DateTime.now().subtract(const Duration(days: 1)),
+        type: LicenseType.standard,
+      );
 
-    // Validate signature first to populate payload
-    await validator.validateSignature(expiredLicense);
-    final expiredResult = validator.validateExpiration(expiredLicense);
-    print(
-        '   Expired license: ${!expiredResult.isValid ? "✅ Rejected" : "❌ Accepted"}');
-    if (!expiredResult.isValid) {
-      print('   Expiration check working: ${expiredResult.message}');
+      // Validate signature first to populate payload
+      await Licensify.validateLicenseWithKeyBytes(
+        license: expiredLicense,
+        publicKeyBytes: publicKeyBytes,
+      );
+      // Check expiration manually since it's included in full validation
+      final expiredResult = expiredLicense.isExpired
+          ? const LicenseValidationResult(
+              isValid: false, message: 'License expired')
+          : const LicenseValidationResult(
+              isValid: true, message: 'License not expired');
+      print(
+          '   Expired license: ${!expiredResult.isValid ? "✅ Rejected" : "❌ Accepted"}');
+      if (!expiredResult.isValid) {
+        print('   Expiration check working: ${expiredResult.message}');
+      }
+    } finally {
+      privateKey4.dispose();
     }
   }
 
@@ -236,8 +300,10 @@ class LicensifyPasetoExamples {
 
     print('1. PASETO v4.local encryption (symmetric):');
 
-    // Generate symmetric key
+    // Generate symmetric key and save bytes for reuse
     final symmetricKey = LicensifyKey.generateLocalKey();
+    final symmetricKeyBytes = List<int>.from(symmetricKey.keyBytes);
+    symmetricKey.dispose(); // Dispose original key immediately
 
     // Encrypt sensitive data
     final sensitiveData = {
@@ -248,67 +314,98 @@ class LicensifyPasetoExamples {
     };
 
     try {
-      final encryptedToken = await symmetricKey.crypto.encrypt(
-        sensitiveData,
+      // Create fresh key for encryption
+      final encryptKey = LicensifySymmetricKey.xchacha20(
+          Uint8List.fromList(symmetricKeyBytes));
+
+      final encryptedToken = await Licensify.encryptData(
+        data: sensitiveData,
+        encryptionKey: encryptKey,
         footer: jsonEncode({'purpose': 'sensitive_data', 'version': '2.0'}),
       );
 
       print('✅ Data encrypted with PASETO v4.local');
       print('   Token: ${encryptedToken.substring(0, 40)}...');
 
-      // Decrypt the data
-      final decryptedResult = await symmetricKey.crypto.decrypt(encryptedToken);
+      // Create fresh key for decryption
+      final decryptKey = LicensifySymmetricKey.xchacha20(
+          Uint8List.fromList(symmetricKeyBytes));
 
-      print('✅ Data decrypted successfully');
-      print('   Original keys: ${sensitiveData.keys.join(", ")}');
-      print('   Decrypted keys: ${decryptedResult.keys.join(", ")}');
-      print('   Footer: $decryptedResult');
+      try {
+        final decryptedResult = await Licensify.decryptData(
+          encryptedToken: encryptedToken,
+          encryptionKey: decryptKey,
+        );
 
-      final dataMatches = _comparePayloads(sensitiveData, decryptedResult);
-      print('   Data integrity: ${dataMatches ? "✅ Verified" : "❌ Failed"}');
+        print('✅ Data decrypted successfully');
+        print('   Original keys: ${sensitiveData.keys.join(", ")}');
+        print('   Decrypted keys: ${decryptedResult.keys.join(", ")}');
+
+        final dataMatches = _comparePayloads(sensitiveData, decryptedResult);
+        print('   Data integrity: ${dataMatches ? "✅ Verified" : "❌ Failed"}');
+      } finally {
+        decryptKey.dispose();
+      }
     } catch (e) {
       print('❌ v4.local encryption error: $e');
     }
 
-    print('\n2. Fluent API usage:');
+    print('\n2. Automatic key generation with cleanup:');
 
-    // Demonstrate fluent API through key objects
-    final fluentGenerator = keyPair.privateKey.licenseGenerator;
-    final fluentValidator = keyPair.publicKey!.licenseValidator;
-
-    final fluentLicense = await fluentGenerator.call(
-      appId: 'com.example.fluent',
+    // Demonstrate automatic key generation
+    final autoResult = await Licensify.createLicenseWithKeys(
+      appId: 'com.example.auto',
       expirationDate: DateTime.now().add(const Duration(days: 90)),
       type: LicenseType('startup'),
       features: {'api_calls': 10000, 'storage_gb': 50},
     );
 
-    final fluentResult = await fluentValidator.validate(fluentLicense);
-    print('   Fluent API: ${fluentResult.isValid ? "✅ Working" : "❌ Failed"}');
+    print('✅ License with auto-generated keys created');
+    print('   Public key: ${autoResult.publicKeyBytes.length} bytes');
+    print('   🔒 Private key automatically disposed');
 
-    print('\n3. License payload generation from existing data:');
+    // Validate with the returned public key bytes
+    final validationResult = await Licensify.validateLicenseWithKeyBytes(
+      license: autoResult.license,
+      publicKeyBytes: autoResult.publicKeyBytes,
+    );
+    print(
+        '   Auto validation: ${validationResult.isValid ? "✅ Working" : "❌ Failed"}');
 
-    final customPayload = {
-      'sub': 'custom-license-12345',
-      'app_id': 'com.example.custom',
-      'exp': DateTime.now().add(const Duration(days: 60)).toIso8601String(),
-      'iat': DateTime.now().toIso8601String(),
-      'type': 'custom',
-      'features': {'feature_a': true, 'feature_b': 'premium'},
-      'trial': false,
+    print('\n3. Encryption with auto-generated key:');
+
+    final configData = {
+      'endpoint': 'https://api.example.com/licenses',
+      'feature_flags': {
+        'advanced_analytics': true,
+        'multi_tenant': true,
+        'custom_themes': true,
+      },
     };
 
-    final generator = LicenseGenerator(privateKey: keyPair.privateKey);
-    final customLicense = await generator.fromPayload(payload: customPayload);
+    final encryptResult = await Licensify.encryptDataWithKey(
+      data: configData,
+    );
 
-    print('✅ License from custom payload created');
-    print('   Token starts with: ${customLicense.token.substring(0, 30)}...');
+    print('✅ Config encrypted with auto-generated key');
+    print('   Token: ${encryptResult.encryptedToken.substring(0, 40)}...');
+    print('   Key: ${encryptResult.keyBytes.length} bytes');
 
-    // Validate the custom license
-    final validator = LicenseValidator(publicKey: keyPair.publicKey!);
-    final customResult = await validator.validate(customLicense);
-    print(
-        '   Custom validation: ${customResult.isValid ? "✅ Valid" : "❌ Invalid"}');
+    // Decrypt with the returned key bytes
+    final tempKey = LicensifySymmetricKey.xchacha20(encryptResult.keyBytes);
+    late Map<String, dynamic> decryptedConfig;
+    try {
+      decryptedConfig = await Licensify.decryptData(
+        encryptedToken: encryptResult.encryptedToken,
+        encryptionKey: tempKey,
+      );
+    } finally {
+      tempKey.dispose();
+    }
+
+    print('✅ Config decrypted successfully');
+    print('   Endpoint: ${decryptedConfig['endpoint']}');
+    print('   Feature flags: ${decryptedConfig['feature_flags']}');
   }
 
   /// Performance testing examples
@@ -316,23 +413,30 @@ class LicensifyPasetoExamples {
     print('\n\n⚡ PERFORMANCE EXAMPLES');
     print('=======================\n');
 
-    final generator = LicenseGenerator(privateKey: keyPair.privateKey);
-    final validator = LicenseValidator(publicKey: keyPair.publicKey!);
-
     print('1. Bulk license generation and validation:');
 
     const testCount = 50;
     final stopwatch = Stopwatch()..start();
 
     final licenses = <License>[];
-    for (int i = 0; i < testCount; i++) {
-      final testLicense = await generator.call(
-        appId: 'com.example.perf$i',
-        expirationDate: DateTime.now().add(const Duration(days: 365)),
-        type: i % 2 == 0 ? LicenseType.pro : LicenseType.standard,
-        features: {'test_id': i, 'batch': 'performance_test'},
-      );
-      licenses.add(testLicense);
+
+    // Создаем приватный ключ для генерации лицензий
+    final perfPrivateKey =
+        LicensifyPrivateKey.ed25519(Uint8List.fromList(privateKeyBytes));
+
+    try {
+      for (int i = 0; i < testCount; i++) {
+        final testLicense = await Licensify.createLicense(
+          privateKey: perfPrivateKey,
+          appId: 'com.example.perf$i',
+          expirationDate: DateTime.now().add(const Duration(days: 365)),
+          type: i % 2 == 0 ? LicenseType.pro : LicenseType.standard,
+          features: {'test_id': i, 'batch': 'performance_test'},
+        );
+        licenses.add(testLicense);
+      }
+    } finally {
+      perfPrivateKey.dispose();
     }
 
     final generationTime = stopwatch.elapsedMilliseconds;
@@ -340,7 +444,10 @@ class LicensifyPasetoExamples {
 
     int validCount = 0;
     for (final testLicense in licenses) {
-      final result = await validator.validate(testLicense);
+      final result = await Licensify.validateLicenseWithKeyBytes(
+        license: testLicense,
+        publicKeyBytes: publicKeyBytes,
+      );
       if (result.isValid) validCount++;
     }
 
@@ -366,6 +473,10 @@ class LicensifyPasetoExamples {
         '   Payload size estimate: ~${(sampleLicense.token.length * 0.6).round()} chars');
     print(
         '   Signature size estimate: ~${(sampleLicense.token.length * 0.4).round()} chars');
+
+    // Очищаем основные ключи в конце
+    keyPair.privateKey.dispose();
+    keyPair.publicKey.dispose();
   }
 
   /// Helper method to print license details
@@ -393,10 +504,15 @@ class LicensifyPasetoExamples {
   /// Helper method to compare payloads
   bool _comparePayloads(
       Map<String, dynamic> original, Map<String, dynamic> decrypted) {
-    if (original.length != decrypted.length) return false;
+    // Filter out PASETO internal fields that start with underscore
+    final filteredDecrypted = Map<String, dynamic>.from(decrypted);
+    filteredDecrypted.removeWhere((key, value) => key.startsWith('_'));
+
+    if (original.length != filteredDecrypted.length) return false;
 
     for (final key in original.keys) {
-      if (!decrypted.containsKey(key) || original[key] != decrypted[key]) {
+      if (!filteredDecrypted.containsKey(key) ||
+          original[key] != filteredDecrypted[key]) {
         return false;
       }
     }

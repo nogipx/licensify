@@ -25,6 +25,7 @@ abstract interface class ILicenseGenerator {
     Map<String, dynamic> features = const {},
     Map<String, dynamic>? metadata,
     bool isTrial = false,
+    String? footer,
   });
 }
 
@@ -33,14 +34,14 @@ abstract interface class ILicenseGenerator {
 /// This class is responsible for creating cryptographically signed licenses
 /// using PASETO v4.public tokens. This provides better security than traditional
 /// signature schemes and follows modern cryptographic best practices.
-class LicenseGenerator implements ILicenseGenerator {
+class _LicenseGenerator implements ILicenseGenerator {
   /// Private key for signing PASETO tokens
   final LicensifyPrivateKey _privateKey;
 
   /// Creates a new PASETO license generator with Ed25519 private key
   ///
   /// [privateKey] - Ed25519 private key for PASETO v4.public signing
-  LicenseGenerator({required LicensifyPrivateKey privateKey})
+  _LicenseGenerator({required LicensifyPrivateKey privateKey})
       : _privateKey = privateKey {
     if (_privateKey.keyType != LicensifyKeyType.ed25519Public) {
       throw ArgumentError(

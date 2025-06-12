@@ -4,29 +4,36 @@ import 'package:licensify/licensify.dart';
 
 void main() {
   group('LicensifyKey Factory Methods', () {
-    test('should generate Ed25519 key pair', () async {
+    test('should_generate_ed25519_key_pair_with_correct_properties', () async {
       // Act
-      final keyPair = await LicensifyKey.generatePublicKeyPair();
+      final sut = await LicensifyKey.generatePublicKeyPair();
 
       // Assert
-      expect(keyPair, isA<LicensifyKeyPair>());
-      expect(keyPair.keyType, equals(LicensifyKeyType.ed25519Public));
-      expect(keyPair.privateKey.keyBytes.length, equals(32));
-      expect(keyPair.publicKey.keyBytes.length, equals(32));
-      expect(keyPair.isConsistent, isTrue);
+      expect(sut, isA<LicensifyKeyPair>());
+      expect(sut.keyType, equals(LicensifyKeyType.ed25519Public));
+      expect(sut.privateKey.keyBytes.length, equals(32));
+      expect(sut.publicKey.keyBytes.length, equals(32));
+      expect(sut.isConsistent, isTrue);
+
+      // Cleanup
+      sut.privateKey.dispose();
+      sut.publicKey.dispose();
     });
 
-    test('should generate symmetric key', () {
+    test('should_generate_symmetric_key_with_correct_properties', () {
       // Act
-      final symmetricKey = LicensifyKey.generateLocalKey();
+      final sut = LicensifyKey.generateLocalKey();
 
       // Assert
-      expect(symmetricKey, isA<LicensifySymmetricKey>());
-      expect(symmetricKey.keyType, equals(LicensifyKeyType.xchacha20Local));
-      expect(symmetricKey.keyBytes.length, equals(32));
+      expect(sut, isA<LicensifySymmetricKey>());
+      expect(sut.keyType, equals(LicensifyKeyType.xchacha20Local));
+      expect(sut.keyBytes.length, equals(32));
+
+      // Cleanup
+      sut.dispose();
     });
 
-    test('should generate different keys each time', () async {
+    test('should_generate_different_keys_each_time', () async {
       // Act
       final keyPair1 = await LicensifyKey.generatePublicKeyPair();
       final keyPair2 = await LicensifyKey.generatePublicKeyPair();
@@ -39,28 +46,54 @@ void main() {
       expect(keyPair1.publicKey.keyBytes,
           isNot(equals(keyPair2.publicKey.keyBytes)));
       expect(symmetricKey1.keyBytes, isNot(equals(symmetricKey2.keyBytes)));
+
+      // Cleanup
+      keyPair1.privateKey.dispose();
+      keyPair1.publicKey.dispose();
+      keyPair2.privateKey.dispose();
+      keyPair2.publicKey.dispose();
+      symmetricKey1.dispose();
+      symmetricKey2.dispose();
     });
 
-    test('should provide crypto functionality', () async {
+    test('should_create_and_validate_license_using_unified_api', () async {
       // Arrange
       final keyPair = await LicensifyKey.generatePublicKeyPair();
-      final symmetricKey = LicensifyKey.generateLocalKey();
+      final publicKeyBytes = List<int>.from(keyPair.publicKey.keyBytes);
 
-      // Act - check fluent API access
-      final generator = keyPair.privateKey.licenseGenerator;
-      final validator = keyPair.publicKey.licenseValidator;
-      final crypto = symmetricKey.crypto;
+      try {
+        // Act
+        final license = await Licensify.createLicense(
+          privateKey: keyPair.privateKey,
+          appId: 'com.example.test',
+          expirationDate: DateTime.now().add(const Duration(days: 30)),
+          type: LicenseType.pro,
+          features: {'premium': true},
+        );
 
-      // Assert
-      expect(generator, isA<LicenseGenerator>());
-      expect(validator, isA<LicenseValidator>());
-      expect(crypto, isA<LicensifySymmetricCrypto>());
+        final validationResult = await Licensify.validateLicenseWithKeyBytes(
+          license: license,
+          publicKeyBytes: publicKeyBytes,
+        );
+
+        // Assert
+        expect(license.token, startsWith('v4.public.'));
+        expect(validationResult.isValid, isTrue);
+        expect(license.appId, equals('com.example.test'));
+        expect(license.type, equals(LicenseType.pro));
+        expect(license.features['premium'], isTrue);
+      } finally {
+        // Cleanup
+        keyPair.privateKey.dispose();
+        keyPair.publicKey.dispose();
+      }
     });
 
-    test('should work with symmetric crypto operations', () async {
+    test('should_encrypt_and_decrypt_data_using_unified_api', () async {
       // Arrange
       final symmetricKey = LicensifyKey.generateLocalKey();
-      final crypto = symmetricKey.crypto;
+      final keyBytes = List<int>.from(symmetricKey.keyBytes);
+      symmetricKey.dispose(); // Dispose original key
 
       final testData = {
         'message': 'Hello, World!',
@@ -68,55 +101,78 @@ void main() {
       };
 
       // Act
-      final encryptedToken = await crypto.encrypt(testData);
-      final decryptedData = await crypto.decrypt(encryptedToken);
+      final encryptKey =
+          LicensifySymmetricKey.xchacha20(Uint8List.fromList(keyBytes));
+      final encryptedToken = await Licensify.encryptData(
+        data: testData,
+        encryptionKey: encryptKey,
+      );
+
+      final decryptKey =
+          LicensifySymmetricKey.xchacha20(Uint8List.fromList(keyBytes));
+      final decryptedData = await Licensify.decryptData(
+        encryptedToken: encryptedToken,
+        encryptionKey: decryptKey,
+      );
 
       // Assert
       expect(encryptedToken, isA<String>());
       expect(encryptedToken, startsWith('v4.local.'));
       expect(decryptedData['message'], equals('Hello, World!'));
       expect(decryptedData['timestamp'], equals(testData['timestamp']));
+
+      // Cleanup
+      encryptKey.dispose();
+      decryptKey.dispose();
     });
 
-    test('should work with raw bytes encryption', () async {
-      // Arrange
-      final symmetricKey = LicensifyKey.generateLocalKey();
-      final crypto = symmetricKey.crypto;
-
-      final testBytes = Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-
+    test('should_work_with_auto_generated_keys', () async {
       // Act
-      final encryptedToken = await crypto.encryptBytes(testBytes);
-      final decryptedBytes = await crypto.decryptBytes(encryptedToken);
-
-      // Assert
-      expect(encryptedToken, isA<String>());
-      expect(encryptedToken, startsWith('v4.local.'));
-      expect(decryptedBytes, equals(testBytes));
-    });
-
-    test('should generate working license', () async {
-      // Arrange
-      final keyPair = await LicensifyKey.generatePublicKeyPair();
-      final generator = keyPair.privateKey.licenseGenerator;
-      final validator = keyPair.publicKey!.licenseValidator;
-
-      // Act
-      final license = await generator.call(
-        appId: 'com.example.test',
-        expirationDate: DateTime.now().add(const Duration(days: 30)),
-        type: LicenseType.pro,
-        features: {'premium': true},
+      final result = await Licensify.createLicenseWithKeys(
+        appId: 'com.example.auto',
+        expirationDate: DateTime.now().add(const Duration(days: 90)),
+        type: LicenseType.standard,
+        features: {'auto_generated': true},
       );
 
-      final validationResult = await validator.validate(license);
+      final validationResult = await Licensify.validateLicenseWithKeyBytes(
+        license: result.license,
+        publicKeyBytes: result.publicKeyBytes,
+      );
 
       // Assert
-      expect(license.token, startsWith('v4.public.'));
+      expect(result.license.token, startsWith('v4.public.'));
+      expect(result.publicKeyBytes.length, equals(32));
       expect(validationResult.isValid, isTrue);
-      expect(license.appId, equals('com.example.test'));
-      expect(license.type, equals(LicenseType.pro));
-      expect(license.features['premium'], isTrue);
+      expect(result.license.appId, equals('com.example.auto'));
+      expect(result.license.features['auto_generated'], isTrue);
+    });
+
+    test('should_work_with_auto_generated_encryption_key', () async {
+      // Arrange
+      final testData = {
+        'secret': 'confidential information',
+        'level': 'top-secret'
+      };
+
+      // Act
+      final encryptResult = await Licensify.encryptDataWithKey(data: testData);
+
+      final decryptKey =
+          LicensifySymmetricKey.xchacha20(encryptResult.keyBytes);
+      final decryptedData = await Licensify.decryptData(
+        encryptedToken: encryptResult.encryptedToken,
+        encryptionKey: decryptKey,
+      );
+
+      // Assert
+      expect(encryptResult.encryptedToken, startsWith('v4.local.'));
+      expect(encryptResult.keyBytes.length, equals(32));
+      expect(decryptedData['secret'], equals('confidential information'));
+      expect(decryptedData['level'], equals('top-secret'));
+
+      // Cleanup
+      decryptKey.dispose();
     });
   });
 }

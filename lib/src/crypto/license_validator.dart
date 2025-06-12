@@ -21,18 +21,18 @@ abstract interface class ILicenseValidator {
 /// This class validates license authenticity using PASETO v4.public tokens
 /// and checks license expiration dates. It provides better security than
 /// traditional signature verification.
-class LicenseValidator implements ILicenseValidator {
+class _LicenseValidator implements ILicenseValidator {
   /// Public key for signature verification
   final LicensifyPublicKey _publicKey;
 
   /// Creates a new PASETO validator with Ed25519 public key
   ///
   /// [publicKey] - Ed25519 public key for PASETO v4.public verification
-  LicenseValidator({required LicensifyPublicKey publicKey})
+  _LicenseValidator({required LicensifyPublicKey publicKey})
       : _publicKey = publicKey {
     if (_publicKey.keyType != LicensifyKeyType.ed25519Public) {
       throw ArgumentError(
-        'PasetoLicenseValidator requires Ed25519 public key for v4.public tokens',
+        'Paseto_LicenseValidator requires Ed25519 public key for v4.public tokens',
       );
     }
   }

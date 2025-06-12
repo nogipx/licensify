@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+import 'dart:typed_data';
 import 'package:licensify/licensify.dart';
 
 /// 🔐 Примеры безопасного использования Licensify
@@ -23,24 +24,21 @@ Future<void> basicSecureUsage() async {
   print('1️⃣ BASIC SECURE USAGE');
   print('======================\n');
 
-  // ✅ РЕКОМЕНДУЕМЫЙ способ - автоматическая очистка
-  final license = await SecureLicensifyOperations.generateLicenseSecurely(
-    operation: (generator) async {
-      return await generator.call(
-        appId: 'com.example.secure',
-        expirationDate: DateTime.now().add(const Duration(days: 30)),
-        type: LicenseType.pro,
-        features: {
-          'max_users': 100,
-          'advanced_features': true,
-        },
-      );
+  // ✅ РЕКОМЕНДУЕМЫЙ способ - автоматическая генерация и очистка ключей
+  final result = await Licensify.createLicenseWithKeys(
+    appId: 'com.example.secure',
+    expirationDate: DateTime.now().add(const Duration(days: 30)),
+    type: LicenseType.pro,
+    features: {
+      'max_users': 100,
+      'advanced_features': true,
     },
   );
 
   print('✅ License generated securely');
-  print('   Token: ${license.token.substring(0, 40)}...');
-  print('   🔒 Keys automatically zeroed after generation\n');
+  print('   Token: ${result.license.token.substring(0, 40)}...');
+  print('   🔒 Private key automatically zeroed after generation');
+  print('   📦 Public key bytes: ${result.publicKeyBytes.length} bytes\n');
 }
 
 /// 2. Автоматическая очистка ключей
@@ -49,43 +47,43 @@ Future<void> automaticKeyCleanup() async {
   print('=========================\n');
 
   // Симметричное шифрование с автоочисткой
-  final encryptedData = await SecureLicensifyOperations.encryptSecurely(
-    operation: (crypto) async {
-      final sensitiveData = {
-        'customer_id': 'ultra-secret-12345',
-        'api_key': 'sk-super-secret-api-key',
-        'internal_token': 'internal-system-token-xyz',
-      };
-
-      return await crypto.encrypt(sensitiveData);
+  final encryptResult = await Licensify.encryptDataWithKey(
+    data: {
+      'customer_id': 'ultra-secret-12345',
+      'api_key': 'sk-super-secret-api-key',
+      'internal_token': 'internal-system-token-xyz',
     },
   );
 
   print('✅ Data encrypted securely');
-  print('   Token: ${encryptedData.substring(0, 40)}...');
-  print('   🔒 Symmetric key automatically zeroed\n');
+  print('   Token: ${encryptResult.encryptedToken.substring(0, 40)}...');
+  print('   🔒 Symmetric key automatically zeroed');
+  print('   📦 Key bytes: ${encryptResult.keyBytes.length} bytes\n');
 
   // Валидация с автоочисткой публичного ключа
   final keyPair = await LicensifyKey.generatePublicKeyPair();
 
   // Создаем лицензию для тестирования
-  final testLicense = await keyPair.privateKey.licenseGenerator.call(
+  final testLicense = await Licensify.createLicense(
+    privateKey: keyPair.privateKey,
     appId: 'com.test.validation',
     expirationDate: DateTime.now().add(const Duration(days: 7)),
   );
 
-  // Валидируем с автоматической очисткой
-  final result = await SecureLicensifyOperations.validateLicenseSecurely(
+  // Валидируем с автоматической очисткой через байты ключа
+  final publicKeyBytes = Uint8List.fromList(keyPair.publicKey.keyBytes);
+  final result = await Licensify.validateLicenseWithKeyBytes(
     license: testLicense,
-    publicKey: keyPair.publicKey, // Будет автоматически очищен
+    publicKeyBytes: publicKeyBytes,
   );
 
   print('✅ License validated: ${result.isValid}');
   print('   Message: ${result.message}');
   print('   🔒 Public key automatically zeroed\n');
 
-  // Очищаем оставшийся приватный ключ
+  // Очищаем оставшиеся ключи
   keyPair.privateKey.dispose();
+  keyPair.publicKey.dispose();
 }
 
 /// 3. Ручное управление ключами (продвинутый уровень)
@@ -106,8 +104,9 @@ Future<void> manualKeyManagement() async {
     print('   Public key disposed: ${keyPair.publicKey.isDisposed}');
     print('   Symmetric key disposed: ${symmetricKey.isDisposed}');
 
-    // Безопасный доступ к ключам через лицензию
-    final testLicense = await keyPair.privateKey.licenseGenerator.call(
+    // Безопасный доступ к ключам через унифицированное API
+    final testLicense = await Licensify.createLicense(
+      privateKey: keyPair.privateKey,
       appId: 'com.test.manual',
       expirationDate: DateTime.now().add(const Duration(days: 1)),
     );
@@ -115,14 +114,24 @@ Future<void> manualKeyManagement() async {
     print('✅ License generated with secure key access');
 
     // Безопасное шифрование
-    final encryptedData = await symmetricKey.crypto.encrypt({
-      'secret': 'information',
-      'timestamp': DateTime.now().toIso8601String(),
-    });
+    final encryptedData = await Licensify.encryptData(
+      data: {
+        'secret': 'information',
+        'timestamp': DateTime.now().toIso8601String(),
+      },
+      encryptionKey: symmetricKey,
+    );
 
     print('✅ Data encrypted with secure key access');
+    print('   Token: ${encryptedData.substring(0, 40)}...');
 
-    print('✅ Data encrypted with temporary key bytes');
+    // Валидация лицензии
+    final validationResult = await Licensify.validateLicense(
+      license: testLicense,
+      publicKey: keyPair.publicKey,
+    );
+
+    print('✅ License validation: ${validationResult.isValid}');
     print('   🔒 All temporary key copies automatically zeroed');
   } finally {
     // ВСЕГДА очищаем ключи в блоке finally
@@ -144,23 +153,28 @@ Future<void> bestPracticesDemo() async {
   print('============================\n');
 
   print(
-      '✅ DO - Используйте SecureLicensifyOperations для автоматической очистки');
+      '✅ DO - Используйте Licensify.createLicenseWithKeys() для автоматической очистки');
+  print(
+      '✅ DO - Используйте Licensify.encryptDataWithKey() для одноразового шифрования');
+  print(
+      '✅ DO - Используйте Licensify.validateLicenseWithKeyBytes() для валидации');
   print(
       '✅ DO - Всегда вызывайте dispose() в блоке finally при ручном управлении');
-  print('✅ DO - Используйте executeWithKeyBytes() для временного доступа');
   print('✅ DO - Минимизируйте время жизни ключей в памяти');
   print('✅ DO - Проверяйте isDisposed перед использованием ключей');
 
-  print('\n❌ DON\'T - Не храните байты ключей в переменных');
+  print('\n❌ DON\'T - Не храните байты ключей в переменных без необходимости');
   print('❌ DON\'T - Не передавайте keyBytes между функциями без обнуления');
   print('❌ DON\'T - Не забывайте вызывать dispose()');
   print('❌ DON\'T - Не используйте ключи после dispose()');
+  print('❌ DON\'T - Не используйте приватные классы напрямую');
 
   print('\n🛡️ ЗАЩИТА ОТ АТАК:');
   print('   • Memory dump attacks - ключи автоматически обнуляются');
   print('   • Key reuse - каждая операция создает временные копии');
   print('   • Accidental exposure - defensive copying предотвращает утечки');
   print('   • Lifecycle management - автоматическая и ручная очистка');
+  print('   • API misuse - приватные классы недоступны извне');
 
   print('\n⚠️ ОГРАНИЧЕНИЯ В DART:');
   print('   • Нет native secure memory как в C/C++');
@@ -175,4 +189,32 @@ Future<void> bestPracticesDemo() async {
   print('   • Логируйте попытки использования недействительных ключей');
   print(
       '   • Рассмотрите возможность использования HSM для критических приложений');
+  print(
+      '   • Используйте только публичное API Licensify для максимальной безопасности');
+
+  print('\n🎯 ПРИМЕРЫ БЕЗОПАСНЫХ ПАТТЕРНОВ:');
+
+  // Паттерн 1: Одноразовое шифрование
+  print('\n   📦 Паттерн 1: Одноразовое шифрование');
+  await Licensify.encryptDataWithKey(
+    data: {'temp': 'data'},
+  );
+  print('      ✅ Ключ автоматически сгенерирован и очищен');
+  print('      📝 Сохраните keyBytes безопасно для расшифровки');
+
+  // Паттерн 2: Быстрая валидация
+  print('\n   🔍 Паттерн 2: Быстрая валидация с байтами ключа');
+  final quickLicense = await Licensify.createLicenseWithKeys(
+    appId: 'com.example.quick',
+    expirationDate: DateTime.now().add(const Duration(hours: 1)),
+  );
+
+  final quickValidation = await Licensify.validateLicenseWithKeyBytes(
+    license: quickLicense.license,
+    publicKeyBytes: quickLicense.publicKeyBytes,
+  );
+  print('      ✅ Валидация: ${quickValidation.isValid}');
+  print('      🔒 Все ключи автоматически очищены');
+
+  print('\n🚀 Используйте эти паттерны для максимальной безопасности!');
 }

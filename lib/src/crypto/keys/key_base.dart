@@ -145,39 +145,7 @@ sealed class LicensifyKey {
 ///
 /// This class provides a safer interface for using cryptographic keys
 /// by automatically managing their lifecycle and providing secure operations.
-class SecureLicensifyOperations {
-  /// Performs a license generation operation with automatic key cleanup
-  ///
-  /// The key pair will be automatically disposed after the operation completes,
-  /// regardless of success or failure.
-  ///
-  /// Example:
-  /// ```dart
-  /// final license = await SecureLicensifyOperations.generateLicenseSecurely(
-  ///   operation: (generator) async {
-  ///     return await generator.call(
-  ///       appId: 'com.example.app',
-  ///       expirationDate: DateTime.now().add(Duration(days: 30)),
-  ///     );
-  ///   },
-  /// );
-  /// ```
-  static Future<License> generateLicenseSecurely({
-    required Future<License> Function(LicenseGenerator generator) operation,
-    LicensifyKeyPair? keyPair,
-  }) async {
-    final keys = keyPair ?? await LicensifyKey.generatePublicKeyPair();
-
-    try {
-      final generator = LicenseGenerator(privateKey: keys.privateKey);
-      return await operation(generator);
-    } finally {
-      // Always dispose keys after use
-      keys.privateKey.dispose();
-      keys.publicKey.dispose();
-    }
-  }
-
+class _SecureLicensifyOperations {
   /// Performs license validation with automatic key cleanup
   ///
   /// The public key will be automatically disposed after validation.
@@ -186,7 +154,7 @@ class SecureLicensifyOperations {
     required LicensifyPublicKey publicKey,
   }) async {
     try {
-      final validator = LicenseValidator(publicKey: publicKey);
+      final validator = _LicenseValidator(publicKey: publicKey);
       return await validator.validate(license);
     } finally {
       // Always dispose key after use
@@ -198,13 +166,13 @@ class SecureLicensifyOperations {
   ///
   /// The symmetric key will be automatically disposed after the operation.
   static Future<R> encryptSecurely<R>({
-    required Future<R> Function(LicensifySymmetricCrypto crypto) operation,
+    required Future<R> Function(_LicensifySymmetricCrypto crypto) operation,
     LicensifySymmetricKey? symmetricKey,
   }) async {
     final key = symmetricKey ?? LicensifyKey.generateLocalKey();
 
     try {
-      final crypto = LicensifySymmetricCrypto(symmetricKey: key);
+      final crypto = _LicensifySymmetricCrypto(symmetricKey: key);
       return await operation(crypto);
     } finally {
       // Always dispose key after use
@@ -220,6 +188,7 @@ mixin AutoDisposable on LicensifyKey {
   /// Note: This is not guaranteed to be called immediately, but provides
   /// a safety net for forgotten manual disposal.
   @pragma('vm:notify-debugger-on-pause')
+  // ignore: unused_element
   void _autoDispose() {
     if (!isDisposed) {
       dispose();

@@ -17,13 +17,5 @@ final class LicensifyPublicKey extends LicensifyKey {
     );
   }
 
-  /// Creates a license validator for the public key
-  LicenseValidator get licenseValidator {
-    if (keyType != LicensifyKeyType.ed25519Public) {
-      throw UnsupportedError(
-        'Only Ed25519 public keys are supported for license validation.',
-      );
-    }
-    return LicenseValidator(publicKey: this);
-  }
+  // Геттер licenseValidator убран - используйте Licensify.validateLicense() вместо него
 }

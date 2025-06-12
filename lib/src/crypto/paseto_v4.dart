@@ -5,11 +5,11 @@
 part of '_index.dart';
 
 /// Result of PASETO operations
-class PasetoImplementationResult {
+class _PasetoImplementationResult {
   final Map<String, dynamic> payload;
   final String? footer;
 
-  const PasetoImplementationResult({
+  const _PasetoImplementationResult({
     required this.payload,
     this.footer,
   });
@@ -64,7 +64,7 @@ abstract interface class _PasetoV4 {
   }
 
   /// Verifies a PASETO v4.public token
-  static Future<PasetoImplementationResult> verifyPublic({
+  static Future<_PasetoImplementationResult> verifyPublic({
     required String token,
     required Uint8List publicKeyBytes,
     String? implicitAssertion,
@@ -106,7 +106,7 @@ abstract interface class _PasetoV4 {
             'Invalid payload format: expected Map, got ${decodedPayload.runtimeType}');
       }
 
-      return PasetoImplementationResult(
+      return _PasetoImplementationResult(
         payload: payload,
         footer: verified.package.footer != null
             ? utf8.decode(verified.package.footer!)
@@ -156,10 +156,9 @@ abstract interface class _PasetoV4 {
   }
 
   /// Decrypts a PASETO v4.local token
-  static Future<PasetoImplementationResult> decryptLocal({
+  static Future<_PasetoImplementationResult> decryptLocal({
     required String token,
     required Uint8List symmetricKeyBytes,
-    String? footer,
     String? implicitAssertion,
   }) async {
     try {
@@ -196,7 +195,7 @@ abstract interface class _PasetoV4 {
             'Invalid payload format: expected Map, got ${decodedPayload.runtimeType}');
       }
 
-      return PasetoImplementationResult(
+      return _PasetoImplementationResult(
         payload: payload,
         footer: decrypted.package.footer != null
             ? utf8.decode(decrypted.package.footer!)
@@ -224,31 +223,6 @@ abstract interface class _PasetoV4 {
       };
     } catch (e) {
       throw Exception('Failed to generate Ed25519 key pair: $e');
-    }
-  }
-
-  /// Generates a new Ed25519 key pair from existing seed
-  static Future<Map<String, Uint8List>> generateEd25519KeyPairFromSeed(
-    Uint8List seed,
-  ) async {
-    try {
-      if (seed.length != 32) {
-        throw ArgumentError('Ed25519 seed must be exactly 32 bytes');
-      }
-
-      final ed25519 = Ed25519();
-      final keyPair = await ed25519.newKeyPairFromSeed(seed);
-      final publicKey = await keyPair.extractPublicKey();
-
-      final privateKeyBytes = await keyPair.extractPrivateKeyBytes();
-      final publicKeyBytes = publicKey.bytes;
-
-      return {
-        'privateKey': Uint8List.fromList(privateKeyBytes),
-        'publicKey': Uint8List.fromList(publicKeyBytes),
-      };
-    } catch (e) {
-      throw Exception('Failed to generate Ed25519 key pair from seed: $e');
     }
   }
 

@@ -27,7 +27,7 @@ class License {
   /// Creates a PASETO license from a token string
   ///
   /// Note: This doesn't validate the token, only parses it.
-  /// Use [LicensifyPasetoLicenseValidator] for validation.
+  /// Use [LicensifyPaseto_LicenseValidator] for validation.
   factory License.fromToken(String token) {
     // For now, we'll store the token and extract payload later during validation
     // This is a simple implementation - in production, you might want to

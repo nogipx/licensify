@@ -17,13 +17,5 @@ final class LicensifyPrivateKey extends LicensifyKey {
     );
   }
 
-  /// Creates a license generator for the private key
-  LicenseGenerator get licenseGenerator {
-    if (keyType != LicensifyKeyType.ed25519Public) {
-      throw UnsupportedError(
-        'Only Ed25519 public keys are supported for license generation.',
-      );
-    }
-    return LicenseGenerator(privateKey: this);
-  }
+  // Геттер licenseGenerator убран - используйте Licensify.createLicense() вместо него
 }

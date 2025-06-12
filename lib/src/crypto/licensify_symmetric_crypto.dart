@@ -5,10 +5,10 @@
 part of '_index.dart';
 
 /// Combined handler for local symmetric cryptographic operations using PASETO v4.local
-class LicensifySymmetricCrypto {
+class _LicensifySymmetricCrypto {
   final LicensifySymmetricKey symmetricKey;
 
-  const LicensifySymmetricCrypto({required this.symmetricKey});
+  const _LicensifySymmetricCrypto({required this.symmetricKey});
 
   /// Encrypts the given data as a license using PASETO v4.local
   ///
