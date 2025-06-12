@@ -5,5 +5,5 @@
 export 'license_exception.dart';
 export 'license_status.dart';
 export 'license_type.dart';
-export 'paseto_license.dart';
-export 'validation_result.dart';
+export 'license.dart';
+export 'license_validation_result.dart';

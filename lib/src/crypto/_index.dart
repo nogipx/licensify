@@ -10,8 +10,13 @@ import 'package:uuid/uuid.dart';
 import 'package:licensify/licensify.dart';
 import 'package:paseto_dart/paseto_dart.dart';
 
-part 'ed25519_key_generator.dart';
-part 'paseto_implementation.dart';
-part 'paseto_key.dart';
-part 'paseto_license_generator.dart';
-part 'paseto_license_validator.dart';
+part 'license_generator.dart';
+part 'license_validator.dart';
+part 'licensify_symmetric_crypto.dart';
+
+part 'keys/key_base.dart';
+part 'keys/licensify_key_pair.dart';
+part 'keys/licensify_private_key.dart';
+part 'keys/licensify_public_key.dart';
+part 'keys/licensify_symmetric_key.dart';
+part 'paseto_v4.dart';

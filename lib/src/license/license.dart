@@ -10,7 +10,7 @@ import 'package:licensify/licensify.dart';
 /// This represents a license as a PASETO token instead of separate data + signature.
 /// The entire license is contained within the PASETO token, providing better security
 /// and following modern cryptographic best practices.
-class PasetoLicense {
+class License {
   /// The PASETO token containing all license information
   final String token;
 
@@ -21,18 +21,18 @@ class PasetoLicense {
   ///
   /// [token] - The PASETO v4.public token containing license data
   /// [payload] - The decoded payload from the token (for caching)
-  PasetoLicense._({required this.token, required Map<String, dynamic> payload})
+  License._({required this.token, required Map<String, dynamic> payload})
       : _payload = payload;
 
   /// Creates a PASETO license from a token string
   ///
   /// Note: This doesn't validate the token, only parses it.
   /// Use [LicensifyPasetoLicenseValidator] for validation.
-  factory PasetoLicense.fromToken(String token) {
+  factory License.fromToken(String token) {
     // For now, we'll store the token and extract payload later during validation
     // This is a simple implementation - in production, you might want to
     // validate the structure but not the signature here
-    return PasetoLicense._(
+    return License._(
       token: token,
       payload: {}, // Will be populated during validation
     );
@@ -41,11 +41,11 @@ class PasetoLicense {
   /// Creates a PASETO license from validated payload
   ///
   /// This should only be called after successful token validation
-  factory PasetoLicense.fromValidatedPayload({
+  factory License.fromValidatedPayload({
     required String token,
     required Map<String, dynamic> payload,
   }) {
-    return PasetoLicense._(token: token, payload: payload);
+    return License._(token: token, payload: payload);
   }
 
   /// Updates the internal payload after validation

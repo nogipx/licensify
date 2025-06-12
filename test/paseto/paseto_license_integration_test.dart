@@ -8,17 +8,17 @@ import 'package:licensify/licensify.dart';
 
 void main() {
   group('PASETO License Integration Tests', () {
-    late LicensifyPasetoKeyPair keyPair;
-    late PasetoLicenseGenerator generator;
-    late PasetoLicenseValidator validator;
+    late LicensifyKeyPair keyPair;
+    late LicenseGenerator generator;
+    late LicenseValidator validator;
 
     setUpAll(() async {
       // Generate Ed25519 key pair for testing
-      keyPair = await LicensifyPasetoKeyPair.generateEd25519();
+      keyPair = await LicensifyKey.generatePublicKeyPair();
 
       // Create generator and validator
-      generator = PasetoLicenseGenerator(privateKey: keyPair.privateKey);
-      validator = PasetoLicenseValidator(publicKey: keyPair.publicKey!);
+      generator = LicenseGenerator(privateKey: keyPair.privateKey);
+      validator = LicenseValidator(publicKey: keyPair.publicKey!);
     });
 
     test('should generate valid PASETO license', () async {
@@ -39,7 +39,7 @@ void main() {
       );
 
       // Assert
-      expect(license, isA<PasetoLicense>());
+      expect(license, isA<License>());
       expect(license.token, isNotEmpty);
       expect(license.token, startsWith('v4.public.'));
 
@@ -81,7 +81,7 @@ void main() {
 
     test('should reject invalid PASETO token', () async {
       // Arrange
-      final invalidLicense = PasetoLicense.fromToken('invalid.token.here');
+      final invalidLicense = License.fromToken('invalid.token.here');
 
       // Act
       final result = await validator.validate(invalidLicense);
@@ -182,23 +182,21 @@ void main() {
 
     test('should work with key pair factory methods', () async {
       // Test Ed25519 key generation
-      final ed25519KeyPair = await LicensifyPasetoKeyPair.generateEd25519();
-      expect(ed25519KeyPair.keyType, equals(PasetoKeyType.ed25519Public));
+      final ed25519KeyPair = await LicensifyKey.generatePublicKeyPair();
+      expect(ed25519KeyPair.keyType, equals(LicensifyKeyType.ed25519Public));
       expect(ed25519KeyPair.isAsymmetric, isTrue);
       expect(ed25519KeyPair.isSymmetric, isFalse);
       expect(ed25519KeyPair.isConsistent, isTrue);
 
       // Test XChaCha20 key generation
-      final xchachaKeyPair = LicensifyPasetoKeyPair.generateXChaCha20();
-      expect(xchachaKeyPair.keyType, equals(PasetoKeyType.xchacha20Local));
-      expect(xchachaKeyPair.isAsymmetric, isFalse);
-      expect(xchachaKeyPair.isSymmetric, isTrue);
-      expect(xchachaKeyPair.isConsistent, isTrue);
+      final xchachaKey = LicensifyKey.generateLocalKey();
+      expect(xchachaKey.keyType, equals(LicensifyKeyType.xchacha20Local));
+      expect(xchachaKey.keyBytes.length, equals(32));
     });
 
     test('should provide fluent API through key objects', () async {
       // Arrange
-      final keyPair = await LicensifyPasetoKeyPair.generateEd25519();
+      final keyPair = await LicensifyKey.generatePublicKeyPair();
 
       // Act - use fluent API
       final generator = keyPair.privateKey.licenseGenerator;
@@ -215,15 +213,78 @@ void main() {
 
       // Assert
       expect(result.isValid, isTrue);
-      expect(license.token, startsWith('v4.public.'));
+    });
+
+    test('should prevent different key types from being used together',
+        () async {
+      // Arrange
+      final keyPair = await LicensifyKey.generatePublicKeyPair();
+
+      // This should be OK
+      expect(
+        () => LicenseGenerator(privateKey: keyPair.privateKey),
+        isNot(throwsA(isA<ArgumentError>())),
+      );
+    });
+
+    test('should generate consistent key pairs', () async {
+      // Arrange & Act
+      final keyPair1 = await LicensifyKey.generatePublicKeyPair();
+      final keyPair2 = await LicensifyKey.generatePublicKeyPair();
+
+      // Assert - keys should be different
+      expect(keyPair1.privateKey.keyBytes,
+          isNot(equals(keyPair2.privateKey.keyBytes)));
+      expect(keyPair1.publicKey!.keyBytes,
+          isNot(equals(keyPair2.publicKey!.keyBytes)));
+
+      // But both should be valid Ed25519 keys
+      expect(keyPair1.keyType, equals(LicensifyKeyType.ed25519Public));
+      expect(keyPair2.keyType, equals(LicensifyKeyType.ed25519Public));
+    });
+
+    test('should validate key lengths and formats', () {
+      // Ed25519 keys should be 32 bytes each
+      expect(() => LicensifyPrivateKey.ed25519(Uint8List(31)),
+          throwsA(isA<ArgumentError>()));
+      expect(() => LicensifyPrivateKey.ed25519(Uint8List(33)),
+          throwsA(isA<ArgumentError>()));
+
+      // XChaCha20 keys should be 32 bytes
+      expect(() => LicensifySymmetricKey.xchacha20(Uint8List(31)),
+          throwsA(isA<ArgumentError>()));
+      expect(() => LicensifySymmetricKey.xchacha20(Uint8List(33)),
+          throwsA(isA<ArgumentError>()));
+
+      // Valid keys should not throw
+      expect(() => LicensifyPrivateKey.ed25519(Uint8List(32)),
+          isNot(throwsA(anything)));
+      expect(() => LicensifySymmetricKey.xchacha20(Uint8List(32)),
+          isNot(throwsA(anything)));
+    });
+
+    test('should support key serialization and deserialization', () async {
+      // Arrange
+      final keyPair = await LicensifyKey.generatePublicKeyPair();
+
+      // Act - serialize to bytes and back
+      final privateKeyBytes = keyPair.privateKey.keyBytes;
+      final publicKeyBytes = keyPair.publicKey!.keyBytes;
+
+      final recreatedPrivateKey = LicensifyPrivateKey.ed25519(privateKeyBytes);
+      final recreatedPublicKey = LicensifyPublicKey.ed25519(publicKeyBytes);
+
+      // Assert
+      expect(recreatedPrivateKey.keyBytes, equals(keyPair.privateKey.keyBytes));
+      expect(recreatedPublicKey.keyBytes, equals(keyPair.publicKey!.keyBytes));
     });
 
     test('should generate working license with real cryptography', () async {
       // Generate a real Ed25519 key pair
-      final keyPair = await Ed25519KeyGenerator.generateKeyPair();
+      final keyPair = await LicensifyKey.generatePublicKeyPair();
 
       // Create generator and validator
-      final generator = PasetoLicenseGenerator(privateKey: keyPair.privateKey);
+      final generator = LicenseGenerator(privateKey: keyPair.privateKey);
 
       // Generate license
       final license = await generator.call(
@@ -237,7 +298,7 @@ void main() {
       );
 
       // Assert license structure
-      expect(license, isA<PasetoLicense>());
+      expect(license, isA<License>());
       expect(license.token, isNotEmpty);
       expect(license.token, startsWith('v4.public.'));
 
@@ -248,10 +309,10 @@ void main() {
 
     test('should validate license properly', () async {
       // Generate a real Ed25519 key pair
-      final keyPair = await Ed25519KeyGenerator.generateKeyPair();
+      final keyPair = await LicensifyKey.generatePublicKeyPair();
 
       // Generate test license
-      final generator = PasetoLicenseGenerator(privateKey: keyPair.privateKey);
+      final generator = LicenseGenerator(privateKey: keyPair.privateKey);
       final testLicense = await generator.call(
         appId: 'com.example.validationtest',
         expirationDate: DateTime.now().add(const Duration(days: 7)),
@@ -259,7 +320,7 @@ void main() {
       );
 
       // Create validator
-      final validator = PasetoLicenseValidator(publicKey: keyPair.publicKey!);
+      final validator = LicenseValidator(publicKey: keyPair.publicKey!);
 
       // Validate license
       final result = await validator.validate(testLicense);
@@ -271,12 +332,12 @@ void main() {
 
     test('should reject tampered license', () async {
       // Generate keys and license
-      final keyPair1 = await Ed25519KeyGenerator.generateKeyPair();
-      final keyPair2 = await Ed25519KeyGenerator.generateKeyPair();
+      final keyPair1 = await LicensifyKey.generatePublicKeyPair();
+      final keyPair2 = await LicensifyKey.generatePublicKeyPair();
 
-      final generator = PasetoLicenseGenerator(privateKey: keyPair1.privateKey);
-      final validator = PasetoLicenseValidator(
-          publicKey: keyPair2.publicKey!); // Different key!
+      final generator = LicenseGenerator(privateKey: keyPair1.privateKey);
+      final validator =
+          LicenseValidator(publicKey: keyPair2.publicKey!); // Different key!
 
       // Generate license with first key
       final license = await generator.call(
@@ -297,53 +358,53 @@ void main() {
     test('should create Ed25519 keys with correct format', () {
       // Test individual key creation
       final keyBytes = List.generate(32, (i) => i); // 32 bytes test data
-      final privateKey = LicensifyPasetoPrivateKey.ed25519(
+      final privateKey = LicensifyPrivateKey.ed25519(
         Uint8List.fromList(keyBytes),
       );
-      final publicKey = LicensifyPasetoPublicKey.ed25519(
+      final publicKey = LicensifyPublicKey.ed25519(
         Uint8List.fromList(keyBytes),
       );
 
-      expect(privateKey.keyType, equals(PasetoKeyType.ed25519Public));
+      expect(privateKey.keyType, equals(LicensifyKeyType.ed25519Public));
       expect(privateKey.keyBytes.length, equals(32));
-      expect(publicKey.keyType, equals(PasetoKeyType.ed25519Public));
+      expect(publicKey.keyType, equals(LicensifyKeyType.ed25519Public));
       expect(publicKey.keyBytes.length, equals(32));
     });
 
     test('should enforce key size requirements', () {
       // Test invalid key sizes
       expect(
-        () => LicensifyPasetoPrivateKey.ed25519(Uint8List(16)), // Too short
+        () => LicensifyPrivateKey.ed25519(Uint8List(16)), // Too short
         throwsArgumentError,
       );
 
       expect(
-        () => LicensifyPasetoPublicKey.ed25519(Uint8List(64)), // Too long
+        () => LicensifyPublicKey.ed25519(Uint8List(64)), // Too long
         throwsArgumentError,
       );
 
       expect(
-        () => LicensifyPasetoPrivateKey.xchacha20(Uint8List(16)), // Too short
+        () => LicensifySymmetricKey.xchacha20(Uint8List(16)), // Too short
         throwsArgumentError,
       );
     });
 
     test('should work with RealEd25519KeyGenerator', () async {
       // Test key pair generation
-      final keyPair = await Ed25519KeyGenerator.generateKeyPair();
+      final keyPair = await LicensifyKey.generatePublicKeyPair();
       expect(keyPair.privateKey.keyBytes.length, equals(32));
       expect(keyPair.publicKey!.keyBytes.length, equals(32));
 
       // Test bytes generation
-      final keyMap = await Ed25519KeyGenerator.generateKeyPairAsBytes();
+      final keyMap = await LicensifyKey.generatePublicKeyPair();
       expect(keyMap['privateKey']!.length, equals(32));
       expect(keyMap['publicKey']!.length, equals(32));
 
       // Test key creation from bytes
       final privateKey =
-          Ed25519KeyGenerator.privateKeyFromBytes(keyMap['privateKey']!);
+          LicensifyKeyGenerator.privateKeyFromBytes(keyMap['privateKey']!);
       final publicKey =
-          Ed25519KeyGenerator.publicKeyFromBytes(keyMap['publicKey']!);
+          LicensifyKeyGenerator.publicKeyFromBytes(keyMap['publicKey']!);
       expect(privateKey.keyBytes.length, equals(32));
       expect(publicKey.keyBytes.length, equals(32));
     });

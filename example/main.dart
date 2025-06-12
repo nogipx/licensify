@@ -19,8 +19,8 @@ void main() async {
 
 /// Main class containing all PASETO examples
 class LicensifyPasetoExamples {
-  late final LicensifyPasetoKeyPair keyPair;
-  late final PasetoLicense license;
+  late final LicensifyKeyPair keyPair;
+  late final License license;
 
   /// Run all examples in sequence
   Future<void> runAllExamples() async {
@@ -57,7 +57,7 @@ class LicensifyPasetoExamples {
     print('1. Generating Ed25519 key pair for PASETO v4.public:');
     final startTime = DateTime.now();
 
-    keyPair = await LicensifyPasetoKeyPair.generateEd25519();
+    keyPair = await LicensifyKey.generatePublicKeyPair();
 
     final endTime = DateTime.now();
 
@@ -67,15 +67,13 @@ class LicensifyPasetoExamples {
     print(
         '   Generation time: ${endTime.difference(startTime).inMilliseconds}ms');
     print('   Key type: ${keyPair.keyType}');
-    print('   Is asymmetric: ${keyPair.isAsymmetric}');
     print('   Is consistent: ${keyPair.isConsistent}');
 
     print('\n2. Generating XChaCha20 key for PASETO v4.local:');
-    final symmetricKeyPair = LicensifyPasetoKeyPair.generateXChaCha20();
+    final symmetricKey = LicensifyKey.generateLocalKey();
     print('✅ Generated XChaCha20 symmetric key');
-    print('   Key size: ${symmetricKeyPair.privateKey.keyBytes.length} bytes');
-    print('   Key type: ${symmetricKeyPair.keyType}');
-    print('   Is symmetric: ${symmetricKeyPair.isSymmetric}');
+    print('   Key size: ${symmetricKey.keyBytes.length} bytes');
+    print('   Key type: ${symmetricKey.keyType}');
   }
 
   /// Examples of creating PASETO licenses
@@ -83,7 +81,7 @@ class LicensifyPasetoExamples {
     print('\n\n📝 LICENSE CREATION EXAMPLES');
     print('============================\n');
 
-    final generator = PasetoLicenseGenerator(privateKey: keyPair.privateKey);
+    final generator = LicenseGenerator(privateKey: keyPair.privateKey);
 
     print('1. Creating standard PASETO license:');
     license = await generator.call(
@@ -156,7 +154,7 @@ class LicensifyPasetoExamples {
     print('\n\n🔍 LICENSE VALIDATION EXAMPLES');
     print('===============================\n');
 
-    final validator = PasetoLicenseValidator(publicKey: keyPair.publicKey!);
+    final validator = LicenseValidator(publicKey: keyPair.publicKey!);
 
     print('1. Complete license validation:');
     final result = await validator.validate(license);
@@ -202,7 +200,7 @@ class LicensifyPasetoExamples {
     if (tokenParts.length >= 3) {
       final tamperedToken =
           '${tokenParts[0]}.${tokenParts[1]}.fake_signature_data';
-      final fakeToken = PasetoLicense.fromToken(tamperedToken);
+      final fakeToken = License.fromToken(tamperedToken);
 
       final fakeResult = await validator.validate(fakeToken);
       print(
@@ -214,7 +212,7 @@ class LicensifyPasetoExamples {
 
     print('\n4. Testing expired license:');
 
-    final generator = PasetoLicenseGenerator(privateKey: keyPair.privateKey);
+    final generator = LicenseGenerator(privateKey: keyPair.privateKey);
     final expiredLicense = await generator.call(
       appId: 'com.example.expired',
       expirationDate: DateTime.now().subtract(const Duration(days: 1)),
@@ -239,7 +237,7 @@ class LicensifyPasetoExamples {
     print('1. PASETO v4.local encryption (symmetric):');
 
     // Generate symmetric key
-    final symmetricKey = PasetoV4Implementation.generateSymmetricKey();
+    final symmetricKey = LicensifyKey.generateLocalKey();
 
     // Encrypt sensitive data
     final sensitiveData = {
@@ -250,9 +248,8 @@ class LicensifyPasetoExamples {
     };
 
     try {
-      final encryptedToken = await PasetoV4.encryptLocal(
-        payload: sensitiveData,
-        symmetricKeyBytes: symmetricKey,
+      final encryptedToken = await symmetricKey.crypto.encrypt(
+        sensitiveData,
         footer: jsonEncode({'purpose': 'sensitive_data', 'version': '2.0'}),
       );
 
@@ -260,18 +257,14 @@ class LicensifyPasetoExamples {
       print('   Token: ${encryptedToken.substring(0, 40)}...');
 
       // Decrypt the data
-      final decryptedResult = await PasetoV4.decryptLocal(
-        token: encryptedToken,
-        symmetricKeyBytes: symmetricKey,
-      );
+      final decryptedResult = await symmetricKey.crypto.decrypt(encryptedToken);
 
       print('✅ Data decrypted successfully');
       print('   Original keys: ${sensitiveData.keys.join(", ")}');
-      print('   Decrypted keys: ${decryptedResult.payload.keys.join(", ")}');
-      print('   Footer: ${decryptedResult.footer}');
+      print('   Decrypted keys: ${decryptedResult.keys.join(", ")}');
+      print('   Footer: $decryptedResult');
 
-      final dataMatches =
-          _comparePayloads(sensitiveData, decryptedResult.payload);
+      final dataMatches = _comparePayloads(sensitiveData, decryptedResult);
       print('   Data integrity: ${dataMatches ? "✅ Verified" : "❌ Failed"}');
     } catch (e) {
       print('❌ v4.local encryption error: $e');
@@ -305,14 +298,14 @@ class LicensifyPasetoExamples {
       'trial': false,
     };
 
-    final generator = PasetoLicenseGenerator(privateKey: keyPair.privateKey);
+    final generator = LicenseGenerator(privateKey: keyPair.privateKey);
     final customLicense = await generator.fromPayload(payload: customPayload);
 
     print('✅ License from custom payload created');
     print('   Token starts with: ${customLicense.token.substring(0, 30)}...');
 
     // Validate the custom license
-    final validator = PasetoLicenseValidator(publicKey: keyPair.publicKey!);
+    final validator = LicenseValidator(publicKey: keyPair.publicKey!);
     final customResult = await validator.validate(customLicense);
     print(
         '   Custom validation: ${customResult.isValid ? "✅ Valid" : "❌ Invalid"}');
@@ -323,15 +316,15 @@ class LicensifyPasetoExamples {
     print('\n\n⚡ PERFORMANCE EXAMPLES');
     print('=======================\n');
 
-    final generator = PasetoLicenseGenerator(privateKey: keyPair.privateKey);
-    final validator = PasetoLicenseValidator(publicKey: keyPair.publicKey!);
+    final generator = LicenseGenerator(privateKey: keyPair.privateKey);
+    final validator = LicenseValidator(publicKey: keyPair.publicKey!);
 
     print('1. Bulk license generation and validation:');
 
     const testCount = 50;
     final stopwatch = Stopwatch()..start();
 
-    final licenses = <PasetoLicense>[];
+    final licenses = <License>[];
     for (int i = 0; i < testCount; i++) {
       final testLicense = await generator.call(
         appId: 'com.example.perf$i',
@@ -376,7 +369,7 @@ class LicensifyPasetoExamples {
   }
 
   /// Helper method to print license details
-  void _printLicenseDetails(PasetoLicense license, String type) {
+  void _printLicenseDetails(License license, String type) {
     print('   Type: $type');
     print('   Token starts with: ${license.token.substring(0, 30)}...');
     print('   Token length: ${license.token.length} characters');

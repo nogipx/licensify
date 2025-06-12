@@ -34,7 +34,7 @@ abstract class LicenseStatus {
 
   /// Returns the license object if available (for Active or Expired status)
   /// Returns null for other status types
-  PasetoLicense? get license => switch (this) {
+  License? get license => switch (this) {
         ActiveLicenseStatus(:final license) => license,
         ExpiredLicenseStatus(:final license) => license,
         _ => null,
@@ -50,7 +50,7 @@ class NoLicenseStatus extends LicenseStatus {
 class ActiveLicenseStatus extends LicenseStatus {
   /// The active license object
   @override
-  final PasetoLicense license;
+  final License license;
 
   /// Creates an active license status with the specified license
   const ActiveLicenseStatus(this.license);
@@ -60,7 +60,7 @@ class ActiveLicenseStatus extends LicenseStatus {
 class ExpiredLicenseStatus extends LicenseStatus {
   /// The expired license object
   @override
-  final PasetoLicense license;
+  final License license;
 
   /// Creates an expired license status with the specified license
   const ExpiredLicenseStatus(this.license);

@@ -4,73 +4,6 @@
 
 part of '_index.dart';
 
-/// Backward compatibility wrapper
-class PasetoV4 {
-  /// Signs a PASETO v4.public token
-  static Future<String> signPublic({
-    required Map<String, dynamic> payload,
-    required Uint8List privateKeyBytes,
-    String? footer,
-    String? implicitAssertion,
-  }) =>
-      PasetoV4Implementation.signPublic(
-        payload: payload,
-        privateKeyBytes: privateKeyBytes,
-        footer: footer,
-        implicitAssertion: implicitAssertion,
-      );
-
-  /// Verifies a PASETO v4.public token
-  static Future<PasetoImplementationResult> verifyPublic({
-    required String token,
-    required Uint8List publicKeyBytes,
-    String? footer,
-    String? implicitAssertion,
-  }) =>
-      PasetoV4Implementation.verifyPublic(
-        token: token,
-        publicKeyBytes: publicKeyBytes,
-        footer: footer,
-        implicitAssertion: implicitAssertion,
-      );
-
-  /// Encrypts a PASETO v4.local token
-  static Future<String> encryptLocal({
-    required Map<String, dynamic> payload,
-    required Uint8List symmetricKeyBytes,
-    String? footer,
-    String? implicitAssertion,
-  }) =>
-      PasetoV4Implementation.encryptLocal(
-        payload: payload,
-        symmetricKeyBytes: symmetricKeyBytes,
-        footer: footer,
-        implicitAssertion: implicitAssertion,
-      );
-
-  /// Decrypts a PASETO v4.local token
-  static Future<PasetoImplementationResult> decryptLocal({
-    required String token,
-    required Uint8List symmetricKeyBytes,
-    String? footer,
-    String? implicitAssertion,
-  }) =>
-      PasetoV4Implementation.decryptLocal(
-        token: token,
-        symmetricKeyBytes: symmetricKeyBytes,
-        footer: footer,
-        implicitAssertion: implicitAssertion,
-      );
-
-  /// Generates Ed25519 key pair
-  static Future<Map<String, Uint8List>> generateEd25519KeyPair() =>
-      PasetoV4Implementation.generateEd25519KeyPair();
-
-  /// Generates symmetric key for v4.local
-  static Uint8List generateSymmetricKey() =>
-      PasetoV4Implementation.generateSymmetricKey();
-}
-
 /// Result of PASETO operations
 class PasetoImplementationResult {
   final Map<String, dynamic> payload;
@@ -88,7 +21,7 @@ class PasetoImplementationResult {
 /// the official PASETO v4 specification with:
 /// - v4.public: Ed25519 signatures
 /// - v4.local: XChaCha20 encryption + BLAKE2b MAC
-class PasetoV4Implementation {
+abstract interface class _PasetoV4 {
   /// Signs a PASETO v4.public token
   static Future<String> signPublic({
     required Map<String, dynamic> payload,
@@ -134,7 +67,6 @@ class PasetoV4Implementation {
   static Future<PasetoImplementationResult> verifyPublic({
     required String token,
     required Uint8List publicKeyBytes,
-    String? footer,
     String? implicitAssertion,
   }) async {
     try {
@@ -292,6 +224,45 @@ class PasetoV4Implementation {
       };
     } catch (e) {
       throw Exception('Failed to generate Ed25519 key pair: $e');
+    }
+  }
+
+  /// Generates a new Ed25519 key pair from existing seed
+  static Future<Map<String, Uint8List>> generateEd25519KeyPairFromSeed(
+    Uint8List seed,
+  ) async {
+    try {
+      if (seed.length != 32) {
+        throw ArgumentError('Ed25519 seed must be exactly 32 bytes');
+      }
+
+      final ed25519 = Ed25519();
+      final keyPair = await ed25519.newKeyPairFromSeed(seed);
+      final publicKey = await keyPair.extractPublicKey();
+
+      final privateKeyBytes = await keyPair.extractPrivateKeyBytes();
+      final publicKeyBytes = publicKey.bytes;
+
+      return {
+        'privateKey': Uint8List.fromList(privateKeyBytes),
+        'publicKey': Uint8List.fromList(publicKeyBytes),
+      };
+    } catch (e) {
+      throw Exception('Failed to generate Ed25519 key pair from seed: $e');
+    }
+  }
+
+  /// Validates Ed25519 key bytes
+  static void validateEd25519KeyBytes(Uint8List keyBytes, String keyType) {
+    if (keyBytes.length != 32) {
+      throw ArgumentError('Ed25519 $keyType must be exactly 32 bytes');
+    }
+  }
+
+  /// Validates XChaCha20 key bytes
+  static void validateXChaCha20KeyBytes(Uint8List keyBytes) {
+    if (keyBytes.length != 32) {
+      throw ArgumentError('XChaCha20 key must be exactly 32 bytes');
     }
   }
 

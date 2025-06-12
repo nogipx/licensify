@@ -5,15 +5,15 @@
 part of '_index.dart';
 
 /// Interface for PASETO license validator
-abstract interface class IPasetoLicenseValidator {
+abstract interface class ILicenseValidator {
   /// Validates the complete license (signature and expiration)
-  Future<ValidationResult> validate(PasetoLicense license);
+  Future<LicenseValidationResult> validate(License license);
 
   /// Validates only the cryptographic signature of the license
-  Future<ValidationResult> validateSignature(PasetoLicense license);
+  Future<LicenseValidationResult> validateSignature(License license);
 
   /// Validates only the expiration date of the license
-  ValidationResult validateExpiration(PasetoLicense license);
+  LicenseValidationResult validateExpiration(License license);
 }
 
 /// PASETO-based license validator
@@ -21,16 +21,16 @@ abstract interface class IPasetoLicenseValidator {
 /// This class validates license authenticity using PASETO v4.public tokens
 /// and checks license expiration dates. It provides better security than
 /// traditional signature verification.
-class PasetoLicenseValidator implements IPasetoLicenseValidator {
+class LicenseValidator implements ILicenseValidator {
   /// Public key for signature verification
-  final LicensifyPasetoPublicKey _publicKey;
+  final LicensifyPublicKey _publicKey;
 
   /// Creates a new PASETO validator with Ed25519 public key
   ///
   /// [publicKey] - Ed25519 public key for PASETO v4.public verification
-  PasetoLicenseValidator({required LicensifyPasetoPublicKey publicKey})
+  LicenseValidator({required LicensifyPublicKey publicKey})
       : _publicKey = publicKey {
-    if (_publicKey.keyType != PasetoKeyType.ed25519Public) {
+    if (_publicKey.keyType != LicensifyKeyType.ed25519Public) {
       throw ArgumentError(
         'PasetoLicenseValidator requires Ed25519 public key for v4.public tokens',
       );
@@ -44,9 +44,9 @@ class PasetoLicenseValidator implements IPasetoLicenseValidator {
   /// 2. Token structure validation
   /// 3. Expiration date check
   ///
-  /// Returns [ValidationResult] with validation status and message
+  /// Returns [LicenseValidationResult] with validation status and message
   @override
-  Future<ValidationResult> validate(PasetoLicense license) async {
+  Future<LicenseValidationResult> validate(License license) async {
     try {
       // First validate the signature and extract payload
       final signatureResult = await validateSignature(license);
@@ -60,9 +60,10 @@ class PasetoLicenseValidator implements IPasetoLicenseValidator {
         return expirationResult;
       }
 
-      return const ValidationResult(isValid: true, message: 'License is valid');
+      return const LicenseValidationResult(
+          isValid: true, message: 'License is valid');
     } catch (e) {
-      return ValidationResult(
+      return LicenseValidationResult(
         isValid: false,
         message: 'License validation error: $e',
       );
@@ -76,12 +77,12 @@ class PasetoLicenseValidator implements IPasetoLicenseValidator {
   /// 2. Extracts and validates the payload structure
   /// 3. Updates the license with validated payload
   ///
-  /// Returns [ValidationResult] with validation status
+  /// Returns [LicenseValidationResult] with validation status
   @override
-  Future<ValidationResult> validateSignature(PasetoLicense license) async {
+  Future<LicenseValidationResult> validateSignature(License license) async {
     try {
       // Verify the PASETO token and extract payload
-      final result = await PasetoV4.verifyPublic(
+      final result = await _PasetoV4.verifyPublic(
         token: license.token,
         publicKeyBytes: _publicKey.keyBytes,
       );
@@ -93,7 +94,7 @@ class PasetoLicenseValidator implements IPasetoLicenseValidator {
       final payload = result.payload;
       final validationError = _validatePayloadStructure(payload);
       if (validationError != null) {
-        return ValidationResult(
+        return LicenseValidationResult(
           isValid: false,
           message: 'Invalid payload structure: $validationError',
         );
@@ -102,9 +103,10 @@ class PasetoLicenseValidator implements IPasetoLicenseValidator {
       // Update the license with validated payload
       license.updatePayload(payload);
 
-      return const ValidationResult(isValid: true, message: 'Valid signature');
+      return const LicenseValidationResult(
+          isValid: true, message: 'Valid signature');
     } catch (e) {
-      return ValidationResult(
+      return LicenseValidationResult(
         isValid: false,
         message: 'Signature verification error: $e',
       );
@@ -116,24 +118,24 @@ class PasetoLicenseValidator implements IPasetoLicenseValidator {
   /// This method checks if the license has expired based on the 'exp' claim
   /// in the PASETO payload.
   ///
-  /// Returns [ValidationResult] with validation status
+  /// Returns [LicenseValidationResult] with validation status
   @override
-  ValidationResult validateExpiration(PasetoLicense license) {
+  LicenseValidationResult validateExpiration(License license) {
     try {
       if (license.isExpired) {
-        return ValidationResult(
+        return LicenseValidationResult(
           isValid: false,
           message:
               'License expired on ${license.expirationDate.toIso8601String()}',
         );
       }
 
-      return const ValidationResult(
+      return const LicenseValidationResult(
         isValid: true,
         message: 'License not expired',
       );
     } catch (e) {
-      return ValidationResult(
+      return LicenseValidationResult(
         isValid: false,
         message: 'Expiration validation error: $e',
       );
@@ -193,24 +195,4 @@ class PasetoLicenseValidator implements IPasetoLicenseValidator {
 
     return null; // No validation errors
   }
-}
-
-/// Implementation wrapper for backward compatibility
-class LicensifyPasetoLicenseValidator {
-  final PasetoLicenseValidator _validator;
-
-  LicensifyPasetoLicenseValidator(LicensifyPasetoPublicKey publicKey)
-      : _validator = PasetoLicenseValidator(publicKey: publicKey);
-
-  /// Validates the complete license
-  Future<ValidationResult> validate(PasetoLicense license) =>
-      _validator.validate(license);
-
-  /// Validates only the signature
-  Future<ValidationResult> validateSignature(PasetoLicense license) =>
-      _validator.validateSignature(license);
-
-  /// Validates only the expiration
-  ValidationResult validateExpiration(PasetoLicense license) =>
-      _validator.validateExpiration(license);
 }

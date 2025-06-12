@@ -16,9 +16,9 @@ extension DateTimeUtils on DateTime {
 }
 
 /// Interface for PASETO license generator
-abstract interface class IPasetoLicenseGenerator {
+abstract interface class ILicenseGenerator {
   /// Generates a new PASETO license
-  Future<PasetoLicense> call({
+  Future<License> call({
     required String appId,
     required DateTime expirationDate,
     LicenseType type = LicenseType.standard,
@@ -33,16 +33,16 @@ abstract interface class IPasetoLicenseGenerator {
 /// This class is responsible for creating cryptographically signed licenses
 /// using PASETO v4.public tokens. This provides better security than traditional
 /// signature schemes and follows modern cryptographic best practices.
-class PasetoLicenseGenerator implements IPasetoLicenseGenerator {
+class LicenseGenerator implements ILicenseGenerator {
   /// Private key for signing PASETO tokens
-  final LicensifyPasetoPrivateKey _privateKey;
+  final LicensifyPrivateKey _privateKey;
 
   /// Creates a new PASETO license generator with Ed25519 private key
   ///
   /// [privateKey] - Ed25519 private key for PASETO v4.public signing
-  PasetoLicenseGenerator({required LicensifyPasetoPrivateKey privateKey})
+  LicenseGenerator({required LicensifyPrivateKey privateKey})
       : _privateKey = privateKey {
-    if (_privateKey.keyType != PasetoKeyType.ed25519Public) {
+    if (_privateKey.keyType != LicensifyKeyType.ed25519Public) {
       throw ArgumentError(
         'PasetoLicenseGenerator requires Ed25519 private key for v4.public tokens',
       );
@@ -61,7 +61,7 @@ class PasetoLicenseGenerator implements IPasetoLicenseGenerator {
   ///
   /// Returns a cryptographically signed PasetoLicense object
   @override
-  Future<PasetoLicense> call({
+  Future<License> call({
     required String appId,
     required DateTime expirationDate,
     LicenseType type = LicenseType.standard,
@@ -99,14 +99,14 @@ class PasetoLicenseGenerator implements IPasetoLicenseGenerator {
 
     try {
       // Sign the payload with PASETO v4.public
-      final token = await PasetoV4.signPublic(
+      final token = await _PasetoV4.signPublic(
         payload: payload,
         privateKeyBytes: _privateKey.keyBytes,
         footer: footer,
       );
 
       // Create and return the PASETO license
-      return PasetoLicense.fromValidatedPayload(token: token, payload: payload);
+      return License.fromValidatedPayload(token: token, payload: payload);
     } catch (e) {
       throw Exception('Failed to generate PASETO license: $e');
     }
@@ -116,73 +116,20 @@ class PasetoLicenseGenerator implements IPasetoLicenseGenerator {
   ///
   /// This is useful when you need to re-sign existing license data
   /// or when creating a license from validated payload.
-  Future<PasetoLicense> fromPayload({
+  Future<License> fromPayload({
     required Map<String, dynamic> payload,
     String? footer,
   }) async {
     try {
-      final token = await PasetoV4.signPublic(
+      final token = await _PasetoV4.signPublic(
         payload: payload,
         privateKeyBytes: _privateKey.keyBytes,
         footer: footer,
       );
 
-      return PasetoLicense.fromValidatedPayload(token: token, payload: payload);
+      return License.fromValidatedPayload(token: token, payload: payload);
     } catch (e) {
       throw Exception('Failed to generate PASETO license from payload: $e');
     }
   }
-}
-
-/// Implementation of the license generator interface for backward compatibility
-class LicensifyPasetoLicenseGenerator {
-  final PasetoLicenseGenerator _generator;
-
-  LicensifyPasetoLicenseGenerator._(this._generator);
-
-  /// Creates an Ed25519-based PASETO license generator
-  static LicensifyPasetoLicenseGenerator ed25519(
-    LicensifyPasetoPrivateKey key,
-  ) {
-    return LicensifyPasetoLicenseGenerator._(
-      PasetoLicenseGenerator(privateKey: key),
-    );
-  }
-
-  /// Creates a symmetric key-based generator (currently not implemented)
-  static LicensifyPasetoLicenseGenerator xchacha20(
-    LicensifyPasetoPrivateKey key,
-  ) {
-    throw UnimplementedError(
-      'XChaCha20 symmetric keys are not yet implemented for license generation. '
-      'Use Ed25519 keys with v4.public instead.',
-    );
-  }
-
-  /// Generates a new PASETO license
-  Future<PasetoLicense> call({
-    required String appId,
-    required DateTime expirationDate,
-    LicenseType type = LicenseType.standard,
-    Map<String, dynamic> features = const {},
-    Map<String, dynamic>? metadata,
-    bool isTrial = false,
-    String? footer,
-  }) =>
-      _generator.call(
-        appId: appId,
-        expirationDate: expirationDate,
-        type: type,
-        features: features,
-        metadata: metadata,
-        isTrial: isTrial,
-        footer: footer,
-      );
-
-  /// Generates a license from payload
-  Future<PasetoLicense> fromPayload({
-    required Map<String, dynamic> payload,
-    String? footer,
-  }) =>
-      _generator.fromPayload(payload: payload, footer: footer);
 }

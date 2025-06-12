@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /// Validation result
-class ValidationResult {
+class LicenseValidationResult {
   /// Is license valid
   final bool isValid;
 
@@ -14,16 +14,16 @@ class ValidationResult {
   ///
   /// [isValid] - Is license valid
   /// [message] - Error message (null if license is valid)
-  const ValidationResult({required this.isValid, this.message = ''});
+  const LicenseValidationResult({required this.isValid, this.message = ''});
 
   /// Creates a valid validation result
-  factory ValidationResult.valid() {
-    return const ValidationResult(isValid: true);
+  factory LicenseValidationResult.valid() {
+    return const LicenseValidationResult(isValid: true);
   }
 
   /// Creates an invalid validation result with a message
-  factory ValidationResult.invalid(String message) {
-    return ValidationResult(isValid: false, message: message);
+  factory LicenseValidationResult.invalid(String message) {
+    return LicenseValidationResult(isValid: false, message: message);
   }
 
   @override
