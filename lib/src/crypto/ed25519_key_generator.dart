@@ -2,9 +2,7 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-import 'dart:typed_data';
-import 'package:paseto_dart/paseto_dart.dart';
-import '../paseto_key.dart';
+part of '_index.dart';
 
 /// Real Ed25519 key generator using paseto_dart library
 ///

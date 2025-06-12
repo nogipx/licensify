@@ -2,11 +2,7 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-import 'dart:typed_data';
-import 'license/paseto_license_generator.dart';
-import 'license/paseto_license_validator.dart';
-import 'dart:math';
-import 'keys_generators/real_ed25519_key_generator.dart';
+part of '_index.dart';
 
 /// PASETO key type
 enum PasetoKeyType {

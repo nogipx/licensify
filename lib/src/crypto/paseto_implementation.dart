@@ -2,10 +2,7 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-import 'dart:convert';
-import 'dart:typed_data';
-import 'package:paseto_dart/paseto_dart.dart';
-import 'dart:math';
+part of '_index.dart';
 
 /// Backward compatibility wrapper
 class PasetoV4 {

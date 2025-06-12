@@ -2,8 +2,7 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-import 'package:licensify/licensify.dart';
-import 'package:uuid/uuid.dart';
+part of '_index.dart';
 
 /// Extension for DateTime to round to minutes
 extension DateTimeUtils on DateTime {

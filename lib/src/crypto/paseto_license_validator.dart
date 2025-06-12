@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-import 'package:licensify/licensify.dart';
+part of '_index.dart';
 
 /// Interface for PASETO license validator
 abstract interface class IPasetoLicenseValidator {
