@@ -11,3 +11,4 @@ export 'license_status.dart';
 export 'license_type.dart';
 export 'license.dart';
 export 'validation_result.dart';
+export 'paseto_license.dart';

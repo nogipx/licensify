@@ -1,24 +1,26 @@
 name: licensify
-description: Secure license management for Dart/Flutter with ECDSA signatures, configurable encryption, and cross-platform support.
-version: 2.4.1
+description: A modern Dart library for secure license generation and validation using PASETO v4.
+version: 1.0.0
 homepage: https://github.com/nogipx/licensify
 repository: https://github.com/nogipx/licensify
 issue_tracker: https://github.com/nogipx/licensify/issues
 documentation: https://github.com/nogipx/licensify/blob/main/README.md
 
 environment:
-  sdk: ^3.7.0
+  sdk: '>=3.0.0 <4.0.0'
 
-dependencies: 
+dependencies:
+  paseto_dart: ^1.0.0
+  pointycastle: ^3.9.1
   uuid: ^4.5.1
-  pointycastle: ^4.0.0
-  crypto: ^3.0.3
-  asn1lib: ^1.6.4
   args: ^2.4.2
+  crypto: ^3.0.3
+  asn1lib: ^1.6.1
+  cryptography: ^2.7.0
 
 dev_dependencies:
-  lints: ^5.0.0
-  test: ^1.24.0
+  test: ^1.21.0
+  lints: ^4.0.0
 
 executables:
   licensify: licensify

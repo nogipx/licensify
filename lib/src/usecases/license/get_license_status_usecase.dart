@@ -11,8 +11,8 @@ class GetLicenseStatusUseCase {
   GetLicenseStatusUseCase({
     required ILicenseValidator licenseValidator,
     IDeviceHashGenerator? deviceHashGenerator,
-  }) : _licenseValidator = licenseValidator,
-       _deviceHashGenerator = deviceHashGenerator;
+  })  : _licenseValidator = licenseValidator,
+        _deviceHashGenerator = deviceHashGenerator;
 
   Future<LicenseStatus> call(License? license, {LicenseSchema? schema}) async {
     if (license == null) {
@@ -28,7 +28,7 @@ class GetLicenseStatusUseCase {
     }
 
     if (_deviceHashGenerator != null) {
-      final deviceHash = await _deviceHashGenerator();
+      final deviceHash = await _deviceHashGenerator!();
       if (license.metadata?['deviceHash'] != deviceHash) {
         return InvalidLicenseDeviceHashStatus();
       }
