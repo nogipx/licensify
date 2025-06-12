@@ -2,5 +2,4 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-export 'data/_index.dart';
 export 'domain/_index.dart';

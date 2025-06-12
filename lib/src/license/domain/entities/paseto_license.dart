@@ -124,21 +124,6 @@ class PasetoLicense {
   int get remainingDays =>
       expirationDate.difference(DateTime.now().toUtc()).inDays;
 
-  /// Gets the license status using PASETO validation
-  ///
-  /// TODO: Implement GetPasetoLicenseStatusUseCase
-  /*
-  Future<LicenseStatus> getLicenseStatus({
-    required LicensifyPasetoLicenseValidator licenseValidator,
-    IDeviceHashGenerator? deviceHashGenerator,
-  }) async {
-    return GetPasetoLicenseStatusUseCase(
-      licenseValidator: licenseValidator,
-      deviceHashGenerator: deviceHashGenerator,
-    ).call(this);
-  }
-  */
-
   /// Returns the raw PASETO token
   @override
   String toString() => token;

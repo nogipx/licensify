@@ -2,5 +2,4 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-export 'ecdsa_key_generator.dart';
-export 'rsa_key_generator.dart';
+export 'real_ed25519_key_generator.dart' show Ed25519KeyGenerator;

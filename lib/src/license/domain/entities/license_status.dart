@@ -34,11 +34,11 @@ abstract class LicenseStatus {
 
   /// Returns the license object if available (for Active or Expired status)
   /// Returns null for other status types
-  License? get license => switch (this) {
-    ActiveLicenseStatus(:final license) => license,
-    ExpiredLicenseStatus(:final license) => license,
-    _ => null,
-  };
+  PasetoLicense? get license => switch (this) {
+        ActiveLicenseStatus(:final license) => license,
+        ExpiredLicenseStatus(:final license) => license,
+        _ => null,
+      };
 }
 
 /// Status indicating no license is installed
@@ -50,7 +50,7 @@ class NoLicenseStatus extends LicenseStatus {
 class ActiveLicenseStatus extends LicenseStatus {
   /// The active license object
   @override
-  final License license;
+  final PasetoLicense license;
 
   /// Creates an active license status with the specified license
   const ActiveLicenseStatus(this.license);
@@ -60,7 +60,7 @@ class ActiveLicenseStatus extends LicenseStatus {
 class ExpiredLicenseStatus extends LicenseStatus {
   /// The expired license object
   @override
-  final License license;
+  final PasetoLicense license;
 
   /// Creates an expired license status with the specified license
   const ExpiredLicenseStatus(this.license);
@@ -74,11 +74,11 @@ class InvalidLicenseSignatureStatus extends LicenseStatus {
 
 /// Status indicating the license schema is invalid
 class InvalidLicenseSchemaStatus extends LicenseStatus {
-  /// The schema validation result
-  final SchemaValidationResult schemaValidationResult;
+  /// The schema validation message
+  final String message;
 
-  /// Creates an invalid license schema status with the specified schema validation result
-  const InvalidLicenseSchemaStatus(this.schemaValidationResult);
+  /// Creates an invalid license schema status with the specified message
+  const InvalidLicenseSchemaStatus(this.message);
 }
 
 /// Status indicating the license device hash is invalid

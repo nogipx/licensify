@@ -6,7 +6,7 @@ import 'dart:typed_data';
 import 'license/paseto_license_generator.dart';
 import 'license/paseto_license_validator.dart';
 import 'dart:math';
-import 'keys_generators/ed25519_key_generator.dart';
+import 'keys_generators/real_ed25519_key_generator.dart';
 
 /// PASETO key type
 enum PasetoKeyType {
@@ -133,10 +133,7 @@ final class LicensifyPasetoKeyPair {
     );
   }
 
-  /// Generates a new Ed25519 key pair for PASETO v4.public
-  ///
-  /// Ed25519 is the modern elliptic curve signature algorithm used by PASETO v4.
-  /// This method now uses real cryptographic key generation.
+  /// Generates a new Ed25519 key pair for PASETO v4.public operations
   static Future<LicensifyPasetoKeyPair> generateEd25519() async {
     return await Ed25519KeyGenerator.generateKeyPair();
   }

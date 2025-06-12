@@ -217,6 +217,80 @@ void main() {
       expect(result.isValid, isTrue);
       expect(license.token, startsWith('v4.public.'));
     });
+
+    test('should generate working license with real cryptography', () async {
+      // Generate a real Ed25519 key pair
+      final keyPair = await Ed25519KeyGenerator.generateKeyPair();
+
+      // Create generator and validator
+      final generator = PasetoLicenseGenerator(privateKey: keyPair.privateKey);
+
+      // Generate license
+      final license = await generator.call(
+        appId: 'com.example.test',
+        expirationDate: DateTime.now().add(const Duration(days: 30)),
+        type: LicenseType.pro,
+        features: {
+          'max_users': 100,
+          'api_access': true,
+        },
+      );
+
+      // Assert license structure
+      expect(license, isA<PasetoLicense>());
+      expect(license.token, isNotEmpty);
+      expect(license.token, startsWith('v4.public.'));
+
+      // Now payload is populated during generation, so id and appId should be available
+      expect(license.id, isNotEmpty);
+      expect(license.appId, isNotEmpty);
+    });
+
+    test('should validate license properly', () async {
+      // Generate a real Ed25519 key pair
+      final keyPair = await Ed25519KeyGenerator.generateKeyPair();
+
+      // Generate test license
+      final generator = PasetoLicenseGenerator(privateKey: keyPair.privateKey);
+      final testLicense = await generator.call(
+        appId: 'com.example.validationtest',
+        expirationDate: DateTime.now().add(const Duration(days: 7)),
+        type: LicenseType.standard,
+      );
+
+      // Create validator
+      final validator = PasetoLicenseValidator(publicKey: keyPair.publicKey!);
+
+      // Validate license
+      final result = await validator.validate(testLicense);
+
+      // Assert validation result
+      expect(result.isValid, isTrue);
+      expect(result.message, contains('valid'));
+    });
+
+    test('should reject tampered license', () async {
+      // Generate keys and license
+      final keyPair1 = await Ed25519KeyGenerator.generateKeyPair();
+      final keyPair2 = await Ed25519KeyGenerator.generateKeyPair();
+
+      final generator = PasetoLicenseGenerator(privateKey: keyPair1.privateKey);
+      final validator = PasetoLicenseValidator(
+          publicKey: keyPair2.publicKey!); // Different key!
+
+      // Generate license with first key
+      final license = await generator.call(
+        appId: 'com.example.tamper',
+        expirationDate: DateTime.now().add(const Duration(days: 30)),
+      );
+
+      // Try to validate with second key (should fail)
+      final result = await validator.validate(license);
+
+      // Assert validation fails
+      expect(result.isValid, isFalse);
+      expect(result.message, contains('Invalid'));
+    });
   });
 
   group('PASETO Key Management Tests', () {
@@ -254,7 +328,7 @@ void main() {
       );
     });
 
-    test('should work with Ed25519KeyGenerator', () async {
+    test('should work with RealEd25519KeyGenerator', () async {
       // Test key pair generation
       final keyPair = await Ed25519KeyGenerator.generateKeyPair();
       expect(keyPair.privateKey.keyBytes.length, equals(32));

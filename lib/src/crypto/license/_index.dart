@@ -2,6 +2,5 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-export 'license_encoder.dart';
-export 'license_generator.dart';
-export 'license_validator.dart';
+export 'paseto_license_generator.dart';
+export 'paseto_license_validator.dart';

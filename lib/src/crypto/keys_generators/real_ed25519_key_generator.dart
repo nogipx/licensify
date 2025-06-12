@@ -10,7 +10,7 @@ import '../paseto_key.dart';
 ///
 /// This generator creates cryptographically secure Ed25519 keys
 /// using the same library and algorithms as PASETO v4.public
-class RealEd25519KeyGenerator {
+class Ed25519KeyGenerator {
   /// Generates a real Ed25519 key pair using paseto_dart
   ///
   /// Returns properly formatted keys that work with PASETO v4.public

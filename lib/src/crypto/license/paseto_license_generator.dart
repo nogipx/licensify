@@ -5,6 +5,17 @@
 import 'package:licensify/licensify.dart';
 import 'package:uuid/uuid.dart';
 
+/// Extension for DateTime to round to minutes
+extension DateTimeUtils on DateTime {
+  /// Rounds the DateTime to the nearest minute (zeroes seconds and milliseconds)
+  DateTime roundToMinutes() {
+    return DateTime.fromMillisecondsSinceEpoch(
+      (millisecondsSinceEpoch ~/ 60000) * 60000,
+      isUtc: isUtc,
+    );
+  }
+}
+
 /// Interface for PASETO license generator
 abstract interface class IPasetoLicenseGenerator {
   /// Generates a new PASETO license
