@@ -100,11 +100,8 @@ class License {
   String toString() => token;
 
   /// Converts license to a map representation (from validated payload)
-  Future<Map<String, dynamic>> toMap() async =>
+  Future<Map<String, dynamic>> toJson() async =>
       Map<String, dynamic>.from(_validatedPayload);
-
-  /// Creates a JSON representation of the license payload
-  Future<String> toJson() async => jsonEncode(await toMap());
 
   /// Creates a copy of this instance with optional changes
   ///

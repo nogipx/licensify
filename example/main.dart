@@ -81,6 +81,50 @@ Future<void> basicLicensingWorkflow() async {
     print('   Пробная: ${await license.isTrial}');
     print('   Токен: ${license.token.substring(0, 50)}...');
 
+    // 2a. 🎯 НОВЫЙ API: Восстановление лицензии из токена
+    print('\n💡 Демонстрация нового API fromToken()...');
+
+    // Эмулируем ситуацию: у разработчика есть только токен и публичный ключ
+    final storedToken = license.token; // Токен, который хранится в приложении
+
+    try {
+      // Создаем объект License прямо из токена с валидацией
+      final restoredLicense = await Licensify.fromToken(
+        token: storedToken,
+        publicKey: keys.publicKey,
+      );
+
+      print('✅ Лицензия восстановлена из токена!');
+      print('   Restored ID: ${await restoredLicense.id}');
+      print('   Restored App: ${await restoredLicense.appId}');
+      print('   Restored Type: ${(await restoredLicense.type).name}');
+      print('   Restored Features: ${await restoredLicense.features}');
+
+      // Теперь можно работать с объектом лицензии
+      if (await restoredLicense.isExpired) {
+        print('   ⚠️ Лицензия истекла!');
+      } else {
+        print(
+            '   ✅ Лицензия действительна ещё ${await restoredLicense.remainingDays} дней');
+      }
+    } catch (e) {
+      print('   ❌ Ошибка восстановления лицензии: $e');
+    }
+
+    // 2b. Альтернативный способ с байтами ключа
+    final publicKeyBytes = keys.publicKey.keyBytes;
+    try {
+      final restoredLicense2 = await Licensify.fromTokenWithKeyBytes(
+        token: storedToken,
+        publicKeyBytes: publicKeyBytes,
+      );
+
+      print('✅ Лицензия восстановлена с байтами ключа!');
+      print('   Customer: ${(await restoredLicense2.metadata)?['customer']}');
+    } catch (e) {
+      print('   ❌ Ошибка восстановления с байтами: $e');
+    }
+
     // 3. Быстрая проверка подписи
     final signatureResult = await Licensify.validateSignature(
       license: license,
