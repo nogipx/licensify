@@ -165,24 +165,6 @@ class _SecureLicensifyOperations {
       publicKey.dispose();
     }
   }
-
-  /// Performs symmetric encryption/decryption with automatic key cleanup
-  ///
-  /// The symmetric key will be automatically disposed after the operation.
-  static Future<R> encryptSecurely<R>({
-    required Future<R> Function(_LicensifySymmetricCrypto crypto) operation,
-    LicensifySymmetricKey? symmetricKey,
-  }) async {
-    final key = symmetricKey ?? LicensifyKey.generateLocalKey();
-
-    try {
-      final crypto = _LicensifySymmetricCrypto(symmetricKey: key);
-      return await operation(crypto);
-    } finally {
-      // Always dispose key after use
-      key.dispose();
-    }
-  }
 }
 
 /// Mixin for automatic key disposal

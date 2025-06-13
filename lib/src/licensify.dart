@@ -143,59 +143,6 @@ abstract interface class Licensify {
     });
   }
 
-  /// Создает лицензию с автоматической генерацией и очисткой ключей
-  ///
-  /// 🛡️ Максимально безопасный метод: ключи генерируются, используются
-  /// и автоматически обнуляются в рамках одной операции.
-  ///
-  /// Рекомендуемый способ для одноразового создания лицензий.
-  ///
-  /// Пример:
-  /// ```dart
-  /// final result = await Licensify.createLicenseWithKeys(
-  ///   appId: 'com.example.app',
-  ///   expirationDate: DateTime.now().add(Duration(days: 30)),
-  ///   type: LicenseType.pro,
-  ///   features: {'premium': true},
-  ///   footer: '{"key_id": "auto-key-2025"}',
-  /// );
-  ///
-  /// print('Лицензия: ${result.license.token}');
-  /// print('Публичный ключ: ${result.publicKeyBytes}'); // Для валидации
-  /// ```
-  static Future<({License license, Uint8List publicKeyBytes})>
-      createLicenseWithKeys({
-    required String appId,
-    required DateTime expirationDate,
-    LicenseType type = LicenseType.standard,
-    Map<String, dynamic> features = const {},
-    Map<String, dynamic>? metadata,
-    bool isTrial = false,
-    String? footer,
-  }) async {
-    final keyPair = await generateSigningKeys();
-    try {
-      final license = await createLicense(
-        privateKey: keyPair.privateKey,
-        appId: appId,
-        expirationDate: expirationDate,
-        type: type,
-        features: features,
-        metadata: metadata,
-        isTrial: isTrial,
-        footer: footer,
-      );
-
-      // Сохраняем публичный ключ перед очисткой
-      final publicKeyBytes = Uint8List.fromList(keyPair.publicKey.keyBytes);
-
-      return (license: license, publicKeyBytes: publicKeyBytes);
-    } finally {
-      keyPair.privateKey.dispose();
-      keyPair.publicKey.dispose();
-    }
-  }
-
   // ========================================
   // ✅ ВАЛИДАЦИЯ ЛИЦЕНЗИЙ
   // ========================================
@@ -291,9 +238,10 @@ abstract interface class Licensify {
   // 🔒 ШИФРОВАНИЕ ДАННЫХ
   // ========================================
 
-  /// Шифрует данные симметричным ключом с автоматической очисткой
+  /// Шифрует данные симметричным ключом
   ///
-  /// 🛡️ Безопасный метод: ключ автоматически обнуляется в памяти после использования.
+  /// 🛡️ Безопасный метод: ключ НЕ очищается автоматически,
+  /// разработчик должен сам вызвать dispose() после использования.
   ///
   /// Создает зашифрованный PASETO v4.local токен для безопасной
   /// передачи чувствительных данных.
@@ -317,9 +265,15 @@ abstract interface class Licensify {
   ///     footer: 'metadata:version=1.0',
   ///   );
   ///
+  ///   // Используем тот же ключ для расшифровки
+  ///   final decryptedData = await Licensify.decryptData(
+  ///     encryptedToken: encryptedToken,
+  ///     encryptionKey: encryptionKey,
+  ///   );
+  ///
   ///   print('Зашифрованный токен: $encryptedToken');
   /// } finally {
-  ///   encryptionKey.dispose(); // Очищаем ключ
+  ///   encryptionKey.dispose(); // Очищаем ключ вручную
   /// }
   /// ```
   static Future<String> encryptData({
@@ -328,21 +282,18 @@ abstract interface class Licensify {
     String? footer,
     String? implicitAssertion,
   }) async {
-    return await _SecureLicensifyOperations.encryptSecurely(
-      operation: (crypto) async {
-        return await crypto.encrypt(
-          data,
-          footer: footer,
-          implicitAssertion: implicitAssertion,
-        );
-      },
-      symmetricKey: encryptionKey,
+    final crypto = _LicensifySymmetricCrypto(symmetricKey: encryptionKey);
+    return await crypto.encrypt(
+      data,
+      footer: footer,
+      implicitAssertion: implicitAssertion,
     );
   }
 
-  /// Расшифровывает данные симметричным ключом с автоматической очисткой
+  /// Расшифровывает данные симметричным ключом
   ///
-  /// 🛡️ Безопасный метод: ключ автоматически обнуляется в памяти после использования.
+  /// 🛡️ Безопасный метод: ключ НЕ очищается автоматически,
+  /// разработчик должен сам вызвать dispose() после использования.
   ///
   /// Расшифровывает PASETO v4.local токен и возвращает исходные данные.
   ///
@@ -362,7 +313,7 @@ abstract interface class Licensify {
   ///   print('Расшифрованные данные: $decryptedData');
   ///   print('ID пользователя: ${decryptedData['user_id']}');
   /// } finally {
-  ///   encryptionKey.dispose(); // Очищаем ключ
+  ///   encryptionKey.dispose(); // Очищаем ключ вручную
   /// }
   /// ```
   static Future<Map<String, dynamic>> decryptData({
@@ -374,45 +325,6 @@ abstract interface class Licensify {
     return await crypto.decrypt(
       encryptedToken,
       implicitAssertion: implicitAssertion,
-    );
-  }
-
-  /// Шифрует данные с автоматической генерацией и очисткой ключа
-  ///
-  /// 🛡️ Максимально безопасный метод: ключ генерируется, используется
-  /// и автоматически обнуляется в рамках одной операции.
-  ///
-  /// Рекомендуемый способ для одноразового шифрования данных.
-  ///
-  /// Пример:
-  /// ```dart
-  /// final result = await Licensify.encryptDataWithKey(
-  ///   data: {'secret': 'sensitive data'},
-  ///   footer: 'version=1.0',
-  /// );
-  ///
-  /// print('Зашифрованный токен: ${result.encryptedToken}');
-  /// print('Ключ для расшифровки: ${result.keyBytes}'); // Сохраните безопасно!
-  /// ```
-  static Future<({String encryptedToken, Uint8List keyBytes})>
-      encryptDataWithKey({
-    required Map<String, dynamic> data,
-    String? footer,
-    String? implicitAssertion,
-  }) async {
-    return await _SecureLicensifyOperations.encryptSecurely(
-      operation: (crypto) async {
-        final encryptedToken = await crypto.encrypt(
-          data,
-          footer: footer,
-          implicitAssertion: implicitAssertion,
-        );
-
-        // Сохраняем ключ перед очисткой
-        final keyBytes = Uint8List.fromList(crypto.symmetricKey.keyBytes);
-
-        return (encryptedToken: encryptedToken, keyBytes: keyBytes);
-      },
     );
   }
 
