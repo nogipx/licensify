@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-part of '_index.dart';
+part of 'package:licensify/licensify.dart';
 
 /// Interface for PASETO license validator
 abstract interface class ILicenseValidator {
@@ -64,10 +64,7 @@ class _LicenseValidator implements ILicenseValidator {
     }
 
     // Create validated license
-    final license = License.fromValidatedToken(
-      token: token,
-      validatedPayload: payload,
-    );
+    final license = License._from(token, payload);
 
     // Check expiration
     if (await license.isExpired) {

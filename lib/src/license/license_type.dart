@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+part of 'package:licensify/licensify.dart';
+
 /// License type representation
 ///
 /// This class allows creating custom license types for specific business needs.

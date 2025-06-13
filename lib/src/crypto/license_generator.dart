@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-part of '_index.dart';
+part of 'package:licensify/licensify.dart';
 
 /// Extension for DateTime to round to minutes
 extension DateTimeUtils on DateTime {
@@ -110,10 +110,7 @@ class _LicenseGenerator implements ILicenseGenerator {
       });
 
       // Create and return the PASETO license with validated payload
-      return License.fromValidatedToken(
-        token: token,
-        validatedPayload: payload,
-      );
+      return License._from(token, payload);
     } catch (e) {
       throw Exception('Failed to generate PASETO license: $e');
     }
@@ -134,10 +131,7 @@ class _LicenseGenerator implements ILicenseGenerator {
         footer: footer,
       );
 
-      return License.fromValidatedToken(
-        token: token,
-        validatedPayload: payload,
-      );
+      return License._from(token, payload);
     } catch (e) {
       throw Exception('Failed to generate PASETO license from payload: $e');
     }

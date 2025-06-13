@@ -2,9 +2,7 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-import 'dart:convert';
-import 'dart:async';
-import 'package:licensify/licensify.dart';
+part of 'package:licensify/licensify.dart';
 
 /// PASETO-based license domain entity
 ///
@@ -23,20 +21,7 @@ class License {
   final Map<String, dynamic> _validatedPayload;
 
   /// Creates a new PASETO license instance (PRIVATE - internal use only)
-  License._(this.token, this._validatedPayload);
-
-  /// 🔒 SECURE FACTORY: Creates a license from a cryptographically validated token
-  ///
-  /// This factory should ONLY be used by internal validators and generators
-  /// after successful PASETO signature verification.
-  ///
-  /// ⚠️ NEVER call this directly! Use Licensify.validateLicense() instead.
-  static License fromValidatedToken({
-    required String token,
-    required Map<String, dynamic> validatedPayload,
-  }) {
-    return License._(token, Map<String, dynamic>.from(validatedPayload));
-  }
+  License._from(this.token, [this._validatedPayload = const {}]);
 
   /// Unique license identifier (UUID)
   Future<String> get id async => _validatedPayload['sub'] as String? ?? '';

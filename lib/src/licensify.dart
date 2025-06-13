@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-part of 'crypto/_index.dart';
+part of 'package:licensify/licensify.dart';
 
 /// 🔐 Главный фасад для работы с лицензиями Licensify
 ///

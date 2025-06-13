@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-part of '../_index.dart';
+part of 'package:licensify/licensify.dart';
 
 /// Represents a PASETO public key used for verification
 final class LicensifyPublicKey extends LicensifyKey {

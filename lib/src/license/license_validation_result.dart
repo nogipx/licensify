@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+part of 'package:licensify/licensify.dart';
+
 /// Validation result
 class LicenseValidationResult {
   /// Is license valid

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
-part of '_index.dart';
+part of 'package:licensify/licensify.dart';
 
 /// Result of PASETO operations
 class _PasetoImplementationResult {
