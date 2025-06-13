@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2025 Karim "nogipx" Mamatkazin <nogipx@gmail.com>
+//
+// SPDX-License-Identifier: LGPL-3.0-or-later
+
 part of '../_index.dart';
 
 /// Represents a PASETO symmetric key used for encryption/decryption
