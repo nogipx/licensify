@@ -2,6 +2,61 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.1.0] - 2025-06-13
+
+### ✨ New Features
+
+- **Token to License API**: Added `Licensify.fromToken()` method for creating License objects directly from PASETO tokens
+- **Key Bytes Support**: Added `Licensify.fromTokenWithKeyBytes()` method for convenience when working with key bytes
+- **Complete License Validation**: Both new methods include full cryptographic validation (signature + expiration + structure)
+- **Streamlined Developer Workflow**: Developers can now easily go from stored token → validated License object in one call
+
+### 🔧 API Improvements
+
+- **Resolved API Mismatch**: Fixed the circular dependency where `validateLicense()` required a `License` object, but creating `License` required validation
+- **Enhanced Error Handling**: Comprehensive error handling for invalid tokens, wrong keys, expired licenses, and corrupted data
+- **Automatic Key Cleanup**: Both new methods automatically dispose of keys in memory for security
+
+### 🧪 Testing
+
+- **Comprehensive Test Suite**: Added 11 new tests covering all scenarios:
+  - Positive cases: valid token restoration, key bytes support, expiration handling, trial licenses
+  - Error cases: invalid formats, expired tokens, wrong keys, corrupted tokens  
+  - Consistency tests: roundtrip data integrity, multiple calls consistency
+- **Full Code Coverage**: All new API methods are thoroughly tested
+
+### 📚 Documentation
+
+- **Updated Examples**: Added demonstrations of the new API in `example/main.dart`
+- **Complete API Documentation**: Full Dart documentation for both new methods with usage examples
+
+### 🎯 Usage Example
+
+```dart
+// Simple workflow: token → License object with validation
+try {
+  final license = await Licensify.fromToken(
+    token: storedLicenseToken,
+    publicKey: publicKey,
+  );
+  
+  // Now use the validated license
+  print('App: ${await license.appId}');
+  print('Expires: ${await license.expirationDate}');
+  
+  if (await license.isExpired) {
+    showExpiredDialog();
+  }
+} catch (e) {
+  // Handle validation errors
+  showInvalidLicenseError();
+} finally {
+  publicKey.dispose();
+}
+```
+
+---
+
 ## [3.0.0] - 2025-01-XX
 
 ### ✨ Revolutionary Changes - Complete PASETO Migration
