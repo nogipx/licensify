@@ -21,5 +21,30 @@ final class LicensifyPublicKey extends LicensifyKey {
     );
   }
 
+  /// Creates a public key from a PASERK k4.public string
+  factory LicensifyPublicKey.fromPaserk(String paserk) {
+    final paserkKey = K4PublicKey.fromString(paserk);
+    return LicensifyPublicKey.ed25519(
+      Uint8List.fromList(paserkKey.rawBytes),
+    );
+  }
+
+  /// Converts the public key to PASERK k4.public string
+  String toPaserk() {
+    return executeWithKeyBytes((keyBytes) {
+      final paserkKey = K4PublicKey(Uint8List.fromList(keyBytes));
+      return paserkKey.toString();
+    });
+  }
+
+  /// Computes PASERK k4.pid identifier for this public key
+  String toPaserkIdentifier() {
+    return executeWithKeyBytes((keyBytes) {
+      final paserkKey = K4PublicKey(Uint8List.fromList(keyBytes));
+      final identifier = K4Pid.fromKey(paserkKey);
+      return identifier.toString();
+    });
+  }
+
   // Геттер licenseValidator убран - используйте Licensify.validateLicense() вместо него
 }

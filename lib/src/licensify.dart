@@ -73,6 +73,104 @@ abstract interface class Licensify {
     return LicensifySymmetricKey.xchacha20(Uint8List.fromList(keyBytes));
   }
 
+  /// Создает ключ шифрования из PASERK k4.local строки
+  static LicensifySymmetricKey encryptionKeyFromPaserk(String paserk) {
+    return LicensifySymmetricKey.fromPaserk(paserk);
+  }
+
+  /// Преобразует симметричный ключ в PASERK k4.local строку
+  static String encryptionKeyToPaserk(LicensifySymmetricKey key) {
+    return key.toPaserk();
+  }
+
+  /// Возвращает PASERK идентификатор (k4.lid) для симметричного ключа
+  static String encryptionKeyIdentifier(LicensifySymmetricKey key) {
+    return key.toPaserkIdentifier();
+  }
+
+  /// Создает симметричный ключ из PASERK k4.local-pw строки с использованием пароля
+  static Future<LicensifySymmetricKey> encryptionKeyFromPaserkPassword(
+    String paserk,
+    String password,
+  ) {
+    return LicensifySymmetricKey.fromPaserkPassword(paserk, password);
+  }
+
+  /// Преобразует симметричный ключ в PASERK k4.local-pw строку
+  static Future<String> encryptionKeyToPaserkPassword(
+    LicensifySymmetricKey key,
+    String password, {
+    int memoryCost = K4LocalPw.defaultMemoryCost,
+    int timeCost = K4LocalPw.defaultTimeCost,
+    int parallelism = K4LocalPw.defaultParallelism,
+  }) {
+    return key.toPaserkPassword(
+      password,
+      memoryCost: memoryCost,
+      timeCost: timeCost,
+      parallelism: parallelism,
+    );
+  }
+
+  /// Создает ключи подписи из PASERK k4.secret строки
+  static LicensifyKeyPair signingKeysFromPaserk(String paserk) {
+    return LicensifyKeyPair.fromPaserkSecret(paserk);
+  }
+
+  /// Преобразует ключи подписи в PASERK k4.secret строку
+  static String signingKeysToPaserk(LicensifyKeyPair keyPair) {
+    return keyPair.toPaserkSecret();
+  }
+
+  /// Возвращает PASERK идентификатор (k4.sid) для секретного ключа
+  static String signingKeyIdentifier(LicensifyKeyPair keyPair) {
+    return keyPair.toPaserkSecretIdentifier();
+  }
+
+  /// Создает пару ключей из PASERK k4.secret-pw строки с использованием пароля
+  static Future<LicensifyKeyPair> signingKeysFromPaserkPassword(
+    String paserk,
+    String password,
+  ) {
+    return LicensifyKeyPair.fromPaserkSecretPassword(paserk, password);
+  }
+
+  /// Преобразует ключи подписи в PASERK k4.secret-pw строку
+  static Future<String> signingKeysToPaserkPassword(
+    LicensifyKeyPair keyPair,
+    String password, {
+    int memoryCost = K4SecretPw.defaultMemoryCost,
+    int timeCost = K4SecretPw.defaultTimeCost,
+    int parallelism = K4SecretPw.defaultParallelism,
+  }) {
+    return keyPair.toPaserkSecretPassword(
+      password,
+      memoryCost: memoryCost,
+      timeCost: timeCost,
+      parallelism: parallelism,
+    );
+  }
+
+  /// Создает публичный ключ из PASERK k4.public строки
+  static LicensifyPublicKey publicKeyFromPaserk(String paserk) {
+    return LicensifyPublicKey.fromPaserk(paserk);
+  }
+
+  /// Преобразует публичный ключ в PASERK k4.public строку
+  static String publicKeyToPaserk(LicensifyPublicKey key) {
+    return key.toPaserk();
+  }
+
+  /// Возвращает PASERK идентификатор (k4.pid) для публичного ключа
+  static String publicKeyIdentifier(LicensifyPublicKey key) {
+    return key.toPaserkIdentifier();
+  }
+
+  /// Проверяет, является ли строка PASERK-представлением ключа
+  static bool isPaserk(String data) {
+    return PaserkKey.isPaserk(data);
+  }
+
   // ========================================
   // 📝 СОЗДАНИЕ ЛИЦЕНЗИЙ
   // ========================================
@@ -415,7 +513,7 @@ abstract interface class Licensify {
   // ========================================
 
   /// Получает информацию о версии библиотеки
-  static const String version = '3.1.0';
+  static const String version = '3.2.0';
 
   /// Получает информацию о поддерживаемых версиях PASETO
   static const List<String> supportedPasetoVersions = ['v4.public', 'v4.local'];

@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.3.0] - 2025-08-29
+
+### ✨ New Features
+
+- **PASERK Password Wrapping**: Added high-level helpers to convert encryption and signing keys using PASERK `k4.local-pw` and `k4.secret-pw` via the Licensify facade.
+- **Key Wrapper Enhancements**: Extended symmetric and key pair wrappers with async password wrapping utilities and password-based restoration helpers.
+
+### 🧪 Testing
+
+- Expanded the PASERK support suite with password round-trip coverage for symmetric and signing keys.
+
+## [3.2.0] - 2025-08-28
+
+### ✨ New Features
+
+- **PASERK k4 Facade**: Added high-level helpers on `Licensify` to convert encryption, signing, and public keys to and from PASERK strings.
+- **Key Identifiers**: Automatically compute `k4.lid`, `k4.sid`, and `k4.pid` identifiers for symmetric, secret, and public keys.
+- **PASERK Detection**: Added `Licensify.isPaserk()` utility to quickly detect PASERK strings.
+
+### 🧪 Testing
+
+- Added dedicated unit tests covering PASERK roundtrips and identifier generation for all supported key types.
+
 ## [3.1.0] - 2025-06-13
 
 ### ✨ New Features
