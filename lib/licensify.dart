@@ -15,6 +15,7 @@ part 'src/crypto/licensify_symmetric_crypto.dart';
 part 'src/crypto/paseto_v4.dart';
 
 part 'src/crypto/keys/key_base.dart';
+part 'src/crypto/keys/licensify_salt.dart';
 part 'src/crypto/keys/licensify_key_pair.dart';
 part 'src/crypto/keys/licensify_private_key.dart';
 part 'src/crypto/keys/licensify_public_key.dart';

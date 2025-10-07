@@ -55,9 +55,9 @@ final class LicensifySymmetricKey extends LicensifyKey {
   /// The derivation mirrors the PASERK `k4.local-pw` parameters so that
   /// developers can store only the password + salt and recompute the
   /// encryption key when needed. Provide the same [salt] whenever you expect
-  /// to recover the same key. The salt must be at least
-  /// [K4LocalPw.saltLength] bytes and should be stored alongside the password
-  /// hash or recovery record.
+  /// to recover the same key. `LicensifySalt` гарантирует минимальную длину
+  /// [K4LocalPw.saltLength] байт, и её можно сериализовать в base64url через
+  /// [LicensifySalt.asString] (например, сохранить в footer токена).
   ///
   /// Typical restore flow for a password-protected PASETO v4.local backup:
   /// 1. Retrieve the persisted salt that was saved with the encrypted backup,
@@ -71,16 +71,12 @@ final class LicensifySymmetricKey extends LicensifyKey {
   ///    forgets the password but still controls the private key.
   static Future<LicensifySymmetricKey> fromPassword({
     required String password,
-    required List<int> salt,
+    required LicensifySalt salt,
     int memoryCost = K4LocalPw.defaultMemoryCost,
     int timeCost = K4LocalPw.defaultTimeCost,
     int parallelism = K4LocalPw.defaultParallelism,
   }) async {
-    if (salt.length < K4LocalPw.saltLength) {
-      throw ArgumentError(
-        'salt must be at least ${K4LocalPw.saltLength} bytes',
-      );
-    }
+    final saltBytes = salt.asBytes();
     if (memoryCost <= 0 || memoryCost % 1024 != 0) {
       throw ArgumentError('memoryCost must be a positive multiple of 1024');
     }
@@ -100,7 +96,7 @@ final class LicensifySymmetricKey extends LicensifyKey {
 
     final secretKey = await algorithm.deriveKeyFromPassword(
       password: password,
-      nonce: Uint8List.fromList(salt),
+      nonce: saltBytes,
     );
     final derivedBytes = await secretKey.extractBytes();
 
@@ -117,21 +113,10 @@ final class LicensifySymmetricKey extends LicensifyKey {
   ///
   /// Uses `Random.secure()` under the hood and enforces a minimum
   /// [length] of [K4LocalPw.saltLength] bytes.
-  static Uint8List generatePasswordSalt({
+  static LicensifySalt generatePasswordSalt({
     int length = K4LocalPw.saltLength,
   }) {
-    if (length < K4LocalPw.saltLength) {
-      throw ArgumentError(
-        'length must be at least ${K4LocalPw.saltLength} bytes',
-      );
-    }
-
-    final random = Random.secure();
-    final salt = Uint8List(length);
-    for (var i = 0; i < salt.length; i++) {
-      salt[i] = random.nextInt(256);
-    }
-    return salt;
+    return LicensifySalt.random(length: length);
   }
 
   /// Creates a symmetric key from a PASERK k4.local-pw string using [password]

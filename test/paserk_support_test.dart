@@ -37,9 +37,18 @@ void main() {
       );
       expect(extended.length, equals(K4LocalPw.saltLength + 8));
 
+      final encoded = salt.asString();
+      final restored = LicensifySalt.fromString(value: encoded);
+      expect(restored, equals(salt));
+      expect(restored.asString(), equals(encoded));
+
       expect(
         () => Licensify.generatePasswordSalt(length: 8),
         throwsArgumentError,
+      );
+      expect(
+        () => LicensifySalt.fromString(value: 'invalid!!!'),
+        throwsFormatException,
       );
     });
 
@@ -77,8 +86,9 @@ void main() {
 
       expect(rederived.keyBytes, equals(derived.keyBytes));
 
-      final otherSalt =
-          List<int>.generate(K4LocalPw.saltLength, (index) => 255 - index);
+      final otherSalt = LicensifySalt.fromBytes(
+        bytes: List<int>.generate(K4LocalPw.saltLength, (index) => 255 - index),
+      );
       final different = await Licensify.encryptionKeyFromPassword(
         password: 'correct horse battery staple',
         salt: otherSalt,

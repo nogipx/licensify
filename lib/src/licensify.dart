@@ -60,7 +60,9 @@ abstract interface class Licensify {
   /// Используется Argon2id с теми же параметрами, что и `k4.local-pw`, чтобы
   /// можно было хранить только пароль и соль. Передавайте одну и ту же [salt],
   /// когда нужно восстановить идентичный ключ; соль должна храниться рядом с
-  /// бэкапом и быть не короче 16 байт.
+  /// бэкапом и быть не короче 16 байт. Соль можно сериализовать через
+  /// `LicensifySalt.asString()` (например, положить в footer токена) и затем
+  /// восстановить `LicensifySalt.fromString()` при расшифровке.
   ///
   /// **Флоу восстановления бэкапа PASETO v4.local:**
   /// 1. Получите пароль пользователя и сохранённую соль (например, из footer
@@ -77,14 +79,14 @@ abstract interface class Licensify {
   ///    использовать как резервное копирование ключа на случай смены пароля.
   static Future<LicensifySymmetricKey> encryptionKeyFromPassword({
     required String password,
-    required List<int> salt,
+    required LicensifySalt salt,
     int memoryCost = K4LocalPw.defaultMemoryCost,
     int timeCost = K4LocalPw.defaultTimeCost,
     int parallelism = K4LocalPw.defaultParallelism,
   }) {
     return LicensifySymmetricKey.fromPassword(
       password: password,
-      salt: Uint8List.fromList(salt),
+      salt: salt,
       memoryCost: memoryCost,
       timeCost: timeCost,
       parallelism: parallelism,
@@ -98,21 +100,10 @@ abstract interface class Licensify {
   /// `Random.secure()`. Можно указать больший [length], если требуется
   /// дополнительная энтропия. Значения меньше [K4LocalPw.saltLength]
   /// отклоняются.
-  static Uint8List generatePasswordSalt({
+  static LicensifySalt generatePasswordSalt({
     int length = K4LocalPw.saltLength,
   }) {
-    if (length < K4LocalPw.saltLength) {
-      throw ArgumentError(
-        'length must be at least ${K4LocalPw.saltLength} bytes',
-      );
-    }
-
-    final random = Random.secure();
-    final salt = Uint8List(length);
-    for (var i = 0; i < salt.length; i++) {
-      salt[i] = random.nextInt(256);
-    }
-    return salt;
+    return LicensifySalt.random(length: length);
   }
 
   /// Создает пару ключей из существующих байтов
