@@ -80,6 +80,49 @@ void main() {
       expect(restoredBytes.publicKeyBytes, equals(publicBytes));
     });
 
+    test('private key PASERK utilities', () async {
+      final privateBytes = List<int>.generate(32, (index) => (index * 5) % 256);
+      final publicBytes = List<int>.generate(32, (index) => (150 - index) % 256);
+
+      final privateKey = LicensifyPrivateKey.ed25519(
+        Uint8List.fromList(privateBytes),
+      );
+      final publicKey = LicensifyPublicKey.ed25519(
+        Uint8List.fromList(publicBytes),
+      );
+
+      final paserkSecret = privateKey.toPaserkSecret(publicKey);
+      expect(paserkSecret, startsWith('k4.secret.'));
+
+      final identifier = privateKey.toPaserkSecretIdentifier(publicKey);
+      expect(identifier, startsWith('k4.sid.'));
+
+      final restoredPrivate = LicensifyPrivateKey.fromPaserkSecret(paserkSecret);
+      expect(restoredPrivate.keyBytes, equals(privateBytes));
+
+      final passwordWrapped = await privateKey.toPaserkSecretPassword(
+        publicKey,
+        'Sup3rSecret',
+      );
+      expect(passwordWrapped, startsWith('k4.secret-pw.'));
+
+      final restoredFromPassword = await LicensifyPrivateKey
+          .fromPaserkSecretPassword(passwordWrapped, 'Sup3rSecret');
+      expect(restoredFromPassword.keyBytes, equals(privateBytes));
+
+      final wrappingBytes = List<int>.generate(32, (index) => (index * 9) % 256);
+      final wrappingKey = Licensify.encryptionKeyFromBytes(wrappingBytes);
+
+      final wrapped = privateKey.toPaserkSecretWrap(publicKey, wrappingKey);
+      expect(wrapped, startsWith('k4.secret-wrap.'));
+
+      final restoredFromWrap = LicensifyPrivateKey.fromPaserkSecretWrap(
+        wrapped,
+        wrappingKey,
+      );
+      expect(restoredFromWrap.keyBytes, equals(privateBytes));
+    });
+
     test('signing keys symmetric wrapping', () {
       final privateBytes = List<int>.generate(32, (index) => (index + 10));
       final publicBytes = List<int>.generate(32, (index) => (200 - index));
