@@ -30,6 +30,10 @@ final class LicensifyPublicKey extends LicensifyKey {
   }
 
   /// Converts the public key to PASERK k4.public string
+  ///
+  /// Возвращаемое значение можно передавать и публиковать как есть — в отличие
+  /// от приватных или симметричных ключей, здесь не требуется дополнительное
+  /// шифрование паролем.
   String toPaserk() {
     return executeWithKeyBytes((keyBytes) {
       final paserkKey = K4PublicKey(Uint8List.fromList(keyBytes));
@@ -38,6 +42,9 @@ final class LicensifyPublicKey extends LicensifyKey {
   }
 
   /// Computes PASERK k4.pid identifier for this public key
+  ///
+  /// Идентификатор удобен для ссылок на ключи в логах и метаданных, оставаясь
+  /// безопасным для раскрытия.
   String toPaserkIdentifier() {
     return executeWithKeyBytes((keyBytes) {
       final paserkKey = K4PublicKey(Uint8List.fromList(keyBytes));

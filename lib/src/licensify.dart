@@ -152,16 +152,27 @@ abstract interface class Licensify {
   }
 
   /// Создает публичный ключ из PASERK k4.public строки
+  ///
+  /// Для публичных ключей отсутствуют паролезащищенные варианты PASERK —
+  /// формат `k4.public` уже предназначен для безопасного распространения
+  /// открытого ключа без дополнительного шифрования.
   static LicensifyPublicKey publicKeyFromPaserk(String paserk) {
     return LicensifyPublicKey.fromPaserk(paserk);
   }
 
   /// Преобразует публичный ключ в PASERK k4.public строку
+  ///
+  /// Возвращаемое значение можно хранить и передавать в явном виде — оно не
+  /// содержит секрета и служит каноничным текстовым представлением публичного
+  /// ключа.
   static String publicKeyToPaserk(LicensifyPublicKey key) {
     return key.toPaserk();
   }
 
   /// Возвращает PASERK идентификатор (k4.pid) для публичного ключа
+  ///
+  /// Идентификатор помогает ссылаться на конкретный публичный ключ в логах и
+  /// метаданных, не раскрывая дополнительных секретов.
   static String publicKeyIdentifier(LicensifyPublicKey key) {
     return key.toPaserkIdentifier();
   }
