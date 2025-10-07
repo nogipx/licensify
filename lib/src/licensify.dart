@@ -578,7 +578,7 @@ abstract interface class Licensify {
   // ========================================
 
   /// Получает информацию о версии библиотеки
-  static const String version = '3.4.0';
+  static const String version = '3.2.0';
 
   /// Получает информацию о поддерживаемых версиях PASETO
   static const List<String> supportedPasetoVersions = ['v4.public', 'v4.local'];
