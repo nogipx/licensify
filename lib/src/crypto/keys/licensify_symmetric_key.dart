@@ -113,6 +113,27 @@ final class LicensifySymmetricKey extends LicensifyKey {
     );
   }
 
+  /// Generates a cryptographically secure salt for [fromPassword].
+  ///
+  /// Uses `Random.secure()` under the hood and enforces a minimum
+  /// [length] of [K4LocalPw.saltLength] bytes.
+  static Uint8List generatePasswordSalt({
+    int length = K4LocalPw.saltLength,
+  }) {
+    if (length < K4LocalPw.saltLength) {
+      throw ArgumentError(
+        'length must be at least ${K4LocalPw.saltLength} bytes',
+      );
+    }
+
+    final random = Random.secure();
+    final salt = Uint8List(length);
+    for (var i = 0; i < salt.length; i++) {
+      salt[i] = random.nextInt(256);
+    }
+    return salt;
+  }
+
   /// Creates a symmetric key from a PASERK k4.local-pw string using [password]
   static Future<LicensifySymmetricKey> fromPaserkPassword({
     required String paserk,

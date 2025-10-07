@@ -6,6 +6,7 @@ import 'dart:typed_data';
 
 import 'package:cryptography/cryptography.dart';
 import 'package:licensify/licensify.dart';
+import 'package:paseto_dart/paseto_dart.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -22,6 +23,24 @@ void main() {
 
       final restored = Licensify.encryptionKeyFromPaserk(paserk: paserk);
       expect(restored.keyBytes, equals(keyBytes));
+    });
+
+    test('generate password salt', () {
+      final salt = Licensify.generatePasswordSalt();
+      expect(salt.length, equals(K4LocalPw.saltLength));
+
+      final otherSalt = Licensify.generatePasswordSalt();
+      expect(otherSalt, isNot(equals(salt)));
+
+      final extended = Licensify.generatePasswordSalt(
+        length: K4LocalPw.saltLength + 8,
+      );
+      expect(extended.length, equals(K4LocalPw.saltLength + 8));
+
+      expect(
+        () => Licensify.generatePasswordSalt(length: 8),
+        throwsArgumentError,
+      );
     });
 
     test('symmetric key password wrapping', () async {
@@ -44,7 +63,7 @@ void main() {
     });
 
     test('derive symmetric key from password and salt', () async {
-      final salt = List<int>.generate(16, (index) => index);
+      final salt = Licensify.generatePasswordSalt();
 
       final derived = await Licensify.encryptionKeyFromPassword(
         password: 'correct horse battery staple',
@@ -58,7 +77,8 @@ void main() {
 
       expect(rederived.keyBytes, equals(derived.keyBytes));
 
-      final otherSalt = List<int>.generate(16, (index) => 255 - index);
+      final otherSalt =
+          List<int>.generate(K4LocalPw.saltLength, (index) => 255 - index);
       final different = await Licensify.encryptionKeyFromPassword(
         password: 'correct horse battery staple',
         salt: otherSalt,

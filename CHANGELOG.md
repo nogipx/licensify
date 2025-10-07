@@ -20,6 +20,9 @@ All notable changes to this project will be documented in this file.
 - **Password-Derived Symmetric Keys**: Added helpers to deterministically
   derive encryption keys from user passwords using Argon2id so backups can
   keep only the password + salt.
+- **Password Salt Utility**: Exposed `Licensify.generatePasswordSalt` (and the
+  matching symmetric helper) to mint random salts that meet PASERK
+  requirements before deriving keys from user passwords.
 - **Simplified Private Key PASERK API**: `LicensifyPrivateKey` теперь принимает
   явный `LicensifyPublicKey` при конвертации в `k4.secret`, `k4.secret-pw` и
   `k4.secret-wrap.pie`, избавляясь от скрытого кэширования и делая поток

@@ -91,6 +91,30 @@ abstract interface class Licensify {
     );
   }
 
+  /// Генерирует криптографически стойкую соль для функций
+  /// [encryptionKeyFromPassword] и `k4.local-pw`.
+  ///
+  /// По умолчанию возвращает [K4LocalPw.saltLength] байт, используя
+  /// `Random.secure()`. Можно указать больший [length], если требуется
+  /// дополнительная энтропия. Значения меньше [K4LocalPw.saltLength]
+  /// отклоняются.
+  static Uint8List generatePasswordSalt({
+    int length = K4LocalPw.saltLength,
+  }) {
+    if (length < K4LocalPw.saltLength) {
+      throw ArgumentError(
+        'length must be at least ${K4LocalPw.saltLength} bytes',
+      );
+    }
+
+    final random = Random.secure();
+    final salt = Uint8List(length);
+    for (var i = 0; i < salt.length; i++) {
+      salt[i] = random.nextInt(256);
+    }
+    return salt;
+  }
+
   /// Создает пару ключей из существующих байтов
   ///
   /// Полезно для восстановления ключей из файлов или базы данных.
