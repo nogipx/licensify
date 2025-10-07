@@ -60,7 +60,8 @@ final class LicensifySymmetricKey extends LicensifyKey {
   /// hash or recovery record.
   ///
   /// Typical restore flow for a password-protected PASETO v4.local backup:
-  /// 1. Retrieve the persisted salt that was saved with the encrypted backup.
+  /// 1. Retrieve the persisted salt that was saved with the encrypted backup,
+  ///    for example from the PASETO footer or companion metadata storage.
   /// 2. Ask the user for the password and call
   ///    [Licensify.encryptionKeyFromPassword] (which delegates to this method)
   ///    to deterministically reconstruct the encryption key.
