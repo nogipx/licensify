@@ -7,6 +7,7 @@ import 'dart:math' show Random;
 import 'dart:typed_data' show Uint8List;
 import 'package:uuid/uuid.dart' show Uuid;
 import 'package:paseto_dart/paseto_dart.dart';
+import 'package:cryptography/cryptography.dart';
 
 part 'src/crypto/license_generator.dart';
 part 'src/crypto/license_validator.dart';

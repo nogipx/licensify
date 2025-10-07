@@ -17,6 +17,9 @@ All notable changes to this project will be documented in this file.
 - **Key Wrapping & Sealing**: Enabled symmetric wrapping flows for
   `k4.local-wrap.pie` and `k4.secret-wrap.pie`, plus secure delivery of
   encryption keys through `k4.seal`.
+- **Password-Derived Symmetric Keys**: Added helpers to deterministically
+  derive encryption keys from user passwords using Argon2id so backups can
+  keep only the password + salt.
 - **Simplified Private Key PASERK API**: `LicensifyPrivateKey` теперь принимает
   явный `LicensifyPublicKey` при конвертации в `k4.secret`, `k4.secret-pw` и
   `k4.secret-wrap.pie`, избавляясь от скрытого кэширования и делая поток
@@ -28,6 +31,8 @@ All notable changes to this project will be documented in this file.
   password-protected и публичных вариантов, объяснив необходимость передачи
   публичного ключа для `k4.secret*`, а также подчеркнув важность защищённого
   хранения `k4.local` и `k4.secret` представлений.
+- Пояснили, что `k4.seal` можно хранить вместе с резервными копиями: для
+  восстановления ключа требуется приватная часть пары.
 - Сослались на спецификацию PASERK, поясняя, что полезная нагрузка `k4.secret`
   содержит полный 64-байтовый буфер (приватный + публичный ключ) по стандарту.
 - Разъяснили, что публичная часть не может быть заполнена нулями: реализации

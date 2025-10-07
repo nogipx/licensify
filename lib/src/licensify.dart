@@ -55,6 +55,28 @@ abstract interface class Licensify {
     return LicensifyKey.generateLocalKey();
   }
 
+  /// Детерминированно выводит симметричный ключ из пользовательского [password].
+  ///
+  /// Используется Argon2id с теми же параметрами, что и `k4.local-pw`, чтобы
+  /// можно было хранить только пароль и соль. Передавайте одну и ту же [salt],
+  /// когда нужно восстановить идентичный ключ; соль должна храниться рядом с
+  /// бэкапом и быть не короче 16 байт.
+  static Future<LicensifySymmetricKey> encryptionKeyFromPassword({
+    required String password,
+    required List<int> salt,
+    int memoryCost = K4LocalPw.defaultMemoryCost,
+    int timeCost = K4LocalPw.defaultTimeCost,
+    int parallelism = K4LocalPw.defaultParallelism,
+  }) {
+    return LicensifySymmetricKey.fromPassword(
+      password: password,
+      salt: Uint8List.fromList(salt),
+      memoryCost: memoryCost,
+      timeCost: timeCost,
+      parallelism: parallelism,
+    );
+  }
+
   /// Создает пару ключей из существующих байтов
   ///
   /// Полезно для восстановления ключей из файлов или базы данных.
@@ -147,7 +169,9 @@ abstract interface class Licensify {
   }
 
   /// Создает симметричный ключ из PASERK k4.seal строки, используя пару
-  /// Ed25519 ключей [keyPair] для расшифровки.
+  /// Ed25519 ключей [keyPair] для расшифровки. Формат можно хранить вместе с
+  /// резервными копиями — расшифровать его способен только владелец приватного
+  /// ключа.
   static Future<LicensifySymmetricKey> encryptionKeyFromPaserkSeal({
     required String paserk,
     required LicensifyKeyPair keyPair,

@@ -50,6 +50,58 @@ final class LicensifySymmetricKey extends LicensifyKey {
     });
   }
 
+  /// Derives a symmetric key directly from a user [password] and Argon2id salt.
+  ///
+  /// The derivation mirrors the PASERK `k4.local-pw` parameters so that
+  /// developers can store only the password + salt and recompute the
+  /// encryption key when needed. Provide the same [salt] whenever you expect
+  /// to recover the same key. The salt must be at least
+  /// [K4LocalPw.saltLength] bytes and should be stored alongside the password
+  /// hash or recovery record.
+  static Future<LicensifySymmetricKey> fromPassword({
+    required String password,
+    required List<int> salt,
+    int memoryCost = K4LocalPw.defaultMemoryCost,
+    int timeCost = K4LocalPw.defaultTimeCost,
+    int parallelism = K4LocalPw.defaultParallelism,
+  }) async {
+    if (salt.length < K4LocalPw.saltLength) {
+      throw ArgumentError(
+        'salt must be at least ${K4LocalPw.saltLength} bytes',
+      );
+    }
+    if (memoryCost <= 0 || memoryCost % 1024 != 0) {
+      throw ArgumentError('memoryCost must be a positive multiple of 1024');
+    }
+    if (timeCost <= 0) {
+      throw ArgumentError('timeCost must be positive');
+    }
+    if (parallelism <= 0) {
+      throw ArgumentError('parallelism must be positive');
+    }
+
+    final algorithm = Argon2id(
+      memory: memoryCost ~/ 1024,
+      iterations: timeCost,
+      parallelism: parallelism,
+      hashLength: K4LocalKey.keyLength,
+    );
+
+    final secretKey = await algorithm.deriveKeyFromPassword(
+      password: password,
+      nonce: Uint8List.fromList(salt),
+    );
+    final derivedBytes = await secretKey.extractBytes();
+
+    if (derivedBytes.length != K4LocalKey.keyLength) {
+      throw StateError('Derived key length is invalid');
+    }
+
+    return LicensifySymmetricKey.xchacha20(
+      keyBytes: Uint8List.fromList(derivedBytes),
+    );
+  }
+
   /// Creates a symmetric key from a PASERK k4.local-pw string using [password]
   static Future<LicensifySymmetricKey> fromPaserkPassword({
     required String paserk,
@@ -112,6 +164,9 @@ final class LicensifySymmetricKey extends LicensifyKey {
   }
 
   /// Creates a symmetric key from a PASERK k4.seal string using [keyPair].
+  ///
+  /// The sealed blob is safe to store alongside backups: without the matching
+  /// private key the payload cannot be recovered.
   static Future<LicensifySymmetricKey> fromPaserkSeal({
     required String paserk,
     required LicensifyKeyPair keyPair,

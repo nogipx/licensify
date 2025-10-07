@@ -43,6 +43,30 @@ void main() {
       expect(restored.keyBytes, equals(keyBytes));
     });
 
+    test('derive symmetric key from password and salt', () async {
+      final salt = List<int>.generate(16, (index) => index);
+
+      final derived = await Licensify.encryptionKeyFromPassword(
+        password: 'correct horse battery staple',
+        salt: salt,
+      );
+
+      final rederived = await Licensify.encryptionKeyFromPassword(
+        password: 'correct horse battery staple',
+        salt: salt,
+      );
+
+      expect(rederived.keyBytes, equals(derived.keyBytes));
+
+      final otherSalt = List<int>.generate(16, (index) => 255 - index);
+      final different = await Licensify.encryptionKeyFromPassword(
+        password: 'correct horse battery staple',
+        salt: otherSalt,
+      );
+
+      expect(different.keyBytes, isNot(equals(derived.keyBytes)));
+    });
+
     test('symmetric key wrap with another symmetric key', () {
       final keyBytes = List<int>.generate(32, (index) => (index * 7) % 256);
       final wrappingBytes = List<int>.generate(32, (index) => (255 - index));
