@@ -25,8 +25,9 @@ All notable changes to this project will be documented in this file.
 ### 📚 Documentation
 
 - Documented PASERK k4 formats in the README, clarifying usage scenarios for
-  password-protected и публичных вариантов, а также подчеркнули необходимость
-  защищённого хранения `k4.local` и `k4.secret` представлений.
+  password-protected и публичных вариантов, объяснив необходимость передачи
+  публичного ключа для `k4.secret*`, а также подчеркнув важность защищённого
+  хранения `k4.local` и `k4.secret` представлений.
 
 ### 🧪 Testing
 

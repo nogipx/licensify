@@ -36,6 +36,18 @@ final class LicensifyPrivateKey extends LicensifyKey {
 
   /// Converts this private key to PASERK k4.secret representation using
   /// the matching [publicKey].
+  ///
+  /// Семейство `k4.secret*` в PASERK всегда включает **оба** компонента пары
+  /// ключей (32 байта приватного + 32 байта публичного ключа). Публичный ключ
+  /// нужен, чтобы:
+  ///
+  /// - встроить проверяемый открытый компонент в итоговую строку PASERK,
+  /// - сформировать детерминированный `k4.sid` идентификатор для этой пары,
+  /// - гарантировать, что восстановление пары ключей из строки даст тот же
+  ///   публичный ключ, с которым вы её создавали.
+  ///
+  /// Поэтому метод принимает `LicensifyPublicKey`, вместо того чтобы скрыто
+  /// кэшировать его внутри класса.
   String toPaserkSecret(LicensifyPublicKey publicKey) {
     return executeWithKeyBytes((privateBytes) {
       return publicKey.executeWithKeyBytes((publicBytes) {
@@ -76,6 +88,10 @@ final class LicensifyPrivateKey extends LicensifyKey {
 
   /// Wraps this private key into PASERK k4.secret-pw representation using
   /// the matching [publicKey].
+  ///
+  /// Как и базовый `k4.secret`, парольный вариант включает оба компонента
+  /// пары ключей. Передавая `publicKey`, вы явно выбираете, какой открытый
+  /// ключ будет зашит в защищённую строку.
   Future<String> toPaserkSecretPassword(
     String password, {
     required LicensifyPublicKey publicKey,
@@ -118,6 +134,10 @@ final class LicensifyPrivateKey extends LicensifyKey {
 
   /// Wraps this private key into PASERK k4.secret-wrap.pie using the matching
   /// [publicKey] and symmetric [wrappingKey].
+  ///
+  /// `k4.secret-wrap.pie` хранит полный набор байтов пары ключей. Публичный
+  /// ключ необходим, чтобы сформировать корректный пакет для последующего
+  /// восстановления как приватной, так и публичной части.
   String toPaserkSecretWrap(
     LicensifySymmetricKey wrappingKey, {
     required LicensifyPublicKey publicKey,
