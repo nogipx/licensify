@@ -40,7 +40,7 @@ final class LicensifyPrivateKey extends LicensifyKey {
   /// Семейство `k4.secret*` в PASERK всегда включает **оба** компонента пары
   /// ключей (32 байта приватного + 32 байта публичного ключа).
   /// Согласно спецификации PASERK для `k4.secret` (см.
-  /// https://github.com/paseto-standard/paserk/blob/master/operations/secret.md),
+  /// https://github.com/paseto-standard/paserk/blob/master/types/secret.md),
   /// полезная нагрузка кодируется тем же 64-байтовым буфером, что возвращает
   /// libsodium при генерации Ed25519 секретов, и он уже содержит
   /// публичную часть. Публичный ключ нужен, чтобы:

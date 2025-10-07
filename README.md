@@ -123,7 +123,7 @@ Licensify предоставляет фасадные методы для пре
 - `k4.secret` / `k4.secret-pw` — для Ed25519 пар ключей подписи. Формат хранит
   **обе** части пары (приватную и публичную) в том же 64-байтовом буфере, что и
   спецификация PASERK для `k4.secret`
-  ([operations/secret.md](https://github.com/paseto-standard/paserk/blob/master/operations/secret.md)).
+  ([types/secret.md](https://github.com/paseto-standard/paserk/blob/master/types/secret.md)).
   Поэтому мы просим передавать `LicensifyPublicKey` даже при работе только с
   приватным ключом. Это гарантирует корректный `k4.sid` идентификатор и
   восстановление пары без скрытых зависимостей. Паролезащищённый вариант подходит
