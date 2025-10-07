@@ -58,6 +58,16 @@ final class LicensifySymmetricKey extends LicensifyKey {
   /// to recover the same key. The salt must be at least
   /// [K4LocalPw.saltLength] bytes and should be stored alongside the password
   /// hash or recovery record.
+  ///
+  /// Typical restore flow for a password-protected PASETO v4.local backup:
+  /// 1. Retrieve the persisted salt that was saved with the encrypted backup.
+  /// 2. Ask the user for the password and call
+  ///    [Licensify.encryptionKeyFromPassword] (which delegates to this method)
+  ///    to deterministically reconstruct the encryption key.
+  /// 3. Decrypt the stored token using [Licensify.decryptData] and dispose the
+  ///    key once the plaintext is recovered.
+  /// 4. Optionally fall back to a sealed PASERK (`k4.seal`) copy if the user
+  ///    forgets the password but still controls the private key.
   static Future<LicensifySymmetricKey> fromPassword({
     required String password,
     required List<int> salt,
