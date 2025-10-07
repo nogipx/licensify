@@ -13,12 +13,48 @@ final class LicensifyPublicKey extends LicensifyKey {
   });
 
   /// Creates an Ed25519 public key for PASETO v4.public
-  factory LicensifyPublicKey.ed25519(Uint8List keyBytes) {
+  factory LicensifyPublicKey.ed25519({
+    required Uint8List keyBytes,
+  }) {
     _PasetoV4.validateEd25519KeyBytes(keyBytes, 'public key');
     return LicensifyPublicKey._(
       keyBytes: keyBytes,
       keyType: LicensifyKeyType.ed25519Public,
     );
+  }
+
+  /// Creates a public key from a PASERK k4.public string
+  factory LicensifyPublicKey.fromPaserk({
+    required String paserk,
+  }) {
+    final paserkKey = K4PublicKey.fromString(paserk);
+    return LicensifyPublicKey.ed25519(
+      keyBytes: Uint8List.fromList(paserkKey.rawBytes),
+    );
+  }
+
+  /// Converts the public key to PASERK k4.public string
+  ///
+  /// Возвращаемое значение можно передавать и публиковать как есть — в отличие
+  /// от приватных или симметричных ключей, здесь не требуется дополнительное
+  /// шифрование паролем.
+  String toPaserk() {
+    return executeWithKeyBytes((keyBytes) {
+      final paserkKey = K4PublicKey(Uint8List.fromList(keyBytes));
+      return paserkKey.toString();
+    });
+  }
+
+  /// Computes PASERK k4.pid identifier for this public key
+  ///
+  /// Идентификатор удобен для ссылок на ключи в логах и метаданных, оставаясь
+  /// безопасным для раскрытия.
+  String toPaserkIdentifier() {
+    return executeWithKeyBytes((keyBytes) {
+      final paserkKey = K4PublicKey(Uint8List.fromList(keyBytes));
+      final identifier = K4Pid.fromKey(paserkKey);
+      return identifier.toString();
+    });
   }
 
   // Геттер licenseValidator убран - используйте Licensify.validateLicense() вместо него

@@ -21,8 +21,8 @@ final class LicensifyKeyPair {
     required Uint8List publicKeyBytes,
   }) {
     return LicensifyKeyPair(
-      privateKey: LicensifyPrivateKey.ed25519(privateKeyBytes),
-      publicKey: LicensifyPublicKey.ed25519(publicKeyBytes),
+      privateKey: LicensifyPrivateKey.ed25519(keyBytes: privateKeyBytes),
+      publicKey: LicensifyPublicKey.ed25519(keyBytes: publicKeyBytes),
     );
   }
 
@@ -37,5 +37,123 @@ final class LicensifyKeyPair {
       publicKeyBytes: publicKey.keyBytes,
       privateKeyBytes: privateKey.keyBytes,
     );
+  }
+
+  /// Creates a key pair from a PASERK k4.secret string
+  factory LicensifyKeyPair.fromPaserkSecret({
+    required String paserk,
+  }) {
+    final paserkKey = K4SecretKey.fromString(paserk);
+    final privateKeyBytes =
+        Uint8List.fromList(paserkKey.rawBytes.sublist(0, 32));
+    final publicKeyBytes = Uint8List.fromList(paserkKey.rawBytes.sublist(32));
+    return LicensifyKeyPair.ed25519(
+      privateKeyBytes: privateKeyBytes,
+      publicKeyBytes: publicKeyBytes,
+    );
+  }
+
+  /// Converts the key pair into PASERK k4.secret representation
+  String toPaserkSecret() {
+    return privateKey.executeWithKeyBytes((privateBytes) {
+      return publicKey.executeWithKeyBytes((publicBytes) {
+        final combined = Uint8List(privateBytes.length + publicBytes.length);
+        combined.setRange(0, privateBytes.length, privateBytes);
+        combined.setRange(privateBytes.length, combined.length, publicBytes);
+        final paserkKey = K4SecretKey(combined);
+        return paserkKey.toString();
+      });
+    });
+  }
+
+  /// Computes PASERK k4.sid identifier for this secret key
+  String toPaserkSecretIdentifier() {
+    return privateKey.executeWithKeyBytes((privateBytes) {
+      return publicKey.executeWithKeyBytes((publicBytes) {
+        final combined = Uint8List(privateBytes.length + publicBytes.length);
+        combined.setRange(0, privateBytes.length, privateBytes);
+        combined.setRange(privateBytes.length, combined.length, publicBytes);
+        final paserkKey = K4SecretKey(combined);
+        final identifier = K4Sid.fromKey(paserkKey);
+        return identifier.toString();
+      });
+    });
+  }
+
+  /// Restores a key pair from PASERK k4.secret-pw representation using [password]
+  static Future<LicensifyKeyPair> fromPaserkSecretPassword({
+    required String paserk,
+    required String password,
+  }) async {
+    final paserkKey = await K4SecretPw.unwrap(paserk, password);
+    final privateKeyBytes =
+        Uint8List.fromList(paserkKey.rawBytes.sublist(0, 32));
+    final publicKeyBytes = Uint8List.fromList(paserkKey.rawBytes.sublist(32));
+    return LicensifyKeyPair.ed25519(
+      privateKeyBytes: privateKeyBytes,
+      publicKeyBytes: publicKeyBytes,
+    );
+  }
+
+  /// Wraps the key pair into PASERK k4.secret-pw representation
+  Future<String> toPaserkSecretPassword({
+    required String password,
+    int memoryCost = K4SecretPw.defaultMemoryCost,
+    int timeCost = K4SecretPw.defaultTimeCost,
+    int parallelism = K4SecretPw.defaultParallelism,
+  }) {
+    return privateKey.executeWithKeyBytesAsync((privateBytes) async {
+      return publicKey.executeWithKeyBytesAsync((publicBytes) async {
+        final combined = Uint8List(privateBytes.length + publicBytes.length);
+        combined.setRange(0, privateBytes.length, privateBytes);
+        combined.setRange(privateBytes.length, combined.length, publicBytes);
+        final paserkKey = K4SecretKey(combined);
+        final wrapped = await K4SecretPw.wrap(
+          paserkKey,
+          password,
+          memoryCost: memoryCost,
+          timeCost: timeCost,
+          parallelism: parallelism,
+        );
+        return wrapped.toString();
+      });
+    });
+  }
+
+  /// Restores a key pair from PASERK k4.secret-wrap.pie representation.
+  static LicensifyKeyPair fromPaserkSecretWrap({
+    required String paserk,
+    required LicensifySymmetricKey wrappingKey,
+  }) {
+    return wrappingKey.executeWithKeyBytes((wrappingBytes) {
+      final wrapper = K4LocalKey(Uint8List.fromList(wrappingBytes));
+      final secretKey = K4SecretWrap.unwrap(paserk, wrapper);
+      final privateKeyBytes =
+          Uint8List.fromList(secretKey.rawBytes.sublist(0, 32));
+      final publicKeyBytes = Uint8List.fromList(secretKey.rawBytes.sublist(32));
+      return LicensifyKeyPair.ed25519(
+        privateKeyBytes: privateKeyBytes,
+        publicKeyBytes: publicKeyBytes,
+      );
+    });
+  }
+
+  /// Wraps this key pair into PASERK k4.secret-wrap.pie representation.
+  String toPaserkSecretWrap({
+    required LicensifySymmetricKey wrappingKey,
+  }) {
+    return privateKey.executeWithKeyBytes((privateBytes) {
+      return publicKey.executeWithKeyBytes((publicBytes) {
+        return wrappingKey.executeWithKeyBytes((wrappingBytes) {
+          final combined = Uint8List(privateBytes.length + publicBytes.length);
+          combined.setRange(0, privateBytes.length, privateBytes);
+          combined.setRange(privateBytes.length, combined.length, publicBytes);
+          final secretKey = K4SecretKey(combined);
+          final wrapper = K4LocalKey(Uint8List.fromList(wrappingBytes));
+          final wrapped = K4SecretWrap.wrap(secretKey, wrapper);
+          return wrapped.toString();
+        });
+      });
+    });
   }
 }

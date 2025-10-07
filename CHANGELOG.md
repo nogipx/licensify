@@ -2,6 +2,54 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.2.0] - 2025-08-30
+
+### ✨ New Features
+
+- **PASERK k4 Facade**: Added high-level helpers on `Licensify` to convert
+  symmetric, signing, and public keys to and from PASERK strings, detect
+  PASERK inputs, and compute the matching `k4.lid`, `k4.sid`, and `k4.pid`
+  identifiers.
+- **Password-Protected Keys**: Introduced async helpers for wrapping and
+  restoring encryption and signing keys using PASERK `k4.local-pw` and
+  `k4.secret-pw`, including configurable Argon2 parameters through the
+  facade.
+- **Key Wrapping & Sealing**: Enabled symmetric wrapping flows for
+  `k4.local-wrap.pie` and `k4.secret-wrap.pie`, plus secure delivery of
+  encryption keys through `k4.seal`.
+- **Password-Derived Symmetric Keys**: Added helpers to deterministically
+  derive encryption keys from user passwords using Argon2id so backups can
+  keep only the password + salt.
+- **Password Salt Utility**: Exposed `Licensify.generatePasswordSalt` (and the
+  matching symmetric helper) to mint random salts that meet PASERK
+  requirements before deriving keys from user passwords, returning the new
+  `LicensifySalt` value object that можно сериализовать в base64url строку и
+  восстановить обратно.
+- **Simplified Private Key PASERK API**: `LicensifyPrivateKey` теперь принимает
+  явный `LicensifyPublicKey` при конвертации в `k4.secret`, `k4.secret-pw` и
+  `k4.secret-wrap.pie`, избавляясь от скрытого кэширования и делая поток
+  использования очевидным.
+
+### 📚 Documentation
+
+- Documented PASERK k4 formats in the README, clarifying usage scenarios for
+  password-protected и публичных вариантов, объяснив необходимость передачи
+  публичного ключа для `k4.secret*`, а также подчеркнув важность защищённого
+  хранения `k4.local` и `k4.secret` представлений.
+- Пояснили, что `k4.seal` можно хранить вместе с резервными копиями: для
+  восстановления ключа требуется приватная часть пары.
+- Сослались на спецификацию PASERK, поясняя, что полезная нагрузка `k4.secret`
+  содержит полный 64-байтовый буфер (приватный + публичный ключ) по стандарту.
+- Разъяснили, что публичная часть не может быть заполнена нулями: реализации
+  PASERK проверяют соответствие публичного компонента приватному ключу, поэтому
+  строка с произвольными байтами будет отвергнута и даст неверные идентификаторы.
+
+### 🧪 Testing
+
+- Expanded the PASERK test suite with round-trips covering identifiers,
+  password-protected flows, key wrapping, and sealed delivery for encryption
+  and signing keys.
+
 ## [3.1.0] - 2025-06-13
 
 ### ✨ New Features

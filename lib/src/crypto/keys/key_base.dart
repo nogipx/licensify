@@ -121,8 +121,12 @@ sealed class LicensifyKey {
       final keyBytes = await _PasetoV4.generateEd25519KeyPair();
 
       // Create our wrapper keys
-      final privateKey = LicensifyPrivateKey.ed25519(keyBytes['privateKey']!);
-      final publicKey = LicensifyPublicKey.ed25519(keyBytes['publicKey']!);
+      final privateKey = LicensifyPrivateKey.ed25519(
+        keyBytes: keyBytes['privateKey']!,
+      );
+      final publicKey = LicensifyPublicKey.ed25519(
+        keyBytes: keyBytes['publicKey']!,
+      );
 
       return LicensifyKeyPair(
         privateKey: privateKey,
@@ -138,7 +142,7 @@ sealed class LicensifyKey {
     try {
       // Delegate to _PasetoV4 for symmetric key generation
       final keyBytes = _PasetoV4.generateSymmetricKey();
-      return LicensifySymmetricKey.xchacha20(keyBytes);
+      return LicensifySymmetricKey.xchacha20(keyBytes: keyBytes);
     } catch (e) {
       throw Exception('Failed to generate symmetric key: $e');
     }

@@ -1,6 +1,6 @@
 name: licensify
 description: A modern Dart library for secure license generation and validation using PASETO v4.
-version: 3.1.0
+version: 3.2.0
 homepage: https://github.com/nogipx/licensify
 repository: https://github.com/nogipx/licensify
 issue_tracker: https://github.com/nogipx/licensify/issues
@@ -15,7 +15,6 @@ dependencies:
   paseto_dart: ^1.1.0
   uuid: ^4.5.1
   args: ^2.4.2
-  cryptography: ^2.7.0
   meta: ^1.9.1
 
 dev_dependencies:
