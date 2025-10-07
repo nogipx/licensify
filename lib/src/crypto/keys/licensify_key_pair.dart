@@ -21,7 +21,10 @@ final class LicensifyKeyPair {
     required Uint8List publicKeyBytes,
   }) {
     return LicensifyKeyPair(
-      privateKey: LicensifyPrivateKey.ed25519(privateKeyBytes),
+      privateKey: LicensifyPrivateKey.ed25519(
+        privateKeyBytes,
+        publicKeyBytes: publicKeyBytes,
+      ),
       publicKey: LicensifyPublicKey.ed25519(publicKeyBytes),
     );
   }
