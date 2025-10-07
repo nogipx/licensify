@@ -167,8 +167,7 @@ final class LicensifyPrivateKey extends LicensifyKey {
     return executeWithKeyBytes((privateBytes) {
       return publicKey.executeWithKeyBytes((publicBytes) {
         return wrappingKey.executeWithKeyBytes((wrappingBytes) {
-          final combined =
-              Uint8List(privateBytes.length + publicBytes.length);
+          final combined = Uint8List(privateBytes.length + publicBytes.length);
           combined.setRange(0, privateBytes.length, privateBytes);
           combined.setRange(privateBytes.length, combined.length, publicBytes);
           final secretKey = K4SecretKey(combined);

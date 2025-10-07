@@ -4,7 +4,6 @@
 
 import 'dart:typed_data';
 
-import 'package:cryptography/cryptography.dart';
 import 'package:licensify/licensify.dart';
 import 'package:paseto_dart/paseto_dart.dart';
 import 'package:test/test.dart';
@@ -143,7 +142,8 @@ void main() {
 
     test('private key PASERK utilities', () async {
       final privateBytes = List<int>.generate(32, (index) => (index * 5) % 256);
-      final publicBytes = List<int>.generate(32, (index) => (150 - index) % 256);
+      final publicBytes =
+          List<int>.generate(32, (index) => (150 - index) % 256);
 
       final privateKey = LicensifyPrivateKey.ed25519(
         keyBytes: Uint8List.fromList(privateBytes),
@@ -152,8 +152,7 @@ void main() {
         keyBytes: Uint8List.fromList(publicBytes),
       );
 
-      final paserkSecret =
-          privateKey.toPaserkSecret(publicKey: publicKey);
+      final paserkSecret = privateKey.toPaserkSecret(publicKey: publicKey);
       expect(paserkSecret, startsWith('k4.secret.'));
 
       final identifier =
@@ -171,14 +170,15 @@ void main() {
       );
       expect(passwordWrapped, startsWith('k4.secret-pw.'));
 
-      final restoredFromPassword = await LicensifyPrivateKey
-          .fromPaserkSecretPassword(
+      final restoredFromPassword =
+          await LicensifyPrivateKey.fromPaserkSecretPassword(
         paserk: passwordWrapped,
         password: 'Sup3rSecret',
       );
       expect(restoredFromPassword.keyBytes, equals(privateBytes));
 
-      final wrappingBytes = List<int>.generate(32, (index) => (index * 9) % 256);
+      final wrappingBytes =
+          List<int>.generate(32, (index) => (index * 9) % 256);
       final wrappingKey =
           Licensify.encryptionKeyFromBytes(keyBytes: wrappingBytes);
 
@@ -198,7 +198,8 @@ void main() {
     test('signing keys symmetric wrapping', () {
       final privateBytes = List<int>.generate(32, (index) => (index + 10));
       final publicBytes = List<int>.generate(32, (index) => (200 - index));
-      final wrappingBytes = List<int>.generate(32, (index) => (index * 3) % 256);
+      final wrappingBytes =
+          List<int>.generate(32, (index) => (index * 3) % 256);
 
       final pair = Licensify.keysFromBytes(
         privateKeyBytes: privateBytes,
@@ -282,8 +283,7 @@ void main() {
       final privateKeyBytes = privateKeyBytesFull.length > 32
           ? Uint8List.fromList(privateKeyBytesFull.sublist(0, 32))
           : Uint8List.fromList(privateKeyBytesFull);
-      final publicKeyBytes =
-          (await edKeyPair.extractPublicKey()).bytes;
+      final publicKeyBytes = (await edKeyPair.extractPublicKey()).bytes;
 
       final signingPair = Licensify.keysFromBytes(
         privateKeyBytes: privateKeyBytes,

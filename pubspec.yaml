@@ -15,7 +15,6 @@ dependencies:
   paseto_dart: ^1.1.0
   uuid: ^4.5.1
   args: ^2.4.2
-  cryptography: ^2.7.0
   meta: ^1.9.1
 
 dev_dependencies:

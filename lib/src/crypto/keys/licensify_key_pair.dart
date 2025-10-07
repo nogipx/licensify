@@ -44,7 +44,8 @@ final class LicensifyKeyPair {
     required String paserk,
   }) {
     final paserkKey = K4SecretKey.fromString(paserk);
-    final privateKeyBytes = Uint8List.fromList(paserkKey.rawBytes.sublist(0, 32));
+    final privateKeyBytes =
+        Uint8List.fromList(paserkKey.rawBytes.sublist(0, 32));
     final publicKeyBytes = Uint8List.fromList(paserkKey.rawBytes.sublist(32));
     return LicensifyKeyPair.ed25519(
       privateKeyBytes: privateKeyBytes,
@@ -87,8 +88,7 @@ final class LicensifyKeyPair {
     final paserkKey = await K4SecretPw.unwrap(paserk, password);
     final privateKeyBytes =
         Uint8List.fromList(paserkKey.rawBytes.sublist(0, 32));
-    final publicKeyBytes =
-        Uint8List.fromList(paserkKey.rawBytes.sublist(32));
+    final publicKeyBytes = Uint8List.fromList(paserkKey.rawBytes.sublist(32));
     return LicensifyKeyPair.ed25519(
       privateKeyBytes: privateKeyBytes,
       publicKeyBytes: publicKeyBytes,
@@ -130,8 +130,7 @@ final class LicensifyKeyPair {
       final secretKey = K4SecretWrap.unwrap(paserk, wrapper);
       final privateKeyBytes =
           Uint8List.fromList(secretKey.rawBytes.sublist(0, 32));
-      final publicKeyBytes =
-          Uint8List.fromList(secretKey.rawBytes.sublist(32));
+      final publicKeyBytes = Uint8List.fromList(secretKey.rawBytes.sublist(32));
       return LicensifyKeyPair.ed25519(
         privateKeyBytes: privateKeyBytes,
         publicKeyBytes: publicKeyBytes,
