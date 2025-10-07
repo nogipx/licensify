@@ -4,7 +4,7 @@ test:
     fvm dart test
 
 pubget:
-    fvm dart run packo pubget -r
+    fvm dart pub get
 
 prepare:
     fvm dart format -l 80 .
