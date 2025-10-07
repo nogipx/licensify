@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.4.0] - 2025-08-30
+
+### ✨ New Features
+
+- **PASERK PIE Wrapping**: Added high-level helpers for `k4.local-wrap.pie`
+  and `k4.secret-wrap.pie`, enabling symmetric wrapping of encryption keys
+  and signing key pairs directly through the Licensify facade.
+- **Sealed Key Delivery**: Introduced `k4.seal` support allowing encryption
+  keys to be safely sealed for a recipient's Ed25519 public key and recovered
+  with the matching secret key pair.
+
+### 🧪 Testing
+
+- Extended the PASERK test suite with symmetric wrapping and sealing
+  round-trips for both encryption and signing keys.
+
 ## [3.3.0] - 2025-08-29
 
 ### ✨ New Features

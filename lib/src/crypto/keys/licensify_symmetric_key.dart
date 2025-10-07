@@ -77,5 +77,64 @@ final class LicensifySymmetricKey extends LicensifyKey {
     });
   }
 
+  /// Creates a symmetric key from a PASERK k4.local-wrap.pie string
+  /// using another symmetric [wrappingKey].
+  static LicensifySymmetricKey fromPaserkWrap(
+    String paserk,
+    LicensifySymmetricKey wrappingKey,
+  ) {
+    return wrappingKey.executeWithKeyBytes((wrappingBytes) {
+      final wrapping = K4LocalKey(Uint8List.fromList(wrappingBytes));
+      final unwrapped = K4LocalWrap.unwrap(paserk, wrapping);
+      return LicensifySymmetricKey.xchacha20(
+        Uint8List.fromList(unwrapped.rawBytes),
+      );
+    });
+  }
+
+  /// Wraps this symmetric key into PASERK k4.local-wrap.pie string
+  /// using another symmetric [wrappingKey].
+  String toPaserkWrap(LicensifySymmetricKey wrappingKey) {
+    return executeWithKeyBytes((keyBytes) {
+      return wrappingKey.executeWithKeyBytes((wrappingBytes) {
+        final key = K4LocalKey(Uint8List.fromList(keyBytes));
+        final wrapper = K4LocalKey(Uint8List.fromList(wrappingBytes));
+        final wrapped = K4LocalWrap.wrap(key, wrapper);
+        return wrapped.toString();
+      });
+    });
+  }
+
+  /// Creates a symmetric key from a PASERK k4.seal string using [keyPair].
+  static Future<LicensifySymmetricKey> fromPaserkSeal(
+    String paserk,
+    LicensifyKeyPair keyPair,
+  ) {
+    return keyPair.privateKey.executeWithKeyBytesAsync((privateBytes) async {
+      return keyPair.publicKey.executeWithKeyBytesAsync((publicBytes) async {
+        final combined = Uint8List(privateBytes.length + publicBytes.length);
+        combined.setRange(0, privateBytes.length, privateBytes);
+        combined.setRange(privateBytes.length, combined.length, publicBytes);
+        final secretKey = K4SecretKey(combined);
+        final unsealed = await K4Seal.unseal(paserk, secretKey);
+        return LicensifySymmetricKey.xchacha20(
+          Uint8List.fromList(unsealed.rawBytes),
+        );
+      });
+    });
+  }
+
+  /// Seals this symmetric key into PASERK k4.seal string using [publicKey].
+  Future<String> toPaserkSeal(LicensifyPublicKey publicKey) {
+    return executeWithKeyBytesAsync((keyBytes) async {
+      return publicKey.executeWithKeyBytesAsync((publicBytes) async {
+        final key = K4LocalKey(Uint8List.fromList(keyBytes));
+        final wrapping = K4PublicKey(Uint8List.fromList(publicBytes));
+        final sealed = await K4Seal.seal(key, wrapping);
+        return sealed.toString();
+      });
+    });
+  }
+
   // Геттер crypto убран - используйте Licensify.encryptData() и Licensify.decryptData() вместо него
 }

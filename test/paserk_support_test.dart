@@ -4,6 +4,7 @@
 
 import 'dart:typed_data';
 
+import 'package:cryptography/cryptography.dart';
 import 'package:licensify/licensify.dart';
 import 'package:test/test.dart';
 
@@ -42,6 +43,21 @@ void main() {
       expect(restored.keyBytes, equals(keyBytes));
     });
 
+    test('symmetric key wrap with another symmetric key', () {
+      final keyBytes = List<int>.generate(32, (index) => (index * 7) % 256);
+      final wrappingBytes = List<int>.generate(32, (index) => (255 - index));
+
+      final key = Licensify.encryptionKeyFromBytes(keyBytes);
+      final wrappingKey = Licensify.encryptionKeyFromBytes(wrappingBytes);
+
+      final wrapped = Licensify.encryptionKeyToPaserkWrap(key, wrappingKey);
+      expect(wrapped, startsWith('k4.local-wrap.'));
+
+      final restored =
+          Licensify.encryptionKeyFromPaserkWrap(wrapped, wrappingKey);
+      expect(restored.keyBytes, equals(keyBytes));
+    });
+
     test('signing keys to/from PASERK', () {
       final privateBytes = List<int>.generate(32, (index) => index + 1);
       final publicBytes = List<int>.generate(32, (index) => 255 - index);
@@ -59,6 +75,29 @@ void main() {
 
       final restoredPair = Licensify.signingKeysFromPaserk(paserkSecret);
       final restoredBytes = restoredPair.asBytes;
+
+      expect(restoredBytes.privateKeyBytes, equals(privateBytes));
+      expect(restoredBytes.publicKeyBytes, equals(publicBytes));
+    });
+
+    test('signing keys symmetric wrapping', () {
+      final privateBytes = List<int>.generate(32, (index) => (index + 10));
+      final publicBytes = List<int>.generate(32, (index) => (200 - index));
+      final wrappingBytes = List<int>.generate(32, (index) => (index * 3) % 256);
+
+      final pair = Licensify.keysFromBytes(
+        privateKeyBytes: privateBytes,
+        publicKeyBytes: publicBytes,
+      );
+      final wrappingKey = Licensify.encryptionKeyFromBytes(wrappingBytes);
+
+      final wrapped =
+          Licensify.signingKeysToPaserkWrap(pair, wrappingKey);
+      expect(wrapped, startsWith('k4.secret-wrap.'));
+
+      final restored =
+          Licensify.signingKeysFromPaserkWrap(wrapped, wrappingKey);
+      final restoredBytes = restored.asBytes;
 
       expect(restoredBytes.privateKeyBytes, equals(privateBytes));
       expect(restoredBytes.publicKeyBytes, equals(publicBytes));
@@ -104,6 +143,43 @@ void main() {
 
       final restored = Licensify.publicKeyFromPaserk(paserkPublic);
       expect(restored.keyBytes, equals(publicBytes));
+    });
+
+    test('symmetric key sealing and unsealing', () async {
+      final encryptionBytes =
+          List<int>.generate(32, (index) => (index * 11) % 256);
+      final encryptionKey = Licensify.encryptionKeyFromBytes(encryptionBytes);
+
+      final seed = Uint8List.fromList(
+        List<int>.generate(32, (index) => (index + 42) % 256),
+      );
+      final ed25519 = Ed25519();
+      final edKeyPair = await ed25519.newKeyPairFromSeed(seed);
+      final privateKeyBytesFull = await edKeyPair.extractPrivateKeyBytes();
+      final privateKeyBytes = privateKeyBytesFull.length > 32
+          ? Uint8List.fromList(privateKeyBytesFull.sublist(0, 32))
+          : Uint8List.fromList(privateKeyBytesFull);
+      final publicKeyBytes =
+          (await edKeyPair.extractPublicKey()).bytes;
+
+      final signingPair = Licensify.keysFromBytes(
+        privateKeyBytes: privateKeyBytes,
+        publicKeyBytes: Uint8List.fromList(publicKeyBytes),
+      );
+
+      final sealed = await Licensify.encryptionKeyToPaserkSeal(
+        encryptionKey,
+        signingPair.publicKey,
+      );
+
+      expect(sealed, startsWith('k4.seal.'));
+
+      final unsealed = await Licensify.encryptionKeyFromPaserkSeal(
+        sealed,
+        signingPair,
+      );
+
+      expect(unsealed.keyBytes, equals(encryptionBytes));
     });
   });
 }

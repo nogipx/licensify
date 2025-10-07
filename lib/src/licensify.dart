@@ -112,6 +112,42 @@ abstract interface class Licensify {
     );
   }
 
+  /// Создает симметричный ключ из PASERK k4.local-wrap.pie строки,
+  /// используя другой симметричный [wrappingKey].
+  static LicensifySymmetricKey encryptionKeyFromPaserkWrap(
+    String paserk,
+    LicensifySymmetricKey wrappingKey,
+  ) {
+    return LicensifySymmetricKey.fromPaserkWrap(paserk, wrappingKey);
+  }
+
+  /// Преобразует симметричный ключ в PASERK k4.local-wrap.pie строку,
+  /// зашифровав его другим симметричным [wrappingKey].
+  static String encryptionKeyToPaserkWrap(
+    LicensifySymmetricKey key,
+    LicensifySymmetricKey wrappingKey,
+  ) {
+    return key.toPaserkWrap(wrappingKey);
+  }
+
+  /// Создает симметричный ключ из PASERK k4.seal строки, используя пару
+  /// Ed25519 ключей [keyPair] для расшифровки.
+  static Future<LicensifySymmetricKey> encryptionKeyFromPaserkSeal(
+    String paserk,
+    LicensifyKeyPair keyPair,
+  ) {
+    return LicensifySymmetricKey.fromPaserkSeal(paserk, keyPair);
+  }
+
+  /// Запечатывает симметричный ключ в PASERK k4.seal строку для владельца
+  /// публичного ключа [publicKey].
+  static Future<String> encryptionKeyToPaserkSeal(
+    LicensifySymmetricKey key,
+    LicensifyPublicKey publicKey,
+  ) {
+    return key.toPaserkSeal(publicKey);
+  }
+
   /// Создает ключи подписи из PASERK k4.secret строки
   static LicensifyKeyPair signingKeysFromPaserk(String paserk) {
     return LicensifyKeyPair.fromPaserkSecret(paserk);
@@ -149,6 +185,24 @@ abstract interface class Licensify {
       timeCost: timeCost,
       parallelism: parallelism,
     );
+  }
+
+  /// Восстанавливает пару ключей из PASERK k4.secret-wrap.pie строки,
+  /// используя симметричный [wrappingKey].
+  static LicensifyKeyPair signingKeysFromPaserkWrap(
+    String paserk,
+    LicensifySymmetricKey wrappingKey,
+  ) {
+    return LicensifyKeyPair.fromPaserkSecretWrap(paserk, wrappingKey);
+  }
+
+  /// Шифрует пару ключей подписи в PASERK k4.secret-wrap.pie строку при
+  /// помощи симметричного [wrappingKey].
+  static String signingKeysToPaserkWrap(
+    LicensifyKeyPair keyPair,
+    LicensifySymmetricKey wrappingKey,
+  ) {
+    return keyPair.toPaserkSecretWrap(wrappingKey);
   }
 
   /// Создает публичный ключ из PASERK k4.public строки
@@ -524,7 +578,7 @@ abstract interface class Licensify {
   // ========================================
 
   /// Получает информацию о версии библиотеки
-  static const String version = '3.2.0';
+  static const String version = '3.4.0';
 
   /// Получает информацию о поддерживаемых версиях PASETO
   static const List<String> supportedPasetoVersions = ['v4.public', 'v4.local'];

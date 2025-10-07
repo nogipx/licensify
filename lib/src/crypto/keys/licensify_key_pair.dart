@@ -117,4 +117,40 @@ final class LicensifyKeyPair {
       });
     });
   }
+
+  /// Restores a key pair from PASERK k4.secret-wrap.pie representation.
+  static LicensifyKeyPair fromPaserkSecretWrap(
+    String paserk,
+    LicensifySymmetricKey wrappingKey,
+  ) {
+    return wrappingKey.executeWithKeyBytes((wrappingBytes) {
+      final wrapper = K4LocalKey(Uint8List.fromList(wrappingBytes));
+      final secretKey = K4SecretWrap.unwrap(paserk, wrapper);
+      final privateKeyBytes =
+          Uint8List.fromList(secretKey.rawBytes.sublist(0, 32));
+      final publicKeyBytes =
+          Uint8List.fromList(secretKey.rawBytes.sublist(32));
+      return LicensifyKeyPair.ed25519(
+        privateKeyBytes: privateKeyBytes,
+        publicKeyBytes: publicKeyBytes,
+      );
+    });
+  }
+
+  /// Wraps this key pair into PASERK k4.secret-wrap.pie representation.
+  String toPaserkSecretWrap(LicensifySymmetricKey wrappingKey) {
+    return privateKey.executeWithKeyBytes((privateBytes) {
+      return publicKey.executeWithKeyBytes((publicBytes) {
+        return wrappingKey.executeWithKeyBytes((wrappingBytes) {
+          final combined = Uint8List(privateBytes.length + publicBytes.length);
+          combined.setRange(0, privateBytes.length, privateBytes);
+          combined.setRange(privateBytes.length, combined.length, publicBytes);
+          final secretKey = K4SecretKey(combined);
+          final wrapper = K4LocalKey(Uint8List.fromList(wrappingBytes));
+          final wrapped = K4SecretWrap.wrap(secretKey, wrapper);
+          return wrapped.toString();
+        });
+      });
+    });
+  }
 }
