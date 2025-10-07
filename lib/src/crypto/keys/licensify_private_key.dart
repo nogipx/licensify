@@ -13,7 +13,9 @@ final class LicensifyPrivateKey extends LicensifyKey {
   });
 
   /// Creates an Ed25519 private key for PASETO v4.public.
-  factory LicensifyPrivateKey.ed25519(Uint8List keyBytes) {
+  factory LicensifyPrivateKey.ed25519({
+    required Uint8List keyBytes,
+  }) {
     _PasetoV4.validateEd25519KeyBytes(keyBytes, 'private key');
     return LicensifyPrivateKey._(
       keyBytes: keyBytes,
@@ -27,11 +29,13 @@ final class LicensifyPrivateKey extends LicensifyKey {
   /// так и публичную часть ключа. Этот конструктор извлекает только приватный
   /// компонент. Если вам также нужен публичный ключ, используйте
   /// [LicensifyKeyPair.fromPaserkSecret].
-  factory LicensifyPrivateKey.fromPaserkSecret(String paserk) {
+  factory LicensifyPrivateKey.fromPaserkSecret({
+    required String paserk,
+  }) {
     final paserkKey = K4SecretKey.fromString(paserk);
     final rawBytes = paserkKey.rawBytes;
     final privateKeyBytes = Uint8List.fromList(rawBytes.sublist(0, 32));
-    return LicensifyPrivateKey.ed25519(privateKeyBytes);
+    return LicensifyPrivateKey.ed25519(keyBytes: privateKeyBytes);
   }
 
   /// Converts this private key to PASERK k4.secret representation using
@@ -58,7 +62,9 @@ final class LicensifyPrivateKey extends LicensifyKey {
   ///
   /// Поэтому метод принимает `LicensifyPublicKey`, вместо того чтобы скрыто
   /// кэшировать его внутри класса.
-  String toPaserkSecret(LicensifyPublicKey publicKey) {
+  String toPaserkSecret({
+    required LicensifyPublicKey publicKey,
+  }) {
     return executeWithKeyBytes((privateBytes) {
       return publicKey.executeWithKeyBytes((publicBytes) {
         final combined = Uint8List(privateBytes.length + publicBytes.length);
@@ -72,7 +78,9 @@ final class LicensifyPrivateKey extends LicensifyKey {
 
   /// Computes PASERK k4.sid identifier for this private key using the
   /// matching [publicKey].
-  String toPaserkSecretIdentifier(LicensifyPublicKey publicKey) {
+  String toPaserkSecretIdentifier({
+    required LicensifyPublicKey publicKey,
+  }) {
     return executeWithKeyBytes((privateBytes) {
       return publicKey.executeWithKeyBytes((publicBytes) {
         final combined = Uint8List(privateBytes.length + publicBytes.length);
@@ -86,14 +94,14 @@ final class LicensifyPrivateKey extends LicensifyKey {
   }
 
   /// Restores an Ed25519 private key from PASERK k4.secret-pw representation.
-  static Future<LicensifyPrivateKey> fromPaserkSecretPassword(
-    String paserk,
-    String password,
-  ) async {
+  static Future<LicensifyPrivateKey> fromPaserkSecretPassword({
+    required String paserk,
+    required String password,
+  }) async {
     final paserkKey = await K4SecretPw.unwrap(paserk, password);
     final rawBytes = paserkKey.rawBytes;
     final privateKeyBytes = Uint8List.fromList(rawBytes.sublist(0, 32));
-    return LicensifyPrivateKey.ed25519(privateKeyBytes);
+    return LicensifyPrivateKey.ed25519(keyBytes: privateKeyBytes);
   }
 
   /// Wraps this private key into PASERK k4.secret-pw representation using
@@ -104,8 +112,8 @@ final class LicensifyPrivateKey extends LicensifyKey {
   /// ключ будет зашит в защищённую строку. Реализации проверяют, что публичная
   /// часть соответствует приватной, поэтому подстановка фиктивных байтов вызовет
   /// ошибку при импорте или даст неверные идентификаторы.
-  Future<String> toPaserkSecretPassword(
-    String password, {
+  Future<String> toPaserkSecretPassword({
+    required String password,
     required LicensifyPublicKey publicKey,
     int memoryCost = K4SecretPw.defaultMemoryCost,
     int timeCost = K4SecretPw.defaultTimeCost,
@@ -131,16 +139,16 @@ final class LicensifyPrivateKey extends LicensifyKey {
 
   /// Restores an Ed25519 private key from PASERK k4.secret-wrap.pie using
   /// the provided symmetric [wrappingKey].
-  static LicensifyPrivateKey fromPaserkSecretWrap(
-    String paserk,
-    LicensifySymmetricKey wrappingKey,
-  ) {
+  static LicensifyPrivateKey fromPaserkSecretWrap({
+    required String paserk,
+    required LicensifySymmetricKey wrappingKey,
+  }) {
     return wrappingKey.executeWithKeyBytes((wrappingBytes) {
       final wrapper = K4LocalKey(Uint8List.fromList(wrappingBytes));
       final secretKey = K4SecretWrap.unwrap(paserk, wrapper);
       final rawBytes = secretKey.rawBytes;
       final privateKeyBytes = Uint8List.fromList(rawBytes.sublist(0, 32));
-      return LicensifyPrivateKey.ed25519(privateKeyBytes);
+      return LicensifyPrivateKey.ed25519(keyBytes: privateKeyBytes);
     });
   }
 
@@ -152,8 +160,8 @@ final class LicensifyPrivateKey extends LicensifyKey {
   /// восстановления как приватной, так и публичной части. Библиотеки PASERK
   /// проверяют, что открытый компонент согласован с приватным, поэтому
   /// произвольные или нулевые байты приведут к ошибкам при распаковке.
-  String toPaserkSecretWrap(
-    LicensifySymmetricKey wrappingKey, {
+  String toPaserkSecretWrap({
+    required LicensifySymmetricKey wrappingKey,
     required LicensifyPublicKey publicKey,
   }) {
     return executeWithKeyBytes((privateBytes) {

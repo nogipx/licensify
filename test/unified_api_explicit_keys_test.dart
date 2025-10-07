@@ -355,7 +355,7 @@ void main() {
       originalKey.dispose();
 
       // Act
-      final sut = Licensify.encryptionKeyFromBytes(keyBytes);
+      final sut = Licensify.encryptionKeyFromBytes(keyBytes: keyBytes);
 
       try {
         // Assert

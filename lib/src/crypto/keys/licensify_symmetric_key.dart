@@ -13,7 +13,9 @@ final class LicensifySymmetricKey extends LicensifyKey {
   });
 
   /// Creates a symmetric key for PASETO v4.local
-  factory LicensifySymmetricKey.xchacha20(Uint8List keyBytes) {
+  factory LicensifySymmetricKey.xchacha20({
+    required Uint8List keyBytes,
+  }) {
     _PasetoV4.validateXChaCha20KeyBytes(keyBytes);
     return LicensifySymmetricKey._(
       keyBytes: keyBytes,
@@ -22,10 +24,12 @@ final class LicensifySymmetricKey extends LicensifyKey {
   }
 
   /// Creates a symmetric key from a PASERK k4.local string
-  factory LicensifySymmetricKey.fromPaserk(String paserk) {
+  factory LicensifySymmetricKey.fromPaserk({
+    required String paserk,
+  }) {
     final paserkKey = K4LocalKey.fromString(paserk);
     return LicensifySymmetricKey.xchacha20(
-      Uint8List.fromList(paserkKey.rawBytes),
+      keyBytes: Uint8List.fromList(paserkKey.rawBytes),
     );
   }
 
@@ -47,19 +51,19 @@ final class LicensifySymmetricKey extends LicensifyKey {
   }
 
   /// Creates a symmetric key from a PASERK k4.local-pw string using [password]
-  static Future<LicensifySymmetricKey> fromPaserkPassword(
-    String paserk,
-    String password,
-  ) async {
+  static Future<LicensifySymmetricKey> fromPaserkPassword({
+    required String paserk,
+    required String password,
+  }) async {
     final paserkKey = await K4LocalPw.unwrap(paserk, password);
     return LicensifySymmetricKey.xchacha20(
-      Uint8List.fromList(paserkKey.rawBytes),
+      keyBytes: Uint8List.fromList(paserkKey.rawBytes),
     );
   }
 
   /// Wraps the symmetric key into PASERK k4.local-pw representation
-  Future<String> toPaserkPassword(
-    String password, {
+  Future<String> toPaserkPassword({
+    required String password,
     int memoryCost = K4LocalPw.defaultMemoryCost,
     int timeCost = K4LocalPw.defaultTimeCost,
     int parallelism = K4LocalPw.defaultParallelism,
@@ -79,22 +83,24 @@ final class LicensifySymmetricKey extends LicensifyKey {
 
   /// Creates a symmetric key from a PASERK k4.local-wrap.pie string
   /// using another symmetric [wrappingKey].
-  static LicensifySymmetricKey fromPaserkWrap(
-    String paserk,
-    LicensifySymmetricKey wrappingKey,
-  ) {
+  static LicensifySymmetricKey fromPaserkWrap({
+    required String paserk,
+    required LicensifySymmetricKey wrappingKey,
+  }) {
     return wrappingKey.executeWithKeyBytes((wrappingBytes) {
       final wrapping = K4LocalKey(Uint8List.fromList(wrappingBytes));
       final unwrapped = K4LocalWrap.unwrap(paserk, wrapping);
       return LicensifySymmetricKey.xchacha20(
-        Uint8List.fromList(unwrapped.rawBytes),
+        keyBytes: Uint8List.fromList(unwrapped.rawBytes),
       );
     });
   }
 
   /// Wraps this symmetric key into PASERK k4.local-wrap.pie string
   /// using another symmetric [wrappingKey].
-  String toPaserkWrap(LicensifySymmetricKey wrappingKey) {
+  String toPaserkWrap({
+    required LicensifySymmetricKey wrappingKey,
+  }) {
     return executeWithKeyBytes((keyBytes) {
       return wrappingKey.executeWithKeyBytes((wrappingBytes) {
         final key = K4LocalKey(Uint8List.fromList(keyBytes));
@@ -106,10 +112,10 @@ final class LicensifySymmetricKey extends LicensifyKey {
   }
 
   /// Creates a symmetric key from a PASERK k4.seal string using [keyPair].
-  static Future<LicensifySymmetricKey> fromPaserkSeal(
-    String paserk,
-    LicensifyKeyPair keyPair,
-  ) {
+  static Future<LicensifySymmetricKey> fromPaserkSeal({
+    required String paserk,
+    required LicensifyKeyPair keyPair,
+  }) {
     return keyPair.privateKey.executeWithKeyBytesAsync((privateBytes) async {
       return keyPair.publicKey.executeWithKeyBytesAsync((publicBytes) async {
         final combined = Uint8List(privateBytes.length + publicBytes.length);
@@ -118,14 +124,16 @@ final class LicensifySymmetricKey extends LicensifyKey {
         final secretKey = K4SecretKey(combined);
         final unsealed = await K4Seal.unseal(paserk, secretKey);
         return LicensifySymmetricKey.xchacha20(
-          Uint8List.fromList(unsealed.rawBytes),
+          keyBytes: Uint8List.fromList(unsealed.rawBytes),
         );
       });
     });
   }
 
   /// Seals this symmetric key into PASERK k4.seal string using [publicKey].
-  Future<String> toPaserkSeal(LicensifyPublicKey publicKey) {
+  Future<String> toPaserkSeal({
+    required LicensifyPublicKey publicKey,
+  }) {
     return executeWithKeyBytesAsync((keyBytes) async {
       return publicKey.executeWithKeyBytesAsync((publicBytes) async {
         final key = K4LocalKey(Uint8List.fromList(keyBytes));

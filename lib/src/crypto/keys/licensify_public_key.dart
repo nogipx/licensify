@@ -13,7 +13,9 @@ final class LicensifyPublicKey extends LicensifyKey {
   });
 
   /// Creates an Ed25519 public key for PASETO v4.public
-  factory LicensifyPublicKey.ed25519(Uint8List keyBytes) {
+  factory LicensifyPublicKey.ed25519({
+    required Uint8List keyBytes,
+  }) {
     _PasetoV4.validateEd25519KeyBytes(keyBytes, 'public key');
     return LicensifyPublicKey._(
       keyBytes: keyBytes,
@@ -22,10 +24,12 @@ final class LicensifyPublicKey extends LicensifyKey {
   }
 
   /// Creates a public key from a PASERK k4.public string
-  factory LicensifyPublicKey.fromPaserk(String paserk) {
+  factory LicensifyPublicKey.fromPaserk({
+    required String paserk,
+  }) {
     final paserkKey = K4PublicKey.fromString(paserk);
     return LicensifyPublicKey.ed25519(
-      Uint8List.fromList(paserkKey.rawBytes),
+      keyBytes: Uint8List.fromList(paserkKey.rawBytes),
     );
   }
 

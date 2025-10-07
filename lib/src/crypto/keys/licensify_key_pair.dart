@@ -21,8 +21,8 @@ final class LicensifyKeyPair {
     required Uint8List publicKeyBytes,
   }) {
     return LicensifyKeyPair(
-      privateKey: LicensifyPrivateKey.ed25519(privateKeyBytes),
-      publicKey: LicensifyPublicKey.ed25519(publicKeyBytes),
+      privateKey: LicensifyPrivateKey.ed25519(keyBytes: privateKeyBytes),
+      publicKey: LicensifyPublicKey.ed25519(keyBytes: publicKeyBytes),
     );
   }
 
@@ -40,7 +40,9 @@ final class LicensifyKeyPair {
   }
 
   /// Creates a key pair from a PASERK k4.secret string
-  factory LicensifyKeyPair.fromPaserkSecret(String paserk) {
+  factory LicensifyKeyPair.fromPaserkSecret({
+    required String paserk,
+  }) {
     final paserkKey = K4SecretKey.fromString(paserk);
     final privateKeyBytes = Uint8List.fromList(paserkKey.rawBytes.sublist(0, 32));
     final publicKeyBytes = Uint8List.fromList(paserkKey.rawBytes.sublist(32));
@@ -78,10 +80,10 @@ final class LicensifyKeyPair {
   }
 
   /// Restores a key pair from PASERK k4.secret-pw representation using [password]
-  static Future<LicensifyKeyPair> fromPaserkSecretPassword(
-    String paserk,
-    String password,
-  ) async {
+  static Future<LicensifyKeyPair> fromPaserkSecretPassword({
+    required String paserk,
+    required String password,
+  }) async {
     final paserkKey = await K4SecretPw.unwrap(paserk, password);
     final privateKeyBytes =
         Uint8List.fromList(paserkKey.rawBytes.sublist(0, 32));
@@ -94,8 +96,8 @@ final class LicensifyKeyPair {
   }
 
   /// Wraps the key pair into PASERK k4.secret-pw representation
-  Future<String> toPaserkSecretPassword(
-    String password, {
+  Future<String> toPaserkSecretPassword({
+    required String password,
     int memoryCost = K4SecretPw.defaultMemoryCost,
     int timeCost = K4SecretPw.defaultTimeCost,
     int parallelism = K4SecretPw.defaultParallelism,
@@ -119,10 +121,10 @@ final class LicensifyKeyPair {
   }
 
   /// Restores a key pair from PASERK k4.secret-wrap.pie representation.
-  static LicensifyKeyPair fromPaserkSecretWrap(
-    String paserk,
-    LicensifySymmetricKey wrappingKey,
-  ) {
+  static LicensifyKeyPair fromPaserkSecretWrap({
+    required String paserk,
+    required LicensifySymmetricKey wrappingKey,
+  }) {
     return wrappingKey.executeWithKeyBytes((wrappingBytes) {
       final wrapper = K4LocalKey(Uint8List.fromList(wrappingBytes));
       final secretKey = K4SecretWrap.unwrap(paserk, wrapper);
@@ -138,7 +140,9 @@ final class LicensifyKeyPair {
   }
 
   /// Wraps this key pair into PASERK k4.secret-wrap.pie representation.
-  String toPaserkSecretWrap(LicensifySymmetricKey wrappingKey) {
+  String toPaserkSecretWrap({
+    required LicensifySymmetricKey wrappingKey,
+  }) {
     return privateKey.executeWithKeyBytes((privateBytes) {
       return publicKey.executeWithKeyBytes((publicBytes) {
         return wrappingKey.executeWithKeyBytes((wrappingBytes) {
