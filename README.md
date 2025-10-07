@@ -121,7 +121,10 @@ Licensify предоставляет фасадные методы для пре
   ключом (например, мастер-ключом хранилища) через методы
   `Licensify.encryptionKeyToPaserkWrap()` и `Licensify.encryptionKeyFromPaserkWrap()`.
 - `k4.secret` / `k4.secret-pw` — для Ed25519 пар ключей подписи. Паролезащищённый
-  вариант подходит для хранения приватных ключей в хранилищах.
+  вариант подходит для хранения приватных ключей в хранилищах. Для операций с
+  приватным ключом (`LicensifyPrivateKey`) передавайте соответствующий
+  `LicensifyPublicKey`, чтобы явно контролировать, какие байты попадают в
+  PASERK-представление без скрытого кэширования.
 - `k4.secret-wrap.pie` — для шифрования пары ключей подписи симметричным ключом,
   используя `Licensify.signingKeysToPaserkWrap()` и
   `Licensify.signingKeysFromPaserkWrap()`.

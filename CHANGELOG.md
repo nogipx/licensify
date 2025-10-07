@@ -17,6 +17,10 @@ All notable changes to this project will be documented in this file.
 - **Key Wrapping & Sealing**: Enabled symmetric wrapping flows for
   `k4.local-wrap.pie` and `k4.secret-wrap.pie`, plus secure delivery of
   encryption keys through `k4.seal`.
+- **Simplified Private Key PASERK API**: `LicensifyPrivateKey` теперь принимает
+  явный `LicensifyPublicKey` при конвертации в `k4.secret`, `k4.secret-pw` и
+  `k4.secret-wrap.pie`, избавляясь от скрытого кэширования и делая поток
+  использования очевидным.
 
 ### 📚 Documentation
 
