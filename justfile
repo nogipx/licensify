@@ -14,17 +14,8 @@ prepare:
     genhtml coverage/lcov.info -o coverage/html
     open coverage/html/index.html
 
-compile:
-    rm pubspec.lock
-    fvm dart pub get
-    fvm dart compile exe bin/licensify.dart -o bin/licensify
-    chmod +x bin/licensify
-
 dry:
     fvm dart pub publish --dry-run
 
 publish:
     fvm dart pub publish
-
-test_cli:
-    sh test_cli/test_all_commands.sh
