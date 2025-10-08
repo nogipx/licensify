@@ -1,254 +1,221 @@
-![Licensify](https://img.shields.io/pub/v/licensify?label=Licensify&logo=dart)
-![License](https://img.shields.io/badge/license-LGPL-blue.svg?link=https://pub.dev/packages/licensify/license)
-
-<div align="center">
-
 # Licensify
 
-**Modern cryptographically secure software licensing using PASETO v4 tokens**
+[![Licensify](https://img.shields.io/pub/v/licensify?label=Licensify&logo=dart)](https://pub.dev/packages/licensify)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg?link=https://pub.dev/packages/licensify/license)](https://github.com/nogipx/licensify/blob/main/LICENSE)
 
-*Quantum-resistant, tamper-proof, and high-performance licensing solution*
+Licensify is a Dart library for issuing and validating software licenses backed by **PASETO v4** tokens. It provides a strongly typed façade over the cryptography primitives in `paseto_dart`, making it straightforward to build licensing workflows that remain verifiable and tamper resistant.
 
-[Quick Start](#quick-start) • [Security](#security) • [API](#api-reference)
-
----
-
-</div>
+## Contents
+- [Overview](#overview)
+- [Key capabilities](#key-capabilities)
+- [Quick start](#quick-start)
+- [Data encryption](#data-encryption)
+- [Key lifecycle requirements](#key-lifecycle-requirements)
+- [Security guidance](#security-guidance)
+- [API reference](#api-reference)
+- [License](#license)
 
 ## Overview
+Licensify encapsulates key generation, license issuance, validation, and symmetric encryption in a single static API. Every license is represented as a signed PASETO v4 token with an authenticated payload containing application, expiry, feature, and metadata details. The library is designed for server-side issuance and on-device or in-application validation scenarios where deterministic and verifiable behavior is critical.
 
-Licensify is a professional software licensing library built on **PASETO v4** tokens, providing a cryptographically superior alternative to traditional JWT-based licensing systems.
+## Key capabilities
+### Licensing workflow
+- Generate Ed25519 key pairs for signing and verifying licenses.
+- Assemble signed license tokens with strongly typed payload helpers.
+- Validate licenses using keys or raw key bytes, exposing structured validation results.
+- Inspect validated license metadata through the `License` domain object.
 
-### Why PASETO over JWT?
+### Cryptography support
+- Convert between key objects and PASERK representations (`k4.local`, `k4.local-pw`, `k4.local-wrap`, `k4.seal`).
+- Derive symmetric keys from passwords using Argon2id with configurable parameters.
+- Encrypt and decrypt structured data using XChaCha20-Poly1305 (PASETO v4.local) tokens.
 
-| Feature | JWT | **Licensify (PASETO v4)** |
-|---------|-----|---------------------------|
-| Algorithm Confusion | Vulnerable | **Fixed algorithms** |
-| Quantum Resistance | No | **Ed25519 ready** |
-| Performance | Slow | **10x faster** |
-| Token Tampering | Easy | **Cryptographically impossible** |
-| Key Size | 2048+ bits | **32 bytes** |
+### Developer ergonomics
+- Asynchronous API surfaces for IO-bound cryptographic operations.
+- Deterministic exceptions for malformed tokens and unsupported payloads.
+- Memory management helpers to ensure explicit key disposal.
 
-## Quick Start
-
-### 🔑 Generate Keys & Create License
-
+## Quick start
+### Generate signing keys and create a license
 ```dart
 import 'package:licensify/licensify.dart';
 
-// Method 1: Automatic key generation (recommended)
-final result = await Licensify.createLicenseWithKeys(
-  appId: 'com.company.product',
-  expirationDate: DateTime.now().add(Duration(days: 365)),
-  type: LicenseType.pro,
-  features: {
-    'analytics': true,
-    'api_access': true,
-    'max_users': 100,
-  },
-  metadata: {
-    'customer': 'Acme Corporation',
-    'license_id': 'LIC-2025-001',
-  },
-);
+Future<void> issueLicense() async {
+  final keyPair = await Licensify.generateSigningKeys();
 
-print('License: ${result.license.token}');
-print('Public key: ${result.publicKeyBytes.length} bytes');
-```
+  try {
+    final license = await Licensify.createLicense(
+      privateKey: keyPair.privateKey,
+      appId: 'com.example.product',
+      expirationDate: DateTime.now().add(const Duration(days: 365)),
+      type: LicenseType.pro,
+      features: const {
+        'analytics': true,
+        'api_access': true,
+        'max_users': 100,
+      },
+      metadata: const {
+        'customer': 'Example Corp',
+        'license_id': 'LIC-2025-001',
+      },
+    );
 
-### ✅ Validate License
-
-```dart
-// Validate license with key bytes (production recommended)
-final validation = await Licensify.validateLicenseWithKeyBytes(
-  license: result.license,
-  publicKeyBytes: result.publicKeyBytes,
-);
-
-if (validation.isValid) {
-  print('✅ License is valid!');
-  
-  // Access verified license data
-  final appId = await result.license.appId;
-  final features = await result.license.features;
-  final metadata = await result.license.metadata;
-  
-  // Check permissions
-  if (features['analytics'] == true) {
-    // Enable analytics features
+    // Persist the license token in your licensing backend or provisioning flow.
+    print('License token: ${license.token}');
+  } finally {
+    keyPair.privateKey.dispose();
+    keyPair.publicKey.dispose();
   }
-} else {
-  print('❌ License invalid: ${validation.message}');
-  // Deny access
 }
 ```
 
-### 🛡️ Tamper Protection
-
+### Validate a license
 ```dart
-// Try to create "better" license with wrong keys
-final wrongKeys = await Licensify.generateSigningKeys();
-final fakeLicense = await Licensify.createLicense(
-  privateKey: wrongKeys.privateKey,
-  appId: 'com.company.product', // Same app ID
-  expirationDate: DateTime.now().add(Duration(days: 999)), // Extended!
-  type: LicenseType.enterprise, // Upgraded!
-  features: {'max_users': 9999}, // More features!
-);
+Future<void> validateLicense() async {
+  final keyPair = await Licensify.generateSigningKeys();
 
-// Try to validate with original key
-final fakeValidation = await Licensify.validateLicenseWithKeyBytes(
-  license: fakeLicense,
-  publicKeyBytes: result.publicKeyBytes, // Original key
-);
+  try {
+    final license = await Licensify.createLicense(
+      privateKey: keyPair.privateKey,
+      appId: 'com.example.product',
+      expirationDate: DateTime.now().add(const Duration(days: 30)),
+    );
 
-print('Fake license rejected: ${!fakeValidation.isValid}'); // true
-print('Error: ${fakeValidation.message}'); // Signature verification error
+    final validation = await Licensify.validateLicense(
+      license: license,
+      publicKey: keyPair.publicKey,
+    );
 
-// Cleanup
-wrongKeys.privateKey.dispose();
-wrongKeys.publicKey.dispose();
-```
-
-## Key Features
-
-### 🔐 Security-by-Design
-- **Secure-only API**: Impossible to create licenses without cryptographic validation
-- **Tamper-proof**: Any modification invalidates the signature instantly
-- **Quantum-resistant**: Ed25519 provides 128-bit security level
-
-### ⚡ Performance
-- **Fast**: ~151 licenses/second throughput
-- **Compact**: 32-byte keys vs 2048+ bit RSA
-- **Efficient**: Automatic key cleanup and disposal
-
-### 🛠️ Developer Experience
-- **Type-safe**: Full Dart type safety with async/await
-- **Unified API**: Single `Licensify` class for all operations
-- **Automatic cleanup**: Built-in memory management
-
-## Security
-
-### Cryptographic Foundation
-```
-Algorithm:    Ed25519 (Curve25519)
-Token Format: PASETO v4.public
-Security:     128-bit quantum-resistant
-Key Size:     32 bytes
-```
-
-### Production Best Practices
-
-```dart
-// Use short-lived tokens
-final license = await Licensify.createLicense(
-  privateKey: keys.privateKey,
-  appId: 'com.company.app',
-  expirationDate: DateTime.now().add(Duration(minutes: 15)), // Short-lived
-  type: LicenseType.standard,
-  metadata: {
-    'jti': generateUniqueId(), // Prevents replay attacks
-  },
-);
-
-// Always dispose keys
-try {
-  // Use license...
-} finally {
-  keys.privateKey.dispose();
-  keys.publicKey.dispose();
-}
-```
-
-## Advanced Usage
-
-### Enterprise License Validation
-
-```dart
-class LicenseManager {
-  static Future<bool> validateEnterpriseLicense(
-    String licenseToken,
-    List<int> publicKeyBytes,
-  ) async {
-    try {
-      final license = License.fromToken(licenseToken);
-      final result = await Licensify.validateLicenseWithKeyBytes(
-        license: license,
-        publicKeyBytes: publicKeyBytes,
-      );
-      
-      if (!result.isValid) return false;
-      
-      // All data is cryptographically verified
-      final type = await license.type;
-      final features = await license.features;
-      
-      // Business validation
-      return type.name == 'enterprise' && 
-             features['user_management'] == true;
-             
-    } catch (e) {
-      return false;
+    if (!validation.isValid) {
+      throw StateError('License rejected: ${validation.message}');
     }
+
+    final appId = await license.appId;
+    final features = await license.features;
+    final metadata = await license.metadata;
+
+    print('Validated license for: ' + appId);
+    print('Features: ' + features.toString());
+    print('Metadata: ' + (metadata ?? {}).toString());
+  } finally {
+    keyPair.privateKey.dispose();
+    keyPair.publicKey.dispose();
   }
 }
 ```
 
-### Data Encryption
-
+### Detect tampering attempts
 ```dart
-// Encrypt sensitive data
-final encryptionResult = await Licensify.encryptDataWithKey(
-  data: {
-    'user_id': 'user_123',
-    'permissions': ['read', 'write', 'admin'],
-  },
-);
+Future<bool> isTamperedLicenseRejected() async {
+  final legitimateKeys = await Licensify.generateSigningKeys();
+  final attackerKeys = await Licensify.generateSigningKeys();
 
-// Decrypt data
-final decryptionKey = Licensify.encryptionKeyFromBytes(encryptionResult.keyBytes);
-try {
-  final decryptedData = await Licensify.decryptData(
-    encryptedToken: encryptionResult.encryptedToken,
-    encryptionKey: decryptionKey,
-  );
-} finally {
-  decryptionKey.dispose();
+  try {
+    final forgedLicense = await Licensify.createLicense(
+      privateKey: attackerKeys.privateKey,
+      appId: 'com.example.product',
+      expirationDate: DateTime.now().add(const Duration(days: 999)),
+      type: LicenseType.enterprise,
+      features: const {'max_users': 9999},
+    );
+
+    final result = await Licensify.validateLicense(
+      license: forgedLicense,
+      publicKey: legitimateKeys.publicKey,
+    );
+
+    return !result.isValid;
+  } finally {
+    attackerKeys.privateKey.dispose();
+    attackerKeys.publicKey.dispose();
+    legitimateKeys.privateKey.dispose();
+    legitimateKeys.publicKey.dispose();
+  }
 }
 ```
 
-## API Reference
-
-### Core Methods
-
+## Data encryption
 ```dart
-// Key Management
-static Future<LicensifyKeyPair> generateSigningKeys()
-static LicensifySymmetricKey generateEncryptionKey()
+Future<Map<String, dynamic>> encryptAndDecrypt() async {
+  final encryptionKey = Licensify.generateEncryptionKey();
 
-// License Creation
-static Future<License> createLicense({...})
-static Future<({License license, List<int> publicKeyBytes})> createLicenseWithKeys({...})
+  try {
+    final encryptedToken = await Licensify.encryptData(
+      data: const {
+        'user_id': 'user_123',
+        'permissions': ['read', 'write', 'admin'],
+      },
+      encryptionKey: encryptionKey,
+    );
 
-// License Validation
-static Future<LicenseValidationResult> validateLicense({...})
-static Future<LicenseValidationResult> validateLicenseWithKeyBytes({...})
+    final decrypted = await Licensify.decryptData(
+      encryptedToken: encryptedToken,
+      encryptionKey: encryptionKey,
+    );
 
-// Data Encryption
-static Future<Map<String, dynamic>> encryptData({...})
-static Future<Map<String, dynamic>> decryptData({...})
+    return decrypted;
+  } finally {
+    encryptionKey.dispose();
+  }
+}
 ```
+
+## Key lifecycle requirements
+Every `LicensifyPrivateKey`, `LicensifyPublicKey`, and `LicensifySymmetricKey` holds sensitive material in memory. Keys **must** be disposed explicitly with `.dispose()` once an operation completes. Failing to dispose keys leaves confidential bytes resident in memory until garbage collection and violates the library's security model.
+
+## Security guidance
+- Issue short-lived licenses where possible and rely on revocation metadata in your backend.
+- Store signing keys in hardware security modules or dedicated secrets managers; never distribute private keys with client applications.
+- Persist salts required for password-derived keys alongside encrypted payloads and protect them with the same rigor as the data they guard.
+- Audit logging should record both successful and failed validations for anomaly detection.
+- Treat decrypted license payloads as sensitive data and limit their exposure within your application.
+
+## API reference
+```dart
+// Key management
+static Future<LicensifyKeyPair> generateSigningKeys();
+static LicensifyKeyPair keysFromBytes({required List<int> privateKeyBytes, required List<int> publicKeyBytes});
+static LicensifySymmetricKey generateEncryptionKey();
+static Future<LicensifySymmetricKey> encryptionKeyFromPassword({...});
+static LicensifySymmetricKey encryptionKeyFromBytes({required List<int> keyBytes});
+static LicensifySymmetricKey encryptionKeyFromPaserk({required String paserk});
+static String encryptionKeyToPaserk({required LicensifySymmetricKey key});
+static String encryptionKeyIdentifier({required LicensifySymmetricKey key});
+static Future<LicensifySymmetricKey> encryptionKeyFromPaserkPassword({...});
+static Future<String> encryptionKeyToPaserkPassword({...});
+static LicensifySymmetricKey encryptionKeyFromPaserkWrap({...});
+static String encryptionKeyToPaserkWrap({...});
+static Future<LicensifySymmetricKey> encryptionKeyFromPaserkSeal({...});
+static String encryptionKeyToPaserkSeal({...});
+static LicensifySalt generatePasswordSalt({int length = K4LocalPw.saltLength});
+
+// License creation
+static Future<License> createLicense({
+  required LicensifyPrivateKey privateKey,
+  required String appId,
+  required DateTime expirationDate,
+  LicenseType type = LicenseType.standard,
+  Map<String, dynamic> features = const {},
+  Map<String, dynamic>? metadata,
+  bool isTrial = false,
+});
+
+// License validation
+static Future<License> fromToken({required String token, required LicensifyPublicKey publicKey});
+static Future<License> fromTokenWithKeyBytes({...});
+static Future<LicenseValidationResult> validateLicense({
+  required License license,
+  required LicensifyPublicKey publicKey,
+});
+static Future<LicenseValidationResult> validateLicenseWithKeyBytes({...});
+
+// Data encryption
+static Future<String> encryptData({required Map<String, dynamic> data, required LicensifySymmetricKey encryptionKey});
+static Future<Map<String, dynamic>> decryptData({required String encryptedToken, required LicensifySymmetricKey encryptionKey});
+```
+
+Refer to the inline API documentation for parameter details and advanced usage notes.
 
 ## License
+This project is distributed under the terms of the **MIT** license. See [LICENSE](LICENSE) for the full text.
 
-This project is licensed under the **LGPL-3.0-or-later** license.
-
----
-
-<div align="center">
-
-**Developed by [Karim "nogipx" Mamatkazin](https://github.com/nogipx)**
-
-[⭐ Star](https://github.com/nogipx/licensify) • [🐛 Issues](https://github.com/nogipx/licensify/issues)
-
-</div>
