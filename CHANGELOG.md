@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.0.0] - 2025-09-20
+
+### ⚠️ Breaking Changes
+
+- **Project relicensed under MIT**: The entire codebase, documentation, and
+  SPDX metadata now ship under the MIT license. This change removes the LGPL
+  obligations that applied in previous releases and warrants a major version
+  bump for consumers who must track licensing terms.
+
+### 📚 Documentation
+
+- Updated the README badge and licensing section to reflect the MIT license
+  and ensured references to LGPL-specific guidance were removed.
+
+### 🛠 Tooling
+
+- Refreshed REUSE configuration and SPDX headers so automated compliance
+  tooling recognizes the new MIT licensing.
+
 ## [3.2.0] - 2025-08-30
 
 ### ✨ New Features

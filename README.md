@@ -1,7 +1,7 @@
 # Licensify
 
 [![Licensify](https://img.shields.io/pub/v/licensify?label=Licensify&logo=dart)](https://pub.dev/packages/licensify)
-[![License](https://img.shields.io/badge/license-LGPL-blue.svg?link=https://pub.dev/packages/licensify/license)](https://github.com/nogipx/licensify/blob/main/LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg?link=https://pub.dev/packages/licensify/license)](https://github.com/nogipx/licensify/blob/main/LICENSE)
 
 Licensify is a Dart library for issuing and validating software licenses backed by **PASETO v4** tokens. It provides a strongly typed façade over the cryptography primitives in `paseto_dart`, making it straightforward to build licensing workflows that remain verifiable and tamper resistant.
 
@@ -217,4 +217,5 @@ static Future<Map<String, dynamic>> decryptData({required String encryptedToken,
 Refer to the inline API documentation for parameter details and advanced usage notes.
 
 ## License
-This project is distributed under the terms of the **LGPL-3.0-or-later** license. See [LICENSE](LICENSE) for the full text.
+This project is distributed under the terms of the **MIT** license. See [LICENSE](LICENSE) for the full text.
+

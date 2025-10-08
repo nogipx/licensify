@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2025 Karim "nogipx" Mamatkazin <nogipx@gmail.com>
 //
-// SPDX-License-Identifier: LGPL-3.0-or-later
+// SPDX-License-Identifier: MIT
 
 import 'dart:convert' show utf8, base64, jsonDecode, jsonEncode, base64Url;
 import 'dart:math' show Random;
