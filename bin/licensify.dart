@@ -347,26 +347,27 @@ Future<void> _handleKeypairGenerate(
       'type': 'ed25519-keypair',
       'publicKeyPaserk': pair.publicKey.toPaserk(),
       'publicKeyId': pair.publicKey.toPaserkIdentifier(),
-      'paserkSecret': pair.toPaserkSecret(),
-      'secretId': pair.toPaserkSecretIdentifier(),
+      'secretKeyPaserk': pair.toPaserkSecret(),
+      'secretKeyId': pair.toPaserkSecretIdentifier(),
     };
 
     if (password != null && password.isNotEmpty) {
-      final String paserkSecretPw = await pair.toPaserkSecretPassword(
+      final String passwordWrappedSecret = await pair.toPaserkSecretPassword(
         password: password,
       );
-      output['paserkSecretPw'] = paserkSecretPw;
+      output['passwordWrappedSecretKey'] = passwordWrappedSecret;
       _applyPasswordMetadata(
         output,
         _parsePaserkPasswordMetadata(
-          paserkSecretPw,
+          passwordWrappedSecret,
           ['keypair', 'generate'],
         ),
+        prefix: 'passwordWrap',
       );
     }
 
     if (wrappingKey != null) {
-      output['paserkSecretWrap'] = pair.toPaserkSecretWrap(
+      output['wrappedSecretKeyPaserk'] = pair.toPaserkSecretWrap(
         wrappingKey: wrappingKey,
       );
     }
@@ -392,9 +393,9 @@ Future<void> _handleKeypairInfo(
 
   final String? paserkInput = _trimmedValue(args['paserk']) ??
       _paserkFromInput(fileInput, const [
-        'paserkSecret',
-        'paserkSecretPw',
-        'paserkSecretWrap',
+        'secretKeyPaserk',
+        'passwordWrappedSecretKey',
+        'wrappedSecretKeyPaserk',
         'publicKeyPaserk',
       ]);
   if (paserkInput == null || paserkInput.isEmpty) {
@@ -463,36 +464,38 @@ Future<void> _handleKeypairInfo(
       'sourceFormat': _detectKeyPairFormat(paserk),
       'publicKeyPaserk': pair.publicKey.toPaserk(),
       'publicKeyId': pair.publicKey.toPaserkIdentifier(),
-      'paserkSecret': pair.toPaserkSecret(),
-      'secretId': pair.toPaserkSecretIdentifier(),
+      'secretKeyPaserk': pair.toPaserkSecret(),
+      'secretKeyId': pair.toPaserkSecretIdentifier(),
     };
 
     if (password != null && password.isNotEmpty) {
-      final String paserkSecretPw = await pair.toPaserkSecretPassword(
+      final String passwordWrappedSecret = await pair.toPaserkSecretPassword(
         password: password,
       );
-      output['paserkSecretPw'] = paserkSecretPw;
+      output['passwordWrappedSecretKey'] = passwordWrappedSecret;
       _applyPasswordMetadata(
         output,
         _parsePaserkPasswordMetadata(
-          paserkSecretPw,
+          passwordWrappedSecret,
           ['keypair', 'info'],
         ),
+        prefix: 'passwordWrap',
       );
     } else if (paserk.startsWith('k4.secret-pw')) {
-      output['paserkSecretPw'] = paserk;
+      output['passwordWrappedSecretKey'] = paserk;
       _applyPasswordMetadata(
         output,
         _parsePaserkPasswordMetadata(paserk, ['keypair', 'info']),
+        prefix: 'passwordWrap',
       );
     }
 
     if (wrappingKey != null) {
-      output['paserkSecretWrap'] = pair.toPaserkSecretWrap(
+      output['wrappedSecretKeyPaserk'] = pair.toPaserkSecretWrap(
         wrappingKey: wrappingKey,
       );
     } else if (paserk.startsWith('k4.secret-wrap')) {
-      output['paserkSecretWrap'] = paserk;
+      output['wrappedSecretKeyPaserk'] = paserk;
     }
 
     await _printJson(output, pretty: pretty, outputPath: outputPath);
@@ -533,29 +536,32 @@ Future<void> _handleSymmetricGenerate(
   try {
     final Map<String, Object?> output = {
       'type': 'xchacha20-key',
-      'paserkLocal': key.toPaserk(),
-      'localId': key.toPaserkIdentifier(),
+      'localKeyPaserk': key.toPaserk(),
+      'localKeyId': key.toPaserkIdentifier(),
     };
 
     if (password != null && password.isNotEmpty) {
-      final String paserkLocalPw =
+      final String passwordWrappedLocal =
           await key.toPaserkPassword(password: password);
-      output['paserkLocalPw'] = paserkLocalPw;
+      output['passwordWrappedLocalKey'] = passwordWrappedLocal;
       _applyPasswordMetadata(
         output,
         _parsePaserkPasswordMetadata(
-          paserkLocalPw,
+          passwordWrappedLocal,
           ['symmetric', 'generate'],
         ),
+        prefix: 'passwordWrap',
       );
     }
 
     if (wrappingKey != null) {
-      output['paserkLocalWrap'] = key.toPaserkWrap(wrappingKey: wrappingKey);
+      output['wrappedLocalKeyPaserk'] =
+          key.toPaserkWrap(wrappingKey: wrappingKey);
     }
 
     if (sealingKey != null) {
-      output['paserkSeal'] = await key.toPaserkSeal(publicKey: sealingKey);
+      output['sealedLocalKeyPaserk'] =
+          await key.toPaserkSeal(publicKey: sealingKey);
     }
 
     await _printJson(output, pretty: pretty, outputPath: outputPath);
@@ -579,10 +585,10 @@ Future<void> _handleSymmetricInfo(
 
   final String? paserkInput = _trimmedValue(args['paserk']) ??
       _paserkFromInput(fileInput, const [
-        'paserkLocal',
-        'paserkLocalPw',
-        'paserkLocalWrap',
-        'paserkSeal',
+        'localKeyPaserk',
+        'passwordWrappedLocalKey',
+        'wrappedLocalKeyPaserk',
+        'sealedLocalKeyPaserk',
       ]);
   if (paserkInput == null || paserkInput.isEmpty) {
     throw _CliUsageException('Provide --paserk with a PASERK string.', ['symmetric', 'info']);
@@ -654,39 +660,43 @@ Future<void> _handleSymmetricInfo(
     final Map<String, Object?> output = {
       'type': 'xchacha20-key',
       'sourceFormat': _detectSymmetricFormat(paserk),
-      'paserkLocal': key.toPaserk(),
-      'localId': key.toPaserkIdentifier(),
+      'localKeyPaserk': key.toPaserk(),
+      'localKeyId': key.toPaserkIdentifier(),
     };
 
     if (password != null && password.isNotEmpty) {
-      final String paserkLocalPw =
+      final String passwordWrappedLocal =
           await key.toPaserkPassword(password: password);
-      output['paserkLocalPw'] = paserkLocalPw;
+      output['passwordWrappedLocalKey'] = passwordWrappedLocal;
       _applyPasswordMetadata(
         output,
         _parsePaserkPasswordMetadata(
-          paserkLocalPw,
+          passwordWrappedLocal,
           ['symmetric', 'info'],
         ),
+        prefix: 'passwordWrap',
       );
     } else if (paserk.startsWith('k4.local-pw')) {
-      output['paserkLocalPw'] = paserk;
+      output['passwordWrappedLocalKey'] = paserk;
       _applyPasswordMetadata(
         output,
         _parsePaserkPasswordMetadata(paserk, ['symmetric', 'info']),
+        prefix: 'passwordWrap',
       );
     }
 
     if (wrappingKey != null) {
-      output['paserkLocalWrap'] = key.toPaserkWrap(wrappingKey: wrappingKey);
+      output['wrappedLocalKeyPaserk'] =
+          key.toPaserkWrap(wrappingKey: wrappingKey);
     } else if (paserk.startsWith('k4.local-wrap')) {
-      output['paserkLocalWrap'] = paserk;
+      output['wrappedLocalKeyPaserk'] = paserk;
     }
 
     if (publicKey != null) {
-      output['paserkSeal'] = await key.toPaserkSeal(publicKey: publicKey);
+      output['sealedLocalKeyPaserk'] =
+          await key.toPaserkSeal(publicKey: publicKey);
     } else if (paserk.startsWith('k4.seal')) {
-      output['paserkSeal'] = paserk;
+      output['sealedLocalKeyPaserk'] = paserk;
     }
 
     await _printJson(output, pretty: pretty, outputPath: outputPath);
@@ -774,28 +784,32 @@ Future<void> _handleSymmetricDerive(
   );
 
   try {
+    final String passwordWrappedLocal =
+        await key.toPaserkPassword(password: password);
+
     final Map<String, Object?> output = {
       'type': 'xchacha20-key',
-      'salt': salt.asString(),
-      'memoryCost': memoryCost,
-      'timeCost': timeCost,
-      'parallelism': parallelism,
-      'paserkLocal': key.toPaserk(),
-      'localId': key.toPaserkIdentifier(),
-      'paserkLocalPw': await key.toPaserkPassword(password: password),
+      'deriveSalt': salt.asString(),
+      'deriveMemoryCost': memoryCost,
+      'deriveTimeCost': timeCost,
+      'deriveParallelism': parallelism,
+      'localKeyPaserk': key.toPaserk(),
+      'localKeyId': key.toPaserkIdentifier(),
+      'passwordWrappedLocalKey': passwordWrappedLocal,
     };
 
     _applyPasswordMetadata(
       output,
       _parsePaserkPasswordMetadata(
-        output['paserkLocalPw']! as String,
+        passwordWrappedLocal,
         ['symmetric', 'derive'],
       ),
-      preferTopLevelSalt: false,
+      prefix: 'passwordWrap',
     );
 
     if (sealKey != null) {
-      output['paserkSeal'] = await key.toPaserkSeal(publicKey: sealKey);
+      output['sealedLocalKeyPaserk'] =
+          await key.toPaserkSeal(publicKey: sealKey);
     }
 
     await _printJson(output, pretty: pretty, outputPath: outputPath);
@@ -1014,21 +1028,16 @@ String _detectKeyPairFormat(String paserk) {
 void _applyPasswordMetadata(
   Map<String, Object?> output,
   _PaserkPasswordMetadata? metadata, {
-  bool preferTopLevelSalt = true,
+  required String prefix,
 }) {
   if (metadata == null) {
     return;
   }
 
-  output['passwordSalt'] = metadata.salt;
-  output['passwordMemoryCost'] = metadata.memoryCost;
-  output['passwordTimeCost'] = metadata.timeCost;
-  output['passwordParallelism'] = metadata.parallelism;
-  if (preferTopLevelSalt) {
-    output['salt'] = metadata.salt;
-  } else {
-    output.putIfAbsent('salt', () => metadata.salt);
-  }
+  output['${prefix}Salt'] = metadata.salt;
+  output['${prefix}MemoryCost'] = metadata.memoryCost;
+  output['${prefix}TimeCost'] = metadata.timeCost;
+  output['${prefix}Parallelism'] = metadata.parallelism;
 }
 
 _PaserkPasswordMetadata? _parsePaserkPasswordMetadata(

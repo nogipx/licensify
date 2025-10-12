@@ -25,9 +25,10 @@ All notable changes to this project will be documented in this file.
   subcommand (e.g., `licensify symmetric -h`).
 - Listing help for `keypair`, `symmetric`, or `salt` now includes their
   respective subcommands to make discovery easier.
-- Password-wrapped outputs now surface the Argon2 salt (`passwordSalt`) and
-  cost parameters so `--password` workflows automatically capture everything
-  required for future recovery.
+- Password-wrapped outputs now surface the Argon2 salt and cost parameters
+  under `passwordWrap*` keys, while derivation commands label their explicit
+  salt and Argon2 inputs with `derive*` fields so JSON exports are easier to
+  interpret and persist.
 - Fixed `licensify symmetric derive` to convert PASERK Argon2 memory-cost
   values from bytes to kibibytes before invoking the underlying implementation,
   preserving compatibility with wrapped outputs and preventing Argon2 crashes

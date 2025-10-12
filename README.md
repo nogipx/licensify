@@ -96,24 +96,24 @@ $ licensify keypair generate --password "correct horse battery staple"
   "type": "ed25519-keypair",
   "publicKeyPaserk": "k4.public...",
   "publicKeyId": "k4.pid...",
-  "paserkSecret": "k4.secret...",
-  "secretId": "k4.sid...",
-  "paserkSecretPw": "k4.secret-pw...",
-  "salt": "base64url-salt...",
-  "passwordSalt": "base64url-salt...",
-  "passwordMemoryCost": 67108864,
-  "passwordTimeCost": 3,
-  "passwordParallelism": 1
+  "secretKeyPaserk": "k4.secret...",
+  "secretKeyId": "k4.sid...",
+  "passwordWrappedSecretKey": "k4.secret-pw...",
+  "passwordWrapSalt": "base64url-salt...",
+  "passwordWrapMemoryCost": 67108864,
+  "passwordWrapTimeCost": 3,
+  "passwordWrapParallelism": 1
 }
 ```
 
 Whenever you request a password-protected export (`--password`), the CLI also
-records the Argon2 salt and cost parameters under the `password*` keys. Persist
-these values alongside the PASERK string so the key can be restored later with
-`licensify symmetric derive` or the equivalent library helpers. The top-level
-`salt` field continues to reflect the command-specific salt (for example, the
-input supplied to `symmetric derive`), while `passwordSalt` mirrors the value
-embedded inside the emitted `k4.*-pw` string.
+records the Argon2 salt and cost parameters under the `passwordWrap*` keys.
+Persist these values alongside the PASERK string so the key can be restored
+later with `licensify symmetric derive` or the equivalent library helpers. When
+deriving symmetric material, the CLI also returns `derive*` keys that describe
+the salt and cost settings you provided explicitly, while the
+`passwordWrap*` keys mirror the values encoded inside the emitted `k4.*-pw`
+string.
 
 Use `licensify symmetric info --paserk <value>` to unwrap `k4.local-pw`,
 `k4.local-wrap.pie`, or `k4.seal` payloads by providing the required password
