@@ -48,7 +48,8 @@ final ArgParser _keypairGenerateParser = _parserWithHelp()
   )
   ..addOption(
     'wrap',
-    help: 'Additionally emit k4.secret-wrap.pie using the provided k4.local key.',
+    help:
+        'Additionally emit k4.secret-wrap.pie using the provided k4.local key.',
   );
 
 final ArgParser _keypairInfoParser = _parserWithHelp()
@@ -77,7 +78,8 @@ final ArgParser _symmetricGenerateParser = _parserWithHelp()
   )
   ..addOption(
     'wrap',
-    help: 'Additionally emit k4.local-wrap.pie using the provided k4.local key.',
+    help:
+        'Additionally emit k4.local-wrap.pie using the provided k4.local key.',
   )
   ..addOption(
     'seal-with',
@@ -119,8 +121,7 @@ final ArgParser _symmetricDeriveParser = _parserWithHelp()
   )
   ..addOption(
     'salt',
-    help:
-        'Base64url salt for Argon2id (see "licensify salt generate").',
+    help: 'Base64url salt for Argon2id (see "licensify salt generate").',
   )
   ..addOption(
     'memory-cost',
@@ -150,8 +151,7 @@ final ArgParser _symmetricParser = _parserWithHelp()
 final ArgParser _saltGenerateParser = _parserWithHelp()
   ..addOption(
     'length',
-    help:
-        'Length of the generated salt in bytes (defaults to PASERK minimum).',
+    help: 'Length of the generated salt in bytes (defaults to PASERK minimum).',
   );
 
 final ArgParser _saltParser = _parserWithHelp()
@@ -399,7 +399,8 @@ Future<void> _handleKeypairInfo(
         'publicKeyPaserk',
       ]);
   if (paserkInput == null || paserkInput.isEmpty) {
-    throw _CliUsageException('Provide --paserk with a PASERK string.', ['keypair', 'info']);
+    throw _CliUsageException(
+        'Provide --paserk with a PASERK string.', ['keypair', 'info']);
   }
 
   final String paserk = paserkInput;
@@ -591,7 +592,8 @@ Future<void> _handleSymmetricInfo(
         'sealedLocalKeyPaserk',
       ]);
   if (paserkInput == null || paserkInput.isEmpty) {
-    throw _CliUsageException('Provide --paserk with a PASERK string.', ['symmetric', 'info']);
+    throw _CliUsageException(
+        'Provide --paserk with a PASERK string.', ['symmetric', 'info']);
   }
 
   final String paserk = paserkInput;
@@ -835,7 +837,8 @@ Future<void> _handleSaltGenerate(
   if (lengthRaw == null || lengthRaw.isEmpty) {
     salt = LicensifySymmetricKey.generatePasswordSalt();
   } else {
-    final int length = _parsePositiveInt(lengthRaw, 'length', ['salt', 'generate']);
+    final int length =
+        _parsePositiveInt(lengthRaw, 'length', ['salt', 'generate']);
     salt = LicensifySalt.random(length: length);
   }
 
@@ -881,7 +884,8 @@ Future<_CliInput?> _loadInput(
 
     return _CliInput(content: trimmed);
   } catch (e) {
-    throw _CliUsageException('Failed to read input file "$path": $e', commandPath);
+    throw _CliUsageException(
+        'Failed to read input file "$path": $e', commandPath);
   }
 }
 
@@ -925,7 +929,8 @@ String? _paserkFromInput(_CliInput? input, List<String> preferredKeys) {
   return trimmed.isEmpty ? null : trimmed;
 }
 
-LicensifySymmetricKey _parseSymmetricKey(String paserk, List<String> commandPath) {
+LicensifySymmetricKey _parseSymmetricKey(
+    String paserk, List<String> commandPath) {
   try {
     return LicensifySymmetricKey.fromPaserk(paserk: paserk);
   } catch (e) {
@@ -992,12 +997,14 @@ Future<LicensifyKeyPair> _loadKeyPair({
 int _parsePositiveInt(Object? value, String name, List<String> commandPath) {
   final String? raw = _trimmedValue(value);
   if (raw == null || raw.isEmpty) {
-    throw _CliUsageException('Provide --$name with a positive integer.', commandPath);
+    throw _CliUsageException(
+        'Provide --$name with a positive integer.', commandPath);
   }
 
   final int? parsed = int.tryParse(raw);
   if (parsed == null || parsed <= 0) {
-    throw _CliUsageException('Provide --$name with a positive integer.', commandPath);
+    throw _CliUsageException(
+        'Provide --$name with a positive integer.', commandPath);
   }
   return parsed;
 }
@@ -1168,9 +1175,8 @@ Future<void> _printJson(
   required bool pretty,
   String? outputPath,
 }) async {
-  final JsonEncoder encoder = pretty
-      ? const JsonEncoder.withIndent('  ')
-      : const JsonEncoder();
+  final JsonEncoder encoder =
+      pretty ? const JsonEncoder.withIndent('  ') : const JsonEncoder();
   final String json = encoder.convert(data);
   final String payload = '$json\n';
   if (outputPath == null || outputPath.isEmpty) {

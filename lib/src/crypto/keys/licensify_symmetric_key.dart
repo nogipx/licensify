@@ -72,6 +72,7 @@ final class LicensifySymmetricKey extends LicensifyKey {
   static Future<LicensifySymmetricKey> fromPassword({
     required String password,
     required LicensifySalt salt,
+
     /// Memory cost expressed in bytes to mirror the PASERK `m` parameter.
     int memoryCost = K4LocalPw.defaultMemoryCost,
     int timeCost = K4LocalPw.defaultTimeCost,
