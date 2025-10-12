@@ -139,6 +139,16 @@ final ArgParser _rootParser = ArgParser()
     defaultsTo: true,
     help: 'Pretty-print JSON output (disable with --no-pretty).',
   )
+  ..addOption(
+    'input',
+    abbr: 'i',
+    help: 'Read primary input (PASERK, salt, etc.) from a file.',
+  )
+  ..addOption(
+    'output',
+    abbr: 'o',
+    help: 'Write JSON output to a file instead of stdout.',
+  )
   ..addCommand('keypair', _keypairParser)
   ..addCommand('symmetric', _symmetricParser)
   ..addCommand('salt', _saltParser);
@@ -159,6 +169,8 @@ Future<void> main(List<String> arguments) async {
   }
 
   final bool pretty = rootResults['pretty'] as bool;
+  final String? inputPath = _trimmedValue(rootResults['input']);
+  final String? outputPath = _trimmedValue(rootResults['output']);
   final ArgResults? command = rootResults.command;
   if (command == null) {
     _printUsage([], error: 'Missing command.');
@@ -167,15 +179,19 @@ Future<void> main(List<String> arguments) async {
   }
 
   try {
+    final _CliInput? fileInput = await _loadInput(
+      inputPath,
+      _commandPathFrom(command),
+    );
     switch (command.name) {
       case 'keypair':
-        await _handleKeypair(command, pretty);
+        await _handleKeypair(command, pretty, fileInput, outputPath);
         break;
       case 'symmetric':
-        await _handleSymmetric(command, pretty);
+        await _handleSymmetric(command, pretty, fileInput, outputPath);
         break;
       case 'salt':
-        await _handleSalt(command, pretty);
+        await _handleSalt(command, pretty, outputPath);
         break;
       default:
         throw _CliUsageException('Unknown command "${command.name}".', []);
@@ -190,7 +206,12 @@ Future<void> main(List<String> arguments) async {
   }
 }
 
-Future<void> _handleKeypair(ArgResults command, bool pretty) async {
+Future<void> _handleKeypair(
+  ArgResults command,
+  bool pretty,
+  _CliInput? fileInput,
+  String? outputPath,
+) async {
   final ArgResults? subcommand = command.command;
   if (subcommand == null) {
     throw _CliUsageException('Missing keypair subcommand.', ['keypair']);
@@ -198,10 +219,10 @@ Future<void> _handleKeypair(ArgResults command, bool pretty) async {
 
   switch (subcommand.name) {
     case 'generate':
-      await _handleKeypairGenerate(subcommand, pretty);
+      await _handleKeypairGenerate(subcommand, pretty, outputPath);
       break;
     case 'info':
-      await _handleKeypairInfo(subcommand, pretty);
+      await _handleKeypairInfo(subcommand, pretty, fileInput, outputPath);
       break;
     default:
       throw _CliUsageException(
@@ -211,7 +232,12 @@ Future<void> _handleKeypair(ArgResults command, bool pretty) async {
   }
 }
 
-Future<void> _handleSymmetric(ArgResults command, bool pretty) async {
+Future<void> _handleSymmetric(
+  ArgResults command,
+  bool pretty,
+  _CliInput? fileInput,
+  String? outputPath,
+) async {
   final ArgResults? subcommand = command.command;
   if (subcommand == null) {
     throw _CliUsageException('Missing symmetric subcommand.', ['symmetric']);
@@ -219,13 +245,13 @@ Future<void> _handleSymmetric(ArgResults command, bool pretty) async {
 
   switch (subcommand.name) {
     case 'generate':
-      await _handleSymmetricGenerate(subcommand, pretty);
+      await _handleSymmetricGenerate(subcommand, pretty, outputPath);
       break;
     case 'info':
-      await _handleSymmetricInfo(subcommand, pretty);
+      await _handleSymmetricInfo(subcommand, pretty, fileInput, outputPath);
       break;
     case 'derive':
-      await _handleSymmetricDerive(subcommand, pretty);
+      await _handleSymmetricDerive(subcommand, pretty, outputPath);
       break;
     default:
       throw _CliUsageException(
@@ -235,7 +261,11 @@ Future<void> _handleSymmetric(ArgResults command, bool pretty) async {
   }
 }
 
-Future<void> _handleSalt(ArgResults command, bool pretty) async {
+Future<void> _handleSalt(
+  ArgResults command,
+  bool pretty,
+  String? outputPath,
+) async {
   final ArgResults? subcommand = command.command;
   if (subcommand == null) {
     throw _CliUsageException('Missing salt subcommand.', ['salt']);
@@ -243,7 +273,7 @@ Future<void> _handleSalt(ArgResults command, bool pretty) async {
 
   switch (subcommand.name) {
     case 'generate':
-      await _handleSaltGenerate(subcommand, pretty);
+      await _handleSaltGenerate(subcommand, pretty, outputPath);
       break;
     default:
       throw _CliUsageException(
@@ -253,7 +283,11 @@ Future<void> _handleSalt(ArgResults command, bool pretty) async {
   }
 }
 
-Future<void> _handleKeypairGenerate(ArgResults args, bool pretty) async {
+Future<void> _handleKeypairGenerate(
+  ArgResults args,
+  bool pretty,
+  String? outputPath,
+) async {
   final String? password = _trimmedValue(args['password']);
   final String? wrapPaserk = _trimmedValue(args['wrap']);
 
@@ -285,7 +319,7 @@ Future<void> _handleKeypairGenerate(ArgResults args, bool pretty) async {
       );
     }
 
-    _printJson(output, pretty: pretty);
+    await _printJson(output, pretty: pretty, outputPath: outputPath);
   } finally {
     pair.privateKey.dispose();
     pair.publicKey.dispose();
@@ -293,8 +327,19 @@ Future<void> _handleKeypairGenerate(ArgResults args, bool pretty) async {
   }
 }
 
-Future<void> _handleKeypairInfo(ArgResults args, bool pretty) async {
-  final String? paserkInput = _trimmedValue(args['paserk']);
+Future<void> _handleKeypairInfo(
+  ArgResults args,
+  bool pretty,
+  _CliInput? fileInput,
+  String? outputPath,
+) async {
+  final String? paserkInput = _trimmedValue(args['paserk']) ??
+      _paserkFromInput(fileInput, const [
+        'paserkSecret',
+        'paserkSecretPw',
+        'paserkSecretWrap',
+        'publicKeyPaserk',
+      ]);
   if (paserkInput == null || paserkInput.isEmpty) {
     throw _CliUsageException('Provide --paserk with a PASERK string.', ['keypair', 'info']);
   }
@@ -309,10 +354,10 @@ Future<void> _handleKeypairInfo(ArgResults args, bool pretty) async {
       final Map<String, Object?> output = {
         'type': 'ed25519-public-key',
         'sourceFormat': 'k4.public',
-        'publicKeyPaserk': publicKey.toPaserk(),
-        'publicKeyId': publicKey.toPaserkIdentifier(),
-      };
-      _printJson(output, pretty: pretty);
+      'publicKeyPaserk': publicKey.toPaserk(),
+      'publicKeyId': publicKey.toPaserkIdentifier(),
+    };
+      await _printJson(output, pretty: pretty, outputPath: outputPath);
     } finally {
       publicKey.dispose();
     }
@@ -380,7 +425,7 @@ Future<void> _handleKeypairInfo(ArgResults args, bool pretty) async {
       output['paserkSecretWrap'] = paserk;
     }
 
-    _printJson(output, pretty: pretty);
+    await _printJson(output, pretty: pretty, outputPath: outputPath);
   } finally {
     pair?.privateKey.dispose();
     pair?.publicKey.dispose();
@@ -388,7 +433,11 @@ Future<void> _handleKeypairInfo(ArgResults args, bool pretty) async {
   }
 }
 
-Future<void> _handleSymmetricGenerate(ArgResults args, bool pretty) async {
+Future<void> _handleSymmetricGenerate(
+  ArgResults args,
+  bool pretty,
+  String? outputPath,
+) async {
   final String? password = _trimmedValue(args['password']);
   final String? wrapPaserk = _trimmedValue(args['wrap']);
   final String? sealWith = _trimmedValue(args['seal-with']);
@@ -425,7 +474,7 @@ Future<void> _handleSymmetricGenerate(ArgResults args, bool pretty) async {
       output['paserkSeal'] = await key.toPaserkSeal(publicKey: sealingKey);
     }
 
-    _printJson(output, pretty: pretty);
+    await _printJson(output, pretty: pretty, outputPath: outputPath);
   } finally {
     key.dispose();
     wrappingKey?.dispose();
@@ -433,8 +482,19 @@ Future<void> _handleSymmetricGenerate(ArgResults args, bool pretty) async {
   }
 }
 
-Future<void> _handleSymmetricInfo(ArgResults args, bool pretty) async {
-  final String? paserkInput = _trimmedValue(args['paserk']);
+Future<void> _handleSymmetricInfo(
+  ArgResults args,
+  bool pretty,
+  _CliInput? fileInput,
+  String? outputPath,
+) async {
+  final String? paserkInput = _trimmedValue(args['paserk']) ??
+      _paserkFromInput(fileInput, const [
+        'paserkLocal',
+        'paserkLocalPw',
+        'paserkLocalWrap',
+        'paserkSeal',
+      ]);
   if (paserkInput == null || paserkInput.isEmpty) {
     throw _CliUsageException('Provide --paserk with a PASERK string.', ['symmetric', 'info']);
   }
@@ -527,7 +587,7 @@ Future<void> _handleSymmetricInfo(ArgResults args, bool pretty) async {
       output['paserkSeal'] = paserk;
     }
 
-    _printJson(output, pretty: pretty);
+    await _printJson(output, pretty: pretty, outputPath: outputPath);
   } finally {
     key?.dispose();
     wrappingKey?.dispose();
@@ -541,7 +601,11 @@ Future<void> _handleSymmetricInfo(ArgResults args, bool pretty) async {
   }
 }
 
-Future<void> _handleSymmetricDerive(ArgResults args, bool pretty) async {
+Future<void> _handleSymmetricDerive(
+  ArgResults args,
+  bool pretty,
+  String? outputPath,
+) async {
   final String? password = _trimmedValue(args['password']);
   if (password == null || password.isEmpty) {
     throw _CliUsageException(
@@ -618,14 +682,18 @@ Future<void> _handleSymmetricDerive(ArgResults args, bool pretty) async {
       output['paserkSeal'] = await key.toPaserkSeal(publicKey: sealKey);
     }
 
-    _printJson(output, pretty: pretty);
+    await _printJson(output, pretty: pretty, outputPath: outputPath);
   } finally {
     key.dispose();
     sealKey?.dispose();
   }
 }
 
-Future<void> _handleSaltGenerate(ArgResults args, bool pretty) async {
+Future<void> _handleSaltGenerate(
+  ArgResults args,
+  bool pretty,
+  String? outputPath,
+) async {
   final String? lengthRaw = _trimmedValue(args['length']);
   LicensifySalt salt;
 
@@ -641,7 +709,85 @@ Future<void> _handleSaltGenerate(ArgResults args, bool pretty) async {
     'salt': salt.asString(),
     'length': salt.length,
   };
-  _printJson(output, pretty: pretty);
+  await _printJson(output, pretty: pretty, outputPath: outputPath);
+}
+
+Future<_CliInput?> _loadInput(
+  String? path,
+  List<String> commandPath,
+) async {
+  if (path == null || path.isEmpty) {
+    return null;
+  }
+
+  final File file = File(path);
+  if (!await file.exists()) {
+    throw _CliUsageException('Input file not found: $path', commandPath);
+  }
+
+  try {
+    final String raw = await file.readAsString();
+    final String trimmed = raw.trim();
+    if (trimmed.isEmpty) {
+      return const _CliInput(content: '');
+    }
+
+    try {
+      final Object? decoded = jsonDecode(raw);
+      if (decoded is Map<String, dynamic>) {
+        return _CliInput(
+          content: trimmed,
+          json: Map<String, Object?>.from(decoded),
+        );
+      }
+    } catch (_) {
+      // Treat as plain text if JSON parsing fails.
+    }
+
+    return _CliInput(content: trimmed);
+  } catch (e) {
+    throw _CliUsageException('Failed to read input file "$path": $e', commandPath);
+  }
+}
+
+class _CliInput {
+  const _CliInput({required this.content, this.json});
+
+  final String content;
+  final Map<String, Object?>? json;
+}
+
+String? _paserkFromInput(_CliInput? input, List<String> preferredKeys) {
+  if (input == null) {
+    return null;
+  }
+
+  final Map<String, Object?>? json = input.json;
+  if (json != null) {
+    for (final String key in preferredKeys) {
+      final Object? value = json[key];
+      if (value is String) {
+        final String trimmed = value.trim();
+        if (trimmed.isNotEmpty) {
+          return trimmed;
+        }
+      }
+    }
+
+    for (final Object? value in json.values) {
+      if (value is String) {
+        final String trimmed = value.trim();
+        if (trimmed.startsWith('k4.')) {
+          return trimmed;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  final String trimmed = input.content.trim();
+  return trimmed.isEmpty ? null : trimmed;
 }
 
 LicensifySymmetricKey _parseSymmetricKey(String paserk, List<String> commandPath) {
@@ -760,11 +906,37 @@ String _detectSymmetricFormat(String paserk) {
   return 'unknown';
 }
 
-void _printJson(Map<String, Object?> data, {required bool pretty}) {
+Future<void> _printJson(
+  Map<String, Object?> data, {
+  required bool pretty,
+  String? outputPath,
+}) async {
   final JsonEncoder encoder = pretty
       ? const JsonEncoder.withIndent('  ')
       : const JsonEncoder();
-  stdout.writeln(encoder.convert(data));
+  final String json = encoder.convert(data);
+  final String payload = '$json\n';
+  if (outputPath == null || outputPath.isEmpty) {
+    stdout.write(payload);
+    return;
+  }
+
+  final File file = File(outputPath);
+  await file.parent.create(recursive: true);
+  await file.writeAsString(payload);
+}
+
+List<String> _commandPathFrom(ArgResults command) {
+  final List<String> path = <String>[];
+  ArgResults? current = command;
+  while (current != null) {
+    final String? name = current.name;
+    if (name != null) {
+      path.add(name);
+    }
+    current = current.command;
+  }
+  return path;
 }
 
 void _printUsage(List<String> commandPath, {String? error}) {

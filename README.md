@@ -59,6 +59,15 @@ licensify --help
 | `salt generate` | Produce base64url salts that satisfy PASERK `k4.local-pw` requirements. |
 
 All commands output JSON (pretty-printed by default, disable with `--no-pretty`).
+Use `-o/--output` to write the JSON response to a file and `-i/--input` to
+reuse PASERK strings (plain text) or previously exported JSON when invoking
+other commands.
+
+```bash
+# Persist generated keys and inspect them later without copy/paste.
+licensify keypair generate -o secrets/signing.json
+licensify keypair info -i secrets/signing.json
+```
 
 ### Example
 

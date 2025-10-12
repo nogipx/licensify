@@ -11,6 +11,9 @@ All notable changes to this project will be documented in this file.
   (`k4.secret*`, `k4.public`) values, deriving and exporting symmetric keys,
   sealing secrets, and producing compliant Argon2 salts. The CLI outputs JSON by
   default and can be installed globally via `dart pub global activate licensify`.
+- **File-based CLI I/O**: Added `-i/--input` for reading PASERK material from
+  files (plain text or prior CLI JSON output) and `-o/--output` for writing the
+  generated JSON payload to disk without manual redirection.
 
 ## [4.0.0] - 2025-09-20
 
