@@ -4,10 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### 🧰 Tooling
-
-- Improved the CLI help system so `-h/--help` works on every command and
-  subcommand (e.g., `licensify symmetric -h`).
+- No changes yet.
 
 ## [4.1.0] - 2025-10-12
 
@@ -21,6 +18,13 @@ All notable changes to this project will be documented in this file.
 - **File-based CLI I/O**: Added `-i/--input` for reading PASERK material from
   files (plain text or prior CLI JSON output) and `-o/--output` for writing the
   generated JSON payload to disk without manual redirection.
+
+### 🧰 Tooling
+
+- Improved the CLI help system so `-h/--help` works on every command and
+  subcommand (e.g., `licensify symmetric -h`).
+- Listing help for `keypair`, `symmetric`, or `salt` now includes their
+  respective subcommands to make discovery easier.
 
 ## [4.0.0] - 2025-09-20
 

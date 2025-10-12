@@ -18,6 +18,27 @@ ArgParser _parserWithHelp() => ArgParser()
     help: 'Show usage information.',
   );
 
+const Map<String, String> _rootCommandDescriptions = <String, String>{
+  'keypair': 'Manage Ed25519 signing key material',
+  'symmetric': 'Manage XChaCha20 encryption keys',
+  'salt': 'Generate Argon2id salts',
+};
+
+const Map<String, String> _keypairCommandDescriptions = <String, String>{
+  'generate': 'Mint a new Ed25519 signing key pair',
+  'info': 'Inspect or convert existing key material',
+};
+
+const Map<String, String> _symmetricCommandDescriptions = <String, String>{
+  'generate': 'Create a new symmetric key with PASERK exports',
+  'info': 'Decode or convert existing symmetric keys',
+  'derive': 'Derive a key from a password and salt',
+};
+
+const Map<String, String> _saltCommandDescriptions = <String, String>{
+  'generate': 'Produce base64url salts for Argon2id',
+};
+
 final ArgParser _keypairGenerateParser = _parserWithHelp()
   ..addOption(
     'password',
@@ -987,6 +1008,30 @@ List<String> _commandPathFrom(ArgResults command) {
   return path;
 }
 
+void _writeCommandTable(
+  Map<String, String> commands, {
+  required String heading,
+}) {
+  if (commands.isEmpty) {
+    return;
+  }
+
+  stderr.writeln(heading);
+  int maxNameLength = 0;
+  for (final String name in commands.keys) {
+    if (name.length > maxNameLength) {
+      maxNameLength = name.length;
+    }
+  }
+
+  for (final MapEntry<String, String> entry in commands.entries) {
+    final String name = entry.key;
+    final String description = entry.value;
+    final String padding = ' ' * (maxNameLength - name.length + 2);
+    stderr.writeln('  $name$padding$description');
+  }
+}
+
 void _printUsage(List<String> commandPath, {String? error}) {
   if (error != null) {
     stderr.writeln('Error: $error');
@@ -998,10 +1043,7 @@ void _printUsage(List<String> commandPath, {String? error}) {
     stderr.writeln('');
     stderr.writeln(_rootParser.usage);
     stderr.writeln('');
-    stderr.writeln('Commands:');
-    stderr.writeln('  keypair     Manage Ed25519 signing key material');
-    stderr.writeln('  symmetric   Manage XChaCha20 encryption keys');
-    stderr.writeln('  salt        Generate Argon2id salts');
+    _writeCommandTable(_rootCommandDescriptions, heading: 'Commands:');
     return;
   }
 
@@ -1011,6 +1053,11 @@ void _printUsage(List<String> commandPath, {String? error}) {
       stderr.writeln('Usage: licensify keypair <subcommand> [arguments]');
       stderr.writeln('');
       stderr.writeln(_keypairParser.usage);
+      stderr.writeln('');
+      _writeCommandTable(
+        _keypairCommandDescriptions,
+        heading: 'Subcommands:',
+      );
       if (commandPath.length > 1) {
         final String sub = commandPath[1];
         final ArgParser? subParser = _keypairParser.commands[sub];
@@ -1024,6 +1071,11 @@ void _printUsage(List<String> commandPath, {String? error}) {
       stderr.writeln('Usage: licensify symmetric <subcommand> [arguments]');
       stderr.writeln('');
       stderr.writeln(_symmetricParser.usage);
+      stderr.writeln('');
+      _writeCommandTable(
+        _symmetricCommandDescriptions,
+        heading: 'Subcommands:',
+      );
       if (commandPath.length > 1) {
         final String sub = commandPath[1];
         final ArgParser? subParser = _symmetricParser.commands[sub];
@@ -1037,6 +1089,11 @@ void _printUsage(List<String> commandPath, {String? error}) {
       stderr.writeln('Usage: licensify salt <subcommand> [arguments]');
       stderr.writeln('');
       stderr.writeln(_saltParser.usage);
+      stderr.writeln('');
+      _writeCommandTable(
+        _saltCommandDescriptions,
+        heading: 'Subcommands:',
+      );
       if (commandPath.length > 1) {
         final String sub = commandPath[1];
         final ArgParser? subParser = _saltParser.commands[sub];

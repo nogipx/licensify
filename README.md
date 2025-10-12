@@ -63,7 +63,24 @@ Use `-o/--output` to write the JSON response to a file and `-i/--input` to
 reuse PASERK strings (plain text) or previously exported JSON when invoking
 other commands. You can append `-h/--help` to any command or subcommand to see
 its dedicated usage, for example `licensify symmetric -h` or
-`licensify symmetric generate -h`.
+`licensify symmetric generate -h`. The command-level help now lists the
+available subcommands so you can quickly discover what each area supports:
+
+```bash
+$ licensify symmetric -h
+Usage: licensify symmetric <subcommand> [arguments]
+
+Global options:
+-h, --help    Show usage information.
+
+Subcommands:
+  generate  Create a new symmetric key with PASERK exports
+  info      Decode or convert existing symmetric keys
+  derive    Derive a key from a password and salt
+```
+
+The same pattern works for `licensify keypair -h` and `licensify salt -h` to
+see their focused command lists.
 
 ```bash
 # Persist generated keys and inspect them later without copy/paste.
