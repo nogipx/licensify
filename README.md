@@ -8,6 +8,7 @@ Licensify is a Dart library for issuing and validating software licenses backed 
 ## Contents
 - [Overview](#overview)
 - [Key capabilities](#key-capabilities)
+- [Command-line interface](#command-line-interface)
 - [Quick start](#quick-start)
 - [Data encryption](#data-encryption)
 - [Key lifecycle requirements](#key-lifecycle-requirements)
@@ -34,6 +35,48 @@ Licensify encapsulates key generation, license issuance, validation, and symmetr
 - Asynchronous API surfaces for IO-bound cryptographic operations.
 - Deterministic exceptions for malformed tokens and unsupported payloads.
 - Memory management helpers to ensure explicit key disposal.
+
+## Command-line interface
+
+The package ships with a dedicated CLI that streamlines key management and PASERK
+conversions without requiring you to write any Dart code. You can run it with
+`dart run bin/licensify.dart ...` inside the repository, or install it globally:
+
+```bash
+dart pub global activate licensify
+licensify --help
+```
+
+### Available commands
+
+| Command | Description |
+| --- | --- |
+| `keypair generate` | Mint a new Ed25519 signing key pair and emit PASERK `k4.secret`, `k4.secret-pw`, `k4.secret-wrap.pie`, and identifiers. |
+| `keypair info` | Inspect existing PASERK material (`k4.secret*`, `k4.public`) and re-export it in other formats. |
+| `symmetric generate` | Create an XChaCha20 encryption key and export `k4.local`, `k4.local-pw`, `k4.local-wrap.pie`, and optional sealed copies. |
+| `symmetric info` | Decode password-protected, wrapped, or sealed symmetric keys and convert them to other PASERK encodings. |
+| `symmetric derive` | Derive an encryption key from a password + salt using Argon2id with configurable parameters. |
+| `salt generate` | Produce base64url salts that satisfy PASERK `k4.local-pw` requirements. |
+
+All commands output JSON (pretty-printed by default, disable with `--no-pretty`).
+
+### Example
+
+```bash
+$ licensify keypair generate --password "correct horse battery staple"
+{
+  "type": "ed25519-keypair",
+  "publicKeyPaserk": "k4.public...",
+  "publicKeyId": "k4.pid...",
+  "paserkSecret": "k4.secret...",
+  "secretId": "k4.sid...",
+  "paserkSecretPw": "k4.secret-pw..."
+}
+```
+
+Use `licensify symmetric info --paserk <value>` to unwrap `k4.local-pw`,
+`k4.local-wrap.pie`, or `k4.seal` payloads by providing the required password
+or companion keys via flags.
 
 ## Quick start
 ### Generate signing keys and create a license

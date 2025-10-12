@@ -21,9 +21,12 @@ dev_dependencies:
   test: ^1.21.0
   lints: ^4.0.0
 
+executables:
+  licensify: licensify
+
 topics:
   - license
-  - digital-signature 
-  - cryptography 
+  - digital-signature
+  - cryptography
   - software-licensing 
   - paseto

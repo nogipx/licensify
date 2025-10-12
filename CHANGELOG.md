@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### ✨ New Features
+
+- **CLI for key management**: Introduced a `licensify` command-line tool with
+  subcommands for generating Ed25519 key pairs, minting and converting PASERK
+  (`k4.secret*`, `k4.public`) values, deriving and exporting symmetric keys,
+  sealing secrets, and producing compliant Argon2 salts. The CLI outputs JSON by
+  default and can be installed globally via `dart pub global activate licensify`.
+
 ## [4.0.0] - 2025-09-20
 
 ### ⚠️ Breaking Changes
