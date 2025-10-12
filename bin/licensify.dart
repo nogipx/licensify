@@ -125,8 +125,7 @@ final ArgParser _symmetricDeriveParser = _parserWithHelp()
   ..addOption(
     'memory-cost',
     defaultsTo: K4LocalPw.defaultMemoryCost.toString(),
-    help:
-        'Argon2 memory cost in kibibytes (must be a positive multiple of 1024).',
+    help: 'Argon2 memory cost in bytes (must be a positive multiple of 1024).',
   )
   ..addOption(
     'time-cost',
