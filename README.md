@@ -61,7 +61,9 @@ licensify --help
 All commands output JSON (pretty-printed by default, disable with `--no-pretty`).
 Use `-o/--output` to write the JSON response to a file and `-i/--input` to
 reuse PASERK strings (plain text) or previously exported JSON when invoking
-other commands.
+other commands. You can append `-h/--help` to any command or subcommand to see
+its dedicated usage, for example `licensify symmetric -h` or
+`licensify symmetric generate -h`.
 
 ```bash
 # Persist generated keys and inspect them later without copy/paste.

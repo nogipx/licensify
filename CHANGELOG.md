@@ -4,7 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-- No unreleased changes yet.
+### 🧰 Tooling
+
+- Improved the CLI help system so `-h/--help` works on every command and
+  subcommand (e.g., `licensify symmetric -h`).
 
 ## [4.1.0] - 2025-10-12
 

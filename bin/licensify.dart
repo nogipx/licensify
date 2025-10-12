@@ -10,7 +10,15 @@ import 'package:args/args.dart';
 import 'package:licensify/licensify.dart';
 import 'package:paseto_dart/paseto_dart.dart';
 
-final ArgParser _keypairGenerateParser = ArgParser()
+ArgParser _parserWithHelp() => ArgParser()
+  ..addFlag(
+    'help',
+    abbr: 'h',
+    negatable: false,
+    help: 'Show usage information.',
+  );
+
+final ArgParser _keypairGenerateParser = _parserWithHelp()
   ..addOption(
     'password',
     help:
@@ -21,7 +29,7 @@ final ArgParser _keypairGenerateParser = ArgParser()
     help: 'Additionally emit k4.secret-wrap.pie using the provided k4.local key.',
   );
 
-final ArgParser _keypairInfoParser = ArgParser()
+final ArgParser _keypairInfoParser = _parserWithHelp()
   ..addOption(
     'paserk',
     help: 'PASERK string to inspect (k4.secret*, k4.public).',
@@ -35,11 +43,11 @@ final ArgParser _keypairInfoParser = ArgParser()
     help: 'Wrapping key (k4.local) required to open k4.secret-wrap.pie inputs.',
   );
 
-final ArgParser _keypairParser = ArgParser()
+final ArgParser _keypairParser = _parserWithHelp()
   ..addCommand('generate', _keypairGenerateParser)
   ..addCommand('info', _keypairInfoParser);
 
-final ArgParser _symmetricGenerateParser = ArgParser()
+final ArgParser _symmetricGenerateParser = _parserWithHelp()
   ..addOption(
     'password',
     help:
@@ -54,7 +62,7 @@ final ArgParser _symmetricGenerateParser = ArgParser()
     help: 'Additionally emit k4.seal using the provided k4.public key.',
   );
 
-final ArgParser _symmetricInfoParser = ArgParser()
+final ArgParser _symmetricInfoParser = _parserWithHelp()
   ..addOption(
     'paserk',
     help:
@@ -82,7 +90,7 @@ final ArgParser _symmetricInfoParser = ArgParser()
         'Wrapping key (k4.local) for the key pair if --keypair is k4.secret-wrap.pie.',
   );
 
-final ArgParser _symmetricDeriveParser = ArgParser()
+final ArgParser _symmetricDeriveParser = _parserWithHelp()
   ..addOption(
     'password',
     help: 'Password to derive the symmetric key from.',
@@ -113,27 +121,22 @@ final ArgParser _symmetricDeriveParser = ArgParser()
     help: 'Additionally emit k4.seal using the provided k4.public key.',
   );
 
-final ArgParser _symmetricParser = ArgParser()
+final ArgParser _symmetricParser = _parserWithHelp()
   ..addCommand('generate', _symmetricGenerateParser)
   ..addCommand('info', _symmetricInfoParser)
   ..addCommand('derive', _symmetricDeriveParser);
 
-final ArgParser _saltGenerateParser = ArgParser()
+final ArgParser _saltGenerateParser = _parserWithHelp()
   ..addOption(
     'length',
     help:
         'Length of the generated salt in bytes (defaults to PASERK minimum).',
   );
 
-final ArgParser _saltParser = ArgParser()..addCommand('generate', _saltGenerateParser);
+final ArgParser _saltParser = _parserWithHelp()
+  ..addCommand('generate', _saltGenerateParser);
 
-final ArgParser _rootParser = ArgParser()
-  ..addFlag(
-    'help',
-    abbr: 'h',
-    negatable: false,
-    help: 'Show usage information.',
-  )
+final ArgParser _rootParser = _parserWithHelp()
   ..addFlag(
     'pretty',
     defaultsTo: true,
@@ -212,6 +215,11 @@ Future<void> _handleKeypair(
   _CliInput? fileInput,
   String? outputPath,
 ) async {
+  if (command['help'] == true) {
+    _printUsage(['keypair']);
+    return;
+  }
+
   final ArgResults? subcommand = command.command;
   if (subcommand == null) {
     throw _CliUsageException('Missing keypair subcommand.', ['keypair']);
@@ -238,6 +246,11 @@ Future<void> _handleSymmetric(
   _CliInput? fileInput,
   String? outputPath,
 ) async {
+  if (command['help'] == true) {
+    _printUsage(['symmetric']);
+    return;
+  }
+
   final ArgResults? subcommand = command.command;
   if (subcommand == null) {
     throw _CliUsageException('Missing symmetric subcommand.', ['symmetric']);
@@ -266,6 +279,11 @@ Future<void> _handleSalt(
   bool pretty,
   String? outputPath,
 ) async {
+  if (command['help'] == true) {
+    _printUsage(['salt']);
+    return;
+  }
+
   final ArgResults? subcommand = command.command;
   if (subcommand == null) {
     throw _CliUsageException('Missing salt subcommand.', ['salt']);
@@ -288,6 +306,11 @@ Future<void> _handleKeypairGenerate(
   bool pretty,
   String? outputPath,
 ) async {
+  if (args['help'] == true) {
+    _printUsage(['keypair', 'generate']);
+    return;
+  }
+
   final String? password = _trimmedValue(args['password']);
   final String? wrapPaserk = _trimmedValue(args['wrap']);
 
@@ -333,6 +356,11 @@ Future<void> _handleKeypairInfo(
   _CliInput? fileInput,
   String? outputPath,
 ) async {
+  if (args['help'] == true) {
+    _printUsage(['keypair', 'info']);
+    return;
+  }
+
   final String? paserkInput = _trimmedValue(args['paserk']) ??
       _paserkFromInput(fileInput, const [
         'paserkSecret',
@@ -438,6 +466,11 @@ Future<void> _handleSymmetricGenerate(
   bool pretty,
   String? outputPath,
 ) async {
+  if (args['help'] == true) {
+    _printUsage(['symmetric', 'generate']);
+    return;
+  }
+
   final String? password = _trimmedValue(args['password']);
   final String? wrapPaserk = _trimmedValue(args['wrap']);
   final String? sealWith = _trimmedValue(args['seal-with']);
@@ -488,6 +521,11 @@ Future<void> _handleSymmetricInfo(
   _CliInput? fileInput,
   String? outputPath,
 ) async {
+  if (args['help'] == true) {
+    _printUsage(['symmetric', 'info']);
+    return;
+  }
+
   final String? paserkInput = _trimmedValue(args['paserk']) ??
       _paserkFromInput(fileInput, const [
         'paserkLocal',
@@ -606,6 +644,11 @@ Future<void> _handleSymmetricDerive(
   bool pretty,
   String? outputPath,
 ) async {
+  if (args['help'] == true) {
+    _printUsage(['symmetric', 'derive']);
+    return;
+  }
+
   final String? password = _trimmedValue(args['password']);
   if (password == null || password.isEmpty) {
     throw _CliUsageException(
@@ -694,6 +737,11 @@ Future<void> _handleSaltGenerate(
   bool pretty,
   String? outputPath,
 ) async {
+  if (args['help'] == true) {
+    _printUsage(['salt', 'generate']);
+    return;
+  }
+
   final String? lengthRaw = _trimmedValue(args['length']);
   LicensifySalt salt;
 
