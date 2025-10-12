@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+- No unreleased changes yet.
+
+## [4.1.0] - 2025-10-12
+
 ### ✨ New Features
 
 - **CLI for key management**: Introduced a `licensify` command-line tool with
