@@ -89,7 +89,11 @@ final class LicensifySymmetricKey extends LicensifyKey {
     }
 
     final algorithm = Argon2id(
-      memory: memoryCost,
+      // Argon2id expects the memory parameter in kibibytes, while PASERK
+      // records it in raw bytes. Convert to maintain compatibility with
+      // `K4LocalPw.wrap`/`unwrap` so derived keys match wrapped outputs and
+      // avoid oversized allocations.
+      memory: memoryCost ~/ 1024,
       iterations: timeCost,
       parallelism: parallelism,
       hashLength: K4LocalKey.keyLength,

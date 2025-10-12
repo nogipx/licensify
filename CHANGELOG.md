@@ -28,9 +28,10 @@ All notable changes to this project will be documented in this file.
 - Password-wrapped outputs now surface the Argon2 salt (`passwordSalt`) and
   cost parameters so `--password` workflows automatically capture everything
   required for future recovery.
-- Fixed `licensify symmetric derive` so it honors PASERK Argon2 memory-cost
-  values, ensuring derived keys match previously wrapped outputs when restored
-  with the recorded password + salt.
+- Fixed `licensify symmetric derive` to convert PASERK Argon2 memory-cost
+  values from bytes to kibibytes before invoking the underlying implementation,
+  preserving compatibility with wrapped outputs and preventing Argon2 crashes
+  when deriving keys from passwords.
 
 ## [4.0.0] - 2025-09-20
 
