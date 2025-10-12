@@ -25,6 +25,9 @@ All notable changes to this project will be documented in this file.
   subcommand (e.g., `licensify symmetric -h`).
 - Listing help for `keypair`, `symmetric`, or `salt` now includes their
   respective subcommands to make discovery easier.
+- Password-wrapped outputs now surface the Argon2 salt (`passwordSalt`) and
+  cost parameters so `--password` workflows automatically capture everything
+  required for future recovery.
 
 ## [4.0.0] - 2025-09-20
 

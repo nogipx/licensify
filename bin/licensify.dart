@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:args/args.dart';
 import 'package:licensify/licensify.dart';
@@ -352,8 +353,16 @@ Future<void> _handleKeypairGenerate(
     };
 
     if (password != null && password.isNotEmpty) {
-      output['paserkSecretPw'] = await pair.toPaserkSecretPassword(
+      final String paserkSecretPw = await pair.toPaserkSecretPassword(
         password: password,
+      );
+      output['paserkSecretPw'] = paserkSecretPw;
+      _applyPasswordMetadata(
+        output,
+        _parsePaserkPasswordMetadata(
+          paserkSecretPw,
+          ['keypair', 'generate'],
+        ),
       );
     }
 
@@ -398,14 +407,15 @@ Future<void> _handleKeypairInfo(
   final String? wrapPaserk = _trimmedValue(args['wrap']);
 
   if (paserk.startsWith('k4.public')) {
-    final LicensifyPublicKey publicKey = _parsePublicKey(paserk, ['keypair', 'info']);
+    final LicensifyPublicKey publicKey =
+        _parsePublicKey(paserk, ['keypair', 'info']);
     try {
       final Map<String, Object?> output = {
         'type': 'ed25519-public-key',
         'sourceFormat': 'k4.public',
-      'publicKeyPaserk': publicKey.toPaserk(),
-      'publicKeyId': publicKey.toPaserkIdentifier(),
-    };
+        'publicKeyPaserk': publicKey.toPaserk(),
+        'publicKeyId': publicKey.toPaserkIdentifier(),
+      };
       await _printJson(output, pretty: pretty, outputPath: outputPath);
     } finally {
       publicKey.dispose();
@@ -459,11 +469,23 @@ Future<void> _handleKeypairInfo(
     };
 
     if (password != null && password.isNotEmpty) {
-      output['paserkSecretPw'] = await pair.toPaserkSecretPassword(
+      final String paserkSecretPw = await pair.toPaserkSecretPassword(
         password: password,
+      );
+      output['paserkSecretPw'] = paserkSecretPw;
+      _applyPasswordMetadata(
+        output,
+        _parsePaserkPasswordMetadata(
+          paserkSecretPw,
+          ['keypair', 'info'],
+        ),
       );
     } else if (paserk.startsWith('k4.secret-pw')) {
       output['paserkSecretPw'] = paserk;
+      _applyPasswordMetadata(
+        output,
+        _parsePaserkPasswordMetadata(paserk, ['keypair', 'info']),
+      );
     }
 
     if (wrappingKey != null) {
@@ -517,7 +539,16 @@ Future<void> _handleSymmetricGenerate(
     };
 
     if (password != null && password.isNotEmpty) {
-      output['paserkLocalPw'] = await key.toPaserkPassword(password: password);
+      final String paserkLocalPw =
+          await key.toPaserkPassword(password: password);
+      output['paserkLocalPw'] = paserkLocalPw;
+      _applyPasswordMetadata(
+        output,
+        _parsePaserkPasswordMetadata(
+          paserkLocalPw,
+          ['symmetric', 'generate'],
+        ),
+      );
     }
 
     if (wrappingKey != null) {
@@ -629,9 +660,22 @@ Future<void> _handleSymmetricInfo(
     };
 
     if (password != null && password.isNotEmpty) {
-      output['paserkLocalPw'] = await key.toPaserkPassword(password: password);
+      final String paserkLocalPw =
+          await key.toPaserkPassword(password: password);
+      output['paserkLocalPw'] = paserkLocalPw;
+      _applyPasswordMetadata(
+        output,
+        _parsePaserkPasswordMetadata(
+          paserkLocalPw,
+          ['symmetric', 'info'],
+        ),
+      );
     } else if (paserk.startsWith('k4.local-pw')) {
       output['paserkLocalPw'] = paserk;
+      _applyPasswordMetadata(
+        output,
+        _parsePaserkPasswordMetadata(paserk, ['symmetric', 'info']),
+      );
     }
 
     if (wrappingKey != null) {
@@ -741,6 +785,15 @@ Future<void> _handleSymmetricDerive(
       'localId': key.toPaserkIdentifier(),
       'paserkLocalPw': await key.toPaserkPassword(password: password),
     };
+
+    _applyPasswordMetadata(
+      output,
+      _parsePaserkPasswordMetadata(
+        output['paserkLocalPw']! as String,
+        ['symmetric', 'derive'],
+      ),
+      preferTopLevelSalt: false,
+    );
 
     if (sealKey != null) {
       output['paserkSeal'] = await key.toPaserkSeal(publicKey: sealKey);
@@ -957,6 +1010,133 @@ String _detectKeyPairFormat(String paserk) {
     return 'k4.public';
   }
   return 'unknown';
+}
+
+void _applyPasswordMetadata(
+  Map<String, Object?> output,
+  _PaserkPasswordMetadata? metadata, {
+  bool preferTopLevelSalt = true,
+}) {
+  if (metadata == null) {
+    return;
+  }
+
+  output['passwordSalt'] = metadata.salt;
+  output['passwordMemoryCost'] = metadata.memoryCost;
+  output['passwordTimeCost'] = metadata.timeCost;
+  output['passwordParallelism'] = metadata.parallelism;
+  if (preferTopLevelSalt) {
+    output['salt'] = metadata.salt;
+  } else {
+    output.putIfAbsent('salt', () => metadata.salt);
+  }
+}
+
+_PaserkPasswordMetadata? _parsePaserkPasswordMetadata(
+  String paserk,
+  List<String> commandPath,
+) {
+  const int parameterSectionLength = 8 + 4 + 4; // memory + time + parallelism
+
+  final _PaserkPasswordLayout? layout = _detectPasswordLayout(paserk);
+  if (layout == null) {
+    return null;
+  }
+
+  final String payload = paserk.substring(layout.prefix.length);
+  final String padded = payload.padRight((payload.length + 3) ~/ 4 * 4, '=');
+
+  final Uint8List decoded;
+  try {
+    decoded = Uint8List.fromList(base64Url.decode(padded));
+  } on FormatException catch (e) {
+    throw _CliUsageException(
+      'Failed to decode password-protected PASERK payload: ${e.message}',
+      commandPath,
+    );
+  }
+
+  if (decoded.length < layout.saltLength + parameterSectionLength) {
+    throw _CliUsageException(
+      'Password-protected PASERK payload is truncated.',
+      commandPath,
+    );
+  }
+
+  var offset = 0;
+  final Uint8List saltBytes =
+      decoded.sublist(offset, offset + layout.saltLength);
+  offset += layout.saltLength;
+  final int memoryCost = _readUint64(decoded, offset);
+  offset += 8;
+  final int timeCost = _readUint32(decoded, offset);
+  offset += 4;
+  final int parallelism = _readUint32(decoded, offset);
+
+  final LicensifySalt salt = LicensifySalt.fromBytes(bytes: saltBytes);
+
+  return _PaserkPasswordMetadata(
+    salt: salt.asString(),
+    memoryCost: memoryCost,
+    timeCost: timeCost,
+    parallelism: parallelism,
+  );
+}
+
+_PaserkPasswordLayout? _detectPasswordLayout(String paserk) {
+  if (paserk.startsWith(PaserkKey.k4LocalPwPrefix)) {
+    return const _PaserkPasswordLayout(
+      prefix: PaserkKey.k4LocalPwPrefix,
+      saltLength: K4LocalPw.saltLength,
+    );
+  }
+  if (paserk.startsWith(PaserkKey.k4SecretPwPrefix)) {
+    return const _PaserkPasswordLayout(
+      prefix: PaserkKey.k4SecretPwPrefix,
+      saltLength: K4SecretPw.saltLength,
+    );
+  }
+  return null;
+}
+
+int _readUint32(Uint8List data, int offset) {
+  int value = 0;
+  for (var i = 0; i < 4; i++) {
+    value = (value << 8) | data[offset + i];
+  }
+  return value;
+}
+
+int _readUint64(Uint8List data, int offset) {
+  int value = 0;
+  for (var i = 0; i < 8; i++) {
+    value = (value << 8) | data[offset + i];
+  }
+  return value;
+}
+
+class _PaserkPasswordMetadata {
+  const _PaserkPasswordMetadata({
+    required this.salt,
+    required this.memoryCost,
+    required this.timeCost,
+    required this.parallelism,
+  });
+
+  final String salt;
+  final int memoryCost;
+  final int timeCost;
+  final int parallelism;
+}
+
+class _PaserkPasswordLayout {
+  const _PaserkPasswordLayout({
+    required this.prefix,
+    required this.saltLength,
+  });
+
+  final String prefix;
+  final int saltLength;
 }
 
 String _detectSymmetricFormat(String paserk) {
