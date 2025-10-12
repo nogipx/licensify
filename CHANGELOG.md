@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+- No changes yet.
+
+## [4.1.0] - 2025-10-12
+
+### ✨ New Features
+
+- **CLI for key management**: Introduced a `licensify` command-line tool with
+  subcommands for generating Ed25519 key pairs, minting and converting PASERK
+  (`k4.secret*`, `k4.public`) values, deriving and exporting symmetric keys,
+  sealing secrets, and producing compliant Argon2 salts. The CLI outputs JSON by
+  default and can be installed globally via `dart pub global activate licensify`.
+- **File-based CLI I/O**: Added `-i/--input` for reading PASERK material from
+  files (plain text or prior CLI JSON output) and `-o/--output` for writing the
+  generated JSON payload to disk without manual redirection.
+
+### 🧰 Tooling
+
+- Improved the CLI help system so `-h/--help` works on every command and
+  subcommand (e.g., `licensify symmetric -h`).
+- Listing help for `keypair`, `symmetric`, or `salt` now includes their
+  respective subcommands to make discovery easier.
+- Password-wrapped outputs now surface the Argon2 salt and cost parameters
+  under `passwordWrap*` keys, while derivation commands label their explicit
+  salt and Argon2 inputs with `derive*` fields so JSON exports are easier to
+  interpret and persist.
+- Fixed `licensify symmetric derive` to convert PASERK Argon2 memory-cost
+  values from bytes to kibibytes before invoking the underlying implementation,
+  preserving compatibility with wrapped outputs and preventing Argon2 crashes
+  when deriving keys from passwords.
+
 ## [4.0.0] - 2025-09-20
 
 ### ⚠️ Breaking Changes

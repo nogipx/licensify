@@ -72,6 +72,7 @@ final class LicensifySymmetricKey extends LicensifyKey {
   static Future<LicensifySymmetricKey> fromPassword({
     required String password,
     required LicensifySalt salt,
+    /// Memory cost expressed in bytes to mirror the PASERK `m` parameter.
     int memoryCost = K4LocalPw.defaultMemoryCost,
     int timeCost = K4LocalPw.defaultTimeCost,
     int parallelism = K4LocalPw.defaultParallelism,
@@ -88,6 +89,10 @@ final class LicensifySymmetricKey extends LicensifyKey {
     }
 
     final algorithm = Argon2id(
+      // Argon2id expects the memory parameter in kibibytes, while PASERK
+      // records it in raw bytes. Convert to maintain compatibility with
+      // `K4LocalPw.wrap`/`unwrap` so derived keys match wrapped outputs and
+      // avoid oversized allocations.
       memory: memoryCost ~/ 1024,
       iterations: timeCost,
       parallelism: parallelism,

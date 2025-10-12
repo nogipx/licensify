@@ -8,6 +8,7 @@ Licensify is a Dart library for issuing and validating software licenses backed 
 ## Contents
 - [Overview](#overview)
 - [Key capabilities](#key-capabilities)
+- [Command-line interface](#command-line-interface)
 - [Quick start](#quick-start)
 - [Data encryption](#data-encryption)
 - [Key lifecycle requirements](#key-lifecycle-requirements)
@@ -34,6 +35,89 @@ Licensify encapsulates key generation, license issuance, validation, and symmetr
 - Asynchronous API surfaces for IO-bound cryptographic operations.
 - Deterministic exceptions for malformed tokens and unsupported payloads.
 - Memory management helpers to ensure explicit key disposal.
+
+## Command-line interface
+
+The package ships with a dedicated CLI that streamlines key management and PASERK
+conversions without requiring you to write any Dart code. You can run it with
+`dart run bin/licensify.dart ...` inside the repository, or install it globally:
+
+```bash
+dart pub global activate licensify
+licensify --help
+```
+
+### Available commands
+
+| Command | Description |
+| --- | --- |
+| `keypair generate` | Mint a new Ed25519 signing key pair and emit PASERK `k4.secret`, `k4.secret-pw`, `k4.secret-wrap.pie`, and identifiers. |
+| `keypair info` | Inspect existing PASERK material (`k4.secret*`, `k4.public`) and re-export it in other formats. |
+| `symmetric generate` | Create an XChaCha20 encryption key and export `k4.local`, `k4.local-pw`, `k4.local-wrap.pie`, and optional sealed copies. |
+| `symmetric info` | Decode password-protected, wrapped, or sealed symmetric keys and convert them to other PASERK encodings. |
+| `symmetric derive` | Derive an encryption key from a password + salt using Argon2id with configurable parameters. |
+| `salt generate` | Produce base64url salts that satisfy PASERK `k4.local-pw` requirements. |
+
+All commands output JSON (pretty-printed by default, disable with `--no-pretty`).
+Use `-o/--output` to write the JSON response to a file and `-i/--input` to
+reuse PASERK strings (plain text) or previously exported JSON when invoking
+other commands. You can append `-h/--help` to any command or subcommand to see
+its dedicated usage, for example `licensify symmetric -h` or
+`licensify symmetric generate -h`. The command-level help now lists the
+available subcommands so you can quickly discover what each area supports:
+
+```bash
+$ licensify symmetric -h
+Usage: licensify symmetric <subcommand> [arguments]
+
+Global options:
+-h, --help    Show usage information.
+
+Subcommands:
+  generate  Create a new symmetric key with PASERK exports
+  info      Decode or convert existing symmetric keys
+  derive    Derive a key from a password and salt
+```
+
+The same pattern works for `licensify keypair -h` and `licensify salt -h` to
+see their focused command lists.
+
+```bash
+# Persist generated keys and inspect them later without copy/paste.
+licensify keypair generate -o secrets/signing.json
+licensify keypair info -i secrets/signing.json
+```
+
+### Example
+
+```bash
+$ licensify keypair generate --password "correct horse battery staple"
+{
+  "type": "ed25519-keypair",
+  "publicKeyPaserk": "k4.public...",
+  "publicKeyId": "k4.pid...",
+  "secretKeyPaserk": "k4.secret...",
+  "secretKeyId": "k4.sid...",
+  "passwordWrappedSecretKey": "k4.secret-pw...",
+  "passwordWrapSalt": "base64url-salt...",
+  "passwordWrapMemoryCost": 67108864,
+  "passwordWrapTimeCost": 3,
+  "passwordWrapParallelism": 1
+}
+```
+
+Whenever you request a password-protected export (`--password`), the CLI also
+records the Argon2 salt and cost parameters under the `passwordWrap*` keys.
+Persist these values alongside the PASERK string so the key can be restored
+later with `licensify symmetric derive` or the equivalent library helpers. When
+deriving symmetric material, the CLI also returns `derive*` keys that describe
+the salt and cost settings you provided explicitly, while the
+`passwordWrap*` keys mirror the values encoded inside the emitted `k4.*-pw`
+string.
+
+Use `licensify symmetric info --paserk <value>` to unwrap `k4.local-pw`,
+`k4.local-wrap.pie`, or `k4.seal` payloads by providing the required password
+or companion keys via flags.
 
 ## Quick start
 ### Generate signing keys and create a license
