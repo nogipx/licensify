@@ -2,9 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [4.2.0] - 2025-10-13
 
-- No changes yet.
+- Add NanoID generator
 
 ## [4.1.0] - 2025-10-12
 
