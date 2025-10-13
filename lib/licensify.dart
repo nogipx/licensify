@@ -4,6 +4,7 @@
 
 import 'dart:convert' show utf8, base64, jsonDecode, jsonEncode, base64Url;
 import 'dart:math' show Random;
+import 'dart:math' as math show ln2, log;
 import 'dart:typed_data' show Uint8List;
 
 import 'package:paseto_dart/paseto_dart.dart';
@@ -18,6 +19,7 @@ part 'src/crypto/keys/licensify_symmetric_key.dart';
 part 'src/crypto/license_generator.dart';
 part 'src/crypto/license_validator.dart';
 part 'src/crypto/licensify_symmetric_crypto.dart';
+part 'src/crypto/nanoid.dart';
 part 'src/crypto/paseto_v4.dart';
 part 'src/license/license.dart';
 part 'src/license/license_exception.dart';
