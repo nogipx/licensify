@@ -207,19 +207,17 @@ Future<void> dataEncryptionExample() async {
   // 4. Шифрование на публичный ключ с использованием `k4.seal`
   final recipientKeys = await Licensify.generateSigningKeys();
   try {
-    final sealedPayload = await Licensify.encryptDataForPublicKey(
+    final asymmetricToken = await Licensify.encryptDataForPublicKey(
       data: sensitiveData,
       publicKey: recipientKeys.publicKey,
       footer: 'sealed_backup=v1',
     );
 
     print('✅ Данные зашифрованы на публичный ключ получателя');
-    print('   Sealed key: ${sealedPayload.sealedKey.substring(0, 40)}...');
-    print(
-        '   Token preview: ${sealedPayload.encryptedToken.substring(0, 40)}...');
+    print('   Token preview: ${asymmetricToken.substring(0, 50)}...');
 
     final recovered = await Licensify.decryptDataForKeyPair(
-      payload: sealedPayload,
+      encryptedToken: asymmetricToken,
       keyPair: recipientKeys,
     );
 

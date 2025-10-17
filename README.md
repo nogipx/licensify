@@ -251,7 +251,7 @@ Future<Map<String, dynamic>> encryptForRecipient() async {
   final keyPair = await Licensify.generateSigningKeys();
 
   try {
-    final payload = await Licensify.encryptDataForPublicKey(
+    final token = await Licensify.encryptDataForPublicKey(
       data: const {
         'backup': 'delta',
         'issued_at': '2025-10-18T12:00:00Z',
@@ -261,7 +261,7 @@ Future<Map<String, dynamic>> encryptForRecipient() async {
     );
 
     final recovered = await Licensify.decryptDataForKeyPair(
-      payload: payload,
+      encryptedToken: token,
       keyPair: keyPair,
     );
 
@@ -272,6 +272,10 @@ Future<Map<String, dynamic>> encryptForRecipient() async {
   }
 }
 ```
+
+> `encryptDataForPublicKey` сохраняет одноразовый `k4.seal` в footer токена, так
+> что для доставки достаточно передать строку `v4.local.*`. При расшифровке
+> исходный footer возвращается в поле `_footer` полезной нагрузки.
 
 ## Key lifecycle requirements
 Every `LicensifyPrivateKey`, `LicensifyPublicKey`, and `LicensifySymmetricKey` holds sensitive material in memory. Keys **must** be disposed explicitly with `.dispose()` once an operation completes. Failing to dispose keys leaves confidential bytes resident in memory until garbage collection and violates the library's security model.
@@ -325,8 +329,8 @@ static Future<LicenseValidationResult> validateLicenseWithKeyBytes({...});
 // Data encryption
 static Future<String> encryptData({required Map<String, dynamic> data, required LicensifySymmetricKey encryptionKey});
 static Future<Map<String, dynamic>> decryptData({required String encryptedToken, required LicensifySymmetricKey encryptionKey});
-static Future<LicensifyAsymmetricEncryptedPayload> encryptDataForPublicKey({required Map<String, dynamic> data, required LicensifyPublicKey publicKey});
-static Future<Map<String, dynamic>> decryptDataForKeyPair({required LicensifyAsymmetricEncryptedPayload payload, required LicensifyKeyPair keyPair});
+static Future<String> encryptDataForPublicKey({required Map<String, dynamic> data, required LicensifyPublicKey publicKey});
+static Future<Map<String, dynamic>> decryptDataForKeyPair({required String encryptedToken, required LicensifyKeyPair keyPair});
 ```
 
 Refer to the inline API documentation for parameter details and advanced usage notes.

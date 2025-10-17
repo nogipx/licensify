@@ -4,84 +4,13 @@
 
 part of 'package:licensify/licensify.dart';
 
-/// Encapsulates the result of encrypting data for a recipient's public key.
-///
-/// The encrypted payload combines a sealed symmetric key (`k4.seal`) with the
-/// actual PASETO `v4.local` token produced using that symmetric key. Consumers
-/// can persist the entire object as JSON and later restore it via
-/// [LicensifyAsymmetricEncryptedPayload.fromJson] before calling
-/// [Licensify.decryptDataForKeyPair].
-final class LicensifyAsymmetricEncryptedPayload {
-  /// The encrypted PASETO `v4.local` token that contains the ciphertext.
-  final String encryptedToken;
-
-  /// PASERK `k4.seal` string carrying the symmetric key encrypted for the
-  /// recipient's public key.
-  final String sealedKey;
-
-  /// Optional footer that was supplied during encryption. It remains stored in
-  /// plaintext inside the PASETO token but is surfaced here for convenience
-  /// when serialising the payload alongside metadata.
-  final String? footer;
-
-  const LicensifyAsymmetricEncryptedPayload({
-    required this.encryptedToken,
-    required this.sealedKey,
-    this.footer,
-  });
-
-  /// Serialises the payload into a JSON-friendly structure.
-  Map<String, dynamic> toJson() {
-    return {
-      'encryptedToken': encryptedToken,
-      'sealedKey': sealedKey,
-      if (footer != null) 'footer': footer,
-    };
-  }
-
-  /// Restores a payload from a JSON map.
-  factory LicensifyAsymmetricEncryptedPayload.fromJson(
-    Map<String, dynamic> json,
-  ) {
-    final encryptedToken = json['encryptedToken'];
-    final sealedKey = json['sealedKey'];
-    final footer = json['footer'];
-
-    if (encryptedToken is! String || encryptedToken.isEmpty) {
-      throw ArgumentError(
-        'encryptedToken must be a non-empty string in the JSON payload',
-      );
-    }
-    if (sealedKey is! String || sealedKey.isEmpty) {
-      throw ArgumentError(
-        'sealedKey must be a non-empty string in the JSON payload',
-      );
-    }
-    if (footer != null && footer is! String) {
-      throw ArgumentError('footer must be a string when provided');
-    }
-
-    return LicensifyAsymmetricEncryptedPayload(
-      encryptedToken: encryptedToken,
-      sealedKey: sealedKey,
-      footer: footer as String?,
-    );
-  }
-
-  @override
-  String toString() {
-    final previewToken =
-        encryptedToken.length > 16 ? '${encryptedToken.substring(0, 16)}…' : encryptedToken;
-    final previewSeal =
-        sealedKey.length > 16 ? '${sealedKey.substring(0, 16)}…' : sealedKey;
-    return 'LicensifyAsymmetricEncryptedPayload(token: $previewToken, sealedKey: $previewSeal)';
-  }
-}
-
 /// Handles asymmetric encryption flows built on top of PASERK `k4.seal`.
 abstract final class _LicensifyAsymmetricCrypto {
+  static const _footerSealedKeyField = 'sealedKey';
+  static const _footerUserFooterField = 'footer';
+
   /// Encrypts [data] for the holder of [publicKey].
-  static Future<LicensifyAsymmetricEncryptedPayload> encrypt({
+  static Future<String> encrypt({
     required Map<String, dynamic> data,
     required LicensifyPublicKey publicKey,
     String? footer,
@@ -90,18 +19,16 @@ abstract final class _LicensifyAsymmetricCrypto {
     final symmetricKey = LicensifyKey.generateLocalKey();
     try {
       final crypto = _LicensifySymmetricCrypto(symmetricKey: symmetricKey);
+      final sealedKey = await symmetricKey.toPaserkSeal(publicKey: publicKey);
       final token = await crypto.encrypt(
         data,
-        footer: footer,
+        footer: _encodeFooter(
+          sealedKey: sealedKey,
+          userFooter: footer,
+        ),
         implicitAssertion: implicitAssertion,
       );
-
-      final sealedKey = await symmetricKey.toPaserkSeal(publicKey: publicKey);
-      return LicensifyAsymmetricEncryptedPayload(
-        encryptedToken: token,
-        sealedKey: sealedKey,
-        footer: footer,
-      );
+      return token;
     } catch (e) {
       throw Exception('Failed to encrypt data for the provided public key: $e');
     } finally {
@@ -109,28 +36,80 @@ abstract final class _LicensifyAsymmetricCrypto {
     }
   }
 
-  /// Decrypts a [payload] using the supplied [keyPair].
+  /// Decrypts an [encryptedToken] using the supplied [keyPair].
   static Future<Map<String, dynamic>> decrypt({
-    required LicensifyAsymmetricEncryptedPayload payload,
+    required String encryptedToken,
     required LicensifyKeyPair keyPair,
     String? implicitAssertion,
   }) async {
     LicensifySymmetricKey? symmetricKey;
     try {
+      final footerInfo = await _extractFooter(encryptedToken);
       symmetricKey = await LicensifySymmetricKey.fromPaserkSeal(
-        paserk: payload.sealedKey,
+        paserk: footerInfo.$1,
         keyPair: keyPair,
       );
 
       final crypto = _LicensifySymmetricCrypto(symmetricKey: symmetricKey);
-      return await crypto.decrypt(
-        payload.encryptedToken,
+      final decrypted = await crypto.decrypt(
+        encryptedToken,
         implicitAssertion: implicitAssertion,
       );
+      if (footerInfo.$2 != null) {
+        decrypted['_footer'] = footerInfo.$2;
+      } else {
+        decrypted.remove('_footer');
+      }
+      return decrypted;
     } catch (e) {
       throw Exception('Failed to decrypt data with the supplied key pair: $e');
     } finally {
       symmetricKey?.dispose();
+    }
+  }
+
+  static String _encodeFooter({
+    required String sealedKey,
+    String? userFooter,
+  }) {
+    final footer = <String, dynamic>{
+      _footerSealedKeyField: sealedKey,
+      if (userFooter != null) _footerUserFooterField: userFooter,
+    };
+    return jsonEncode(footer);
+  }
+
+  static Future<(String, String?)> _extractFooter(String encryptedToken) async {
+    try {
+      final token = await Token.fromString(encryptedToken);
+      if (token.header != LocalV4.header) {
+        throw Exception('Token is not v4.local format');
+      }
+
+      final footerBytes = token.footer;
+      if (footerBytes == null) {
+        throw Exception('Encrypted token footer is missing the sealed key');
+      }
+
+      final footerString = utf8.decode(footerBytes);
+      final decoded = jsonDecode(footerString);
+      if (decoded is! Map) {
+        throw Exception('Encrypted token footer must decode to a JSON object');
+      }
+
+      final sealedKey = decoded[_footerSealedKeyField];
+      if (sealedKey is! String || sealedKey.isEmpty) {
+        throw Exception('Encrypted token footer is missing the sealedKey');
+      }
+
+      final userFooter = decoded[_footerUserFooterField];
+      if (userFooter != null && userFooter is! String) {
+        throw Exception('Encrypted token footer value must be a string when set');
+      }
+
+      return (sealedKey, userFooter as String?);
+    } catch (e) {
+      throw Exception('Failed to parse encrypted token footer: $e');
     }
   }
 }

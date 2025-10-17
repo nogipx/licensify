@@ -10,8 +10,8 @@ All notable changes to this project will be documented in this file.
   `Licensify.decryptDataForKeyPair` to wrap encrypted payloads with PASERK
   `k4.seal`, enabling delivery of secrets to recipients using only their public
   keys.
-- **Payload container**: Introduced `LicensifyAsymmetricEncryptedPayload` for
-  serialising sealed payloads and simplifying transports.
+- **Sealed-key footer**: Store the PASERK `k4.seal` inside the token footer so
+  asymmetric workflows can ship a single PASETO string without extra wrappers.
 
 ### 📚 Documentation
 

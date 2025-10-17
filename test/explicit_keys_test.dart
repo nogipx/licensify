@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:test/test.dart';
 import 'package:licensify/licensify.dart';
 
@@ -71,17 +73,24 @@ void main() {
       };
 
       try {
-        final payload = await Licensify.encryptDataForPublicKey(
+        final token = await Licensify.encryptDataForPublicKey(
           data: data,
           publicKey: keyPair.publicKey,
           footer: 'sealed=v1',
         );
 
-        expect(payload.encryptedToken, startsWith('v4.local.'));
-        expect(payload.sealedKey, startsWith('k4.seal.'));
+        expect(token, startsWith('v4.local.'));
+        final segments = token.split('.');
+        expect(segments.length, 4);
+        final footerSegment = segments.last;
+        final footerJson = utf8.decode(base64Url.decode(footerSegment));
+        final footer = jsonDecode(footerJson) as Map<String, dynamic>;
+        expect(footer['sealedKey'], isA<String>());
+        expect(footer['sealedKey'], startsWith('k4.seal.'));
+        expect(footer['footer'], 'sealed=v1');
 
         final restored = await Licensify.decryptDataForKeyPair(
-          payload: payload,
+          encryptedToken: token,
           keyPair: keyPair,
         );
 

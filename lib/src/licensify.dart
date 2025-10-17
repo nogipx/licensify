@@ -696,10 +696,9 @@ abstract interface class Licensify {
   /// и расшифровать только парой ключей, в которую входит соответствующий
   /// приватный ключ.
   ///
-  /// Возвращаемый [LicensifyAsymmetricEncryptedPayload] удобно сериализовать
-  /// через [LicensifyAsymmetricEncryptedPayload.toJson] и хранить вместе с
-  /// лицензиями или конфигурациями.
-  static Future<LicensifyAsymmetricEncryptedPayload> encryptDataForPublicKey({
+  /// Возвращаемый PASETO токен содержит `k4.seal` в footer, поэтому его можно
+  /// хранить и передавать как обычную строку.
+  static Future<String> encryptDataForPublicKey({
     required Map<String, dynamic> data,
     required LicensifyPublicKey publicKey,
     String? footer,
@@ -716,16 +715,16 @@ abstract interface class Licensify {
   /// Расшифровывает данные, зашифрованные на публичный ключ, используя
   /// полноценную пару ключей [keyPair].
   ///
-  /// Метод принимает [payload], полученный из
-  /// [encryptDataForPublicKey], восстанавливает одноразовый симметричный ключ
-  /// из `k4.seal` и возвращает исходный JSON с возможным `_footer`.
+  /// Метод принимает токен, полученный из [encryptDataForPublicKey],
+  /// восстанавливает одноразовый симметричный ключ из `k4.seal` внутри footer
+  /// и возвращает исходный JSON с `_footer`, если он задавался.
   static Future<Map<String, dynamic>> decryptDataForKeyPair({
-    required LicensifyAsymmetricEncryptedPayload payload,
+    required String encryptedToken,
     required LicensifyKeyPair keyPair,
     String? implicitAssertion,
   }) async {
     return await _LicensifyAsymmetricCrypto.decrypt(
-      payload: payload,
+      encryptedToken: encryptedToken,
       keyPair: keyPair,
       implicitAssertion: implicitAssertion,
     );
