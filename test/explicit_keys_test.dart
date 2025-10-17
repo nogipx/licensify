@@ -65,7 +65,8 @@ void main() {
       }
     });
 
-    test('should seal data for a public key and decrypt with key pair', () async {
+    test('should seal data for a public key and decrypt with key pair',
+        () async {
       final keyPair = await Licensify.generateSigningKeys();
       final data = {
         'user_id': 'test123',

@@ -104,7 +104,9 @@ abstract final class _LicensifyAsymmetricCrypto {
 
       final userFooter = decoded[_footerUserFooterField];
       if (userFooter != null && userFooter is! String) {
-        throw Exception('Encrypted token footer value must be a string when set');
+        throw Exception(
+          'Encrypted token footer value must be a string when set',
+        );
       }
 
       return (sealedKey, userFooter as String?);
