@@ -685,11 +685,58 @@ abstract interface class Licensify {
   }
 
   // ========================================
+  // 🔐 АСИММЕТРИЧНОЕ ШИФРОВАНИЕ ДАННЫХ
+  // ========================================
+
+  /// Шифрует данные на публичный ключ получателя с использованием `k4.seal`
+  ///
+  /// Метод генерирует одноразовый симметричный ключ, шифрует [data] в
+  /// PASETO `v4.local` токен и запечатывает этот ключ в PASERK `k4.seal`
+  /// при помощи [publicKey]. Получившийся контейнер можно передать получателю
+  /// и расшифровать только парой ключей, в которую входит соответствующий
+  /// приватный ключ.
+  ///
+  /// Возвращаемый [LicensifyAsymmetricEncryptedPayload] удобно сериализовать
+  /// через [LicensifyAsymmetricEncryptedPayload.toJson] и хранить вместе с
+  /// лицензиями или конфигурациями.
+  static Future<LicensifyAsymmetricEncryptedPayload> encryptDataForPublicKey({
+    required Map<String, dynamic> data,
+    required LicensifyPublicKey publicKey,
+    String? footer,
+    String? implicitAssertion,
+  }) async {
+    return await _LicensifyAsymmetricCrypto.encrypt(
+      data: data,
+      publicKey: publicKey,
+      footer: footer,
+      implicitAssertion: implicitAssertion,
+    );
+  }
+
+  /// Расшифровывает данные, зашифрованные на публичный ключ, используя
+  /// полноценную пару ключей [keyPair].
+  ///
+  /// Метод принимает [payload], полученный из
+  /// [encryptDataForPublicKey], восстанавливает одноразовый симметричный ключ
+  /// из `k4.seal` и возвращает исходный JSON с возможным `_footer`.
+  static Future<Map<String, dynamic>> decryptDataForKeyPair({
+    required LicensifyAsymmetricEncryptedPayload payload,
+    required LicensifyKeyPair keyPair,
+    String? implicitAssertion,
+  }) async {
+    return await _LicensifyAsymmetricCrypto.decrypt(
+      payload: payload,
+      keyPair: keyPair,
+      implicitAssertion: implicitAssertion,
+    );
+  }
+
+  // ========================================
   // 🛠️ ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
   // ========================================
 
   /// Получает информацию о версии библиотеки
-  static const String version = '3.2.0';
+  static const String version = '4.3.0';
 
   /// Получает информацию о поддерживаемых версиях PASETO
   static const List<String> supportedPasetoVersions = ['v4.public', 'v4.local'];

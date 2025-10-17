@@ -203,6 +203,33 @@ Future<void> dataEncryptionExample() async {
     // 🛡️ Важно! Очищаем ключ
     encryptionKey.dispose();
   }
+
+  // 4. Шифрование на публичный ключ с использованием `k4.seal`
+  final recipientKeys = await Licensify.generateSigningKeys();
+  try {
+    final sealedPayload = await Licensify.encryptDataForPublicKey(
+      data: sensitiveData,
+      publicKey: recipientKeys.publicKey,
+      footer: 'sealed_backup=v1',
+    );
+
+    print('✅ Данные зашифрованы на публичный ключ получателя');
+    print('   Sealed key: ${sealedPayload.sealedKey.substring(0, 40)}...');
+    print(
+        '   Token preview: ${sealedPayload.encryptedToken.substring(0, 40)}...');
+
+    final recovered = await Licensify.decryptDataForKeyPair(
+      payload: sealedPayload,
+      keyPair: recipientKeys,
+    );
+
+    print('✅ Расшифровка приватным ключом успешна');
+    print('   Footer: ${recovered['_footer']}');
+    print('   User ID: ${recovered['user_id']}');
+  } finally {
+    recipientKeys.privateKey.dispose();
+    recipientKeys.publicKey.dispose();
+  }
 }
 
 /// Продвинутые secure операции с автоматическим управлением ключами

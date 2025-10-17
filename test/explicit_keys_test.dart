@@ -63,6 +63,37 @@ void main() {
       }
     });
 
+    test('should seal data for a public key and decrypt with key pair', () async {
+      final keyPair = await Licensify.generateSigningKeys();
+      final data = {
+        'user_id': 'test123',
+        'scopes': ['read', 'write'],
+      };
+
+      try {
+        final payload = await Licensify.encryptDataForPublicKey(
+          data: data,
+          publicKey: keyPair.publicKey,
+          footer: 'sealed=v1',
+        );
+
+        expect(payload.encryptedToken, startsWith('v4.local.'));
+        expect(payload.sealedKey, startsWith('k4.seal.'));
+
+        final restored = await Licensify.decryptDataForKeyPair(
+          payload: payload,
+          keyPair: keyPair,
+        );
+
+        expect(restored['user_id'], data['user_id']);
+        expect(restored['scopes'], data['scopes']);
+        expect(restored['_footer'], 'sealed=v1');
+      } finally {
+        keyPair.privateKey.dispose();
+        keyPair.publicKey.dispose();
+      }
+    });
+
     test('should validate signature only', () async {
       // Arrange
       final keys = await Licensify.generateSigningKeys();

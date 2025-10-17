@@ -30,6 +30,8 @@ Licensify encapsulates key generation, license issuance, validation, and symmetr
 - Convert between key objects and PASERK representations (`k4.local`, `k4.local-pw`, `k4.local-wrap`, `k4.seal`).
 - Derive symmetric keys from passwords using Argon2id with configurable parameters.
 - Encrypt and decrypt structured data using XChaCha20-Poly1305 (PASETO v4.local) tokens.
+- Seal encrypted payloads to a recipient's public key and recover them with the
+  matching key pair via PASERK `k4.seal` helpers.
 
 ### Developer ergonomics
 - Asynchronous API surfaces for IO-bound cryptographic operations.
@@ -244,6 +246,33 @@ Future<Map<String, dynamic>> encryptAndDecrypt() async {
 }
 ```
 
+```dart
+Future<Map<String, dynamic>> encryptForRecipient() async {
+  final keyPair = await Licensify.generateSigningKeys();
+
+  try {
+    final payload = await Licensify.encryptDataForPublicKey(
+      data: const {
+        'backup': 'delta',
+        'issued_at': '2025-10-18T12:00:00Z',
+      },
+      publicKey: keyPair.publicKey,
+      footer: 'backup:v1',
+    );
+
+    final recovered = await Licensify.decryptDataForKeyPair(
+      payload: payload,
+      keyPair: keyPair,
+    );
+
+    return recovered;
+  } finally {
+    keyPair.privateKey.dispose();
+    keyPair.publicKey.dispose();
+  }
+}
+```
+
 ## Key lifecycle requirements
 Every `LicensifyPrivateKey`, `LicensifyPublicKey`, and `LicensifySymmetricKey` holds sensitive material in memory. Keys **must** be disposed explicitly with `.dispose()` once an operation completes. Failing to dispose keys leaves confidential bytes resident in memory until garbage collection and violates the library's security model.
 
@@ -296,6 +325,8 @@ static Future<LicenseValidationResult> validateLicenseWithKeyBytes({...});
 // Data encryption
 static Future<String> encryptData({required Map<String, dynamic> data, required LicensifySymmetricKey encryptionKey});
 static Future<Map<String, dynamic>> decryptData({required String encryptedToken, required LicensifySymmetricKey encryptionKey});
+static Future<LicensifyAsymmetricEncryptedPayload> encryptDataForPublicKey({required Map<String, dynamic> data, required LicensifyPublicKey publicKey});
+static Future<Map<String, dynamic>> decryptDataForKeyPair({required LicensifyAsymmetricEncryptedPayload payload, required LicensifyKeyPair keyPair});
 ```
 
 Refer to the inline API documentation for parameter details and advanced usage notes.
