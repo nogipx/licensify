@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:test/test.dart';
 import 'package:licensify/licensify.dart';
 
@@ -60,6 +62,47 @@ void main() {
         expect(decryptedData['permissions'], testData['permissions']);
       } finally {
         encryptionKey.dispose();
+      }
+    });
+
+    test('should seal data for a public key and decrypt with key pair',
+        () async {
+      final keyPair = await Licensify.generateSigningKeys();
+      final data = {
+        'user_id': 'test123',
+        'scopes': ['read', 'write'],
+      };
+
+      try {
+        final token = await Licensify.encryptDataForPublicKey(
+          data: data,
+          publicKey: keyPair.publicKey,
+          footer: 'sealed=v1',
+        );
+
+        expect(token, startsWith('v4.local.'));
+        final segments = token.split('.');
+        expect(segments.length, 4);
+        final footerSegment = segments.last;
+        final footerJson = utf8.decode(
+          base64Url.decode(base64Url.normalize(footerSegment)),
+        );
+        final footer = jsonDecode(footerJson) as Map<String, dynamic>;
+        expect(footer['sealedKey'], isA<String>());
+        expect(footer['sealedKey'], startsWith('k4.seal.'));
+        expect(footer['footer'], 'sealed=v1');
+
+        final restored = await Licensify.decryptDataForKeyPair(
+          encryptedToken: token,
+          keyPair: keyPair,
+        );
+
+        expect(restored['user_id'], data['user_id']);
+        expect(restored['scopes'], data['scopes']);
+        expect(restored['_footer'], 'sealed=v1');
+      } finally {
+        keyPair.privateKey.dispose();
+        keyPair.publicKey.dispose();
       }
     });
 
