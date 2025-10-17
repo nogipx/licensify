@@ -83,7 +83,9 @@ void main() {
         final segments = token.split('.');
         expect(segments.length, 4);
         final footerSegment = segments.last;
-        final footerJson = utf8.decode(base64Url.decode(footerSegment));
+        final footerJson = utf8.decode(
+          base64Url.decode(base64Url.normalize(footerSegment)),
+        );
         final footer = jsonDecode(footerJson) as Map<String, dynamic>;
         expect(footer['sealedKey'], isA<String>());
         expect(footer['sealedKey'], startsWith('k4.seal.'));
