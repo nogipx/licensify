@@ -19,6 +19,7 @@ part 'src/crypto/keys/licensify_symmetric_key.dart';
 part 'src/crypto/license_generator.dart';
 part 'src/crypto/license_validator.dart';
 part 'src/crypto/licensify_asymmetric_crypto.dart';
+part 'src/crypto/licensify_asymmetric_signing.dart';
 part 'src/crypto/licensify_symmetric_crypto.dart';
 part 'src/crypto/nanoid.dart';
 part 'src/crypto/paseto_v4.dart';

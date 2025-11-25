@@ -346,6 +346,46 @@ abstract interface class Licensify {
   }
 
   // ========================================
+  // ✍️ ПОДПИСЬ И ПРОВЕРКА PASETO v4.public
+  // ========================================
+
+  /// Подписывает произвольный JSON payload в PASETO v4.public токен.
+  ///
+  /// Принимает [LicensifyPrivateKey] (можно получить через `k4.secret`/`k4.secret-pw`)
+  /// и опциональный [footer]/[implicitAssertion]. Бросает исключение, если ключ
+  /// некорректной длины или не принадлежит к Ed25519.
+  static Future<String> signPublicToken({
+    required Map<String, dynamic> payload,
+    required LicensifyPrivateKey privateKey,
+    String? footer,
+    String? implicitAssertion,
+  }) async {
+    return _LicensifyAsymmetricSigning.sign(
+      payload: payload,
+      privateKey: privateKey,
+      footer: footer,
+      implicitAssertion: implicitAssertion,
+    );
+  }
+
+  /// Проверяет PASETO v4.public токен и возвращает расшифрованный
+  /// payload с `_footer`, если он задавался.
+  ///
+  /// Бросает исключение для неверной версии/назначения токена, неподписанных
+  /// данных, несоответствия implicit assertion или некорректного публичного ключа.
+  static Future<Map<String, dynamic>> verifyPublicToken({
+    required String token,
+    required LicensifyPublicKey publicKey,
+    String? implicitAssertion,
+  }) async {
+    return _LicensifyAsymmetricSigning.verify(
+      token: token,
+      publicKey: publicKey,
+      implicitAssertion: implicitAssertion,
+    );
+  }
+
+  // ========================================
   // 📝 СОЗДАНИЕ ЛИЦЕНЗИЙ
   // ========================================
 
@@ -729,14 +769,4 @@ abstract interface class Licensify {
       implicitAssertion: implicitAssertion,
     );
   }
-
-  // ========================================
-  // 🛠️ ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
-  // ========================================
-
-  /// Получает информацию о версии библиотеки
-  static const String version = '4.3.0';
-
-  /// Получает информацию о поддерживаемых версиях PASETO
-  static const List<String> supportedPasetoVersions = ['v4.public', 'v4.local'];
 }

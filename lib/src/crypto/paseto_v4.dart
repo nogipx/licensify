@@ -54,7 +54,7 @@ abstract interface class _PasetoV4 {
       final token = Token(
         header: PublicV4.header,
         payload: signedPayload,
-        footer: null,
+        footer: package.footer,
       );
 
       return token.toTokenString;

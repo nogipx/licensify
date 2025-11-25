@@ -277,6 +277,49 @@ Future<Map<String, dynamic>> encryptForRecipient() async {
 > что для доставки достаточно передать строку `v4.local.*`. При расшифровке
 > исходный footer возвращается в поле `_footer` полезной нагрузки.
 
+## Sign and verify public payloads
+```dart
+Future<void> signArbitraryPayload() async {
+  final keyPair = await Licensify.generateSigningKeys();
+  final paserkSecret = Licensify.signingKeysToPaserk(keyPair: keyPair);
+  final paserkPublic = Licensify.publicKeyToPaserk(key: keyPair.publicKey);
+
+  // Restore keys from PASERK
+  final privateKey = LicensifyPrivateKey.fromPaserkSecret(
+    paserk: paserkSecret,
+  );
+  final publicKey = LicensifyPublicKey.fromPaserkPublic(
+    paserk: paserkPublic,
+  );
+
+  try {
+    final token = await Licensify.signPublicToken(
+      payload: const {
+        'subject': 'user-42',
+        'roles': ['operator'],
+      },
+      privateKey: privateKey,
+      footer: 'k4.pid:${Licensify.publicKeyIdentifier(key: publicKey)}',
+      implicitAssertion: 'audit:v1',
+    );
+
+    final verification = await Licensify.verifyPublicToken(
+      token: token,
+      publicKey: publicKey,
+      implicitAssertion: 'audit:v1',
+    );
+
+    print('Payload: $verification');
+    print('Footer: ${verification['_footer']}');
+  } finally {
+    privateKey.dispose();
+    publicKey.dispose();
+    keyPair.privateKey.dispose();
+    keyPair.publicKey.dispose();
+  }
+}
+```
+
 ## Key lifecycle requirements
 Every `LicensifyPrivateKey`, `LicensifyPublicKey`, and `LicensifySymmetricKey` holds sensitive material in memory. Keys **must** be disposed explicitly with `.dispose()` once an operation completes. Failing to dispose keys leaves confidential bytes resident in memory until garbage collection and violates the library's security model.
 
@@ -326,6 +369,19 @@ static Future<LicenseValidationResult> validateLicense({
 });
 static Future<LicenseValidationResult> validateLicenseWithKeyBytes({...});
 
+// Generic PASETO v4.public helpers
+static Future<String> signPublicToken({
+  required Map<String, dynamic> payload,
+  required LicensifyPrivateKey privateKey,
+  String? footer,
+  String? implicitAssertion,
+});
+static Future<Map<String, dynamic>> verifyPublicToken({
+  required String token,
+  required LicensifyPublicKey publicKey,
+  String? implicitAssertion,
+});
+
 // Data encryption
 static Future<String> encryptData({required Map<String, dynamic> data, required LicensifySymmetricKey encryptionKey});
 static Future<Map<String, dynamic>> decryptData({required String encryptedToken, required LicensifySymmetricKey encryptionKey});
@@ -337,4 +393,3 @@ Refer to the inline API documentation for parameter details and advanced usage n
 
 ## License
 This project is distributed under the terms of the **MIT** license. See [LICENSE](LICENSE) for the full text.
-

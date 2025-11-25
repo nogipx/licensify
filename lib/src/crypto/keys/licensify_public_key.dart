@@ -27,6 +27,15 @@ final class LicensifyPublicKey extends LicensifyKey {
   factory LicensifyPublicKey.fromPaserk({
     required String paserk,
   }) {
+    return LicensifyPublicKey.fromPaserkPublic(paserk: paserk);
+  }
+
+  /// Creates a public key from a PASERK k4.public string.
+  ///
+  /// This is an explicit alias to emphasize the accepted PASERK purpose.
+  factory LicensifyPublicKey.fromPaserkPublic({
+    required String paserk,
+  }) {
     final paserkKey = K4PublicKey.fromString(paserk);
     return LicensifyPublicKey.ed25519(
       keyBytes: Uint8List.fromList(paserkKey.rawBytes),

@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MIT
 
 import 'dart:typed_data';
+
 import 'package:licensify/licensify.dart';
 
 /// 🔐 Пример использования унифицированного API Licensify
@@ -391,14 +392,17 @@ Future<void> securityBestPractices() async {
     masterKeys.publicKey.dispose();
   }
 
-  // 3. Рекомендации по безопасности
-  print('📋 Рекомендации по безопасности:');
-  print('   🔐 Всегда вызывайте dispose() для ключей после использования');
-  print('   💾 Храните приватные ключи в зашифрованном виде');
-  print('   ⏰ Используйте короткие сроки действия для пробных лицензий');
-  print('   🔄 Регулярно ротируйте ключи в production');
-  print('   📊 Логируйте все операции с лицензиями для аудита');
-  print('   🚫 Никогда не передавайте приватные ключи по сети в открытом виде');
-  print(
-      '   ✅ Всегда проверяйте результаты валидации перед предоставлением доступа');
+  final signKeys = await Licensify.generateSigningKeys();
+
+  final token = await Licensify.signPublicToken(
+    payload: {'hello': 'world'},
+    privateKey: signKeys.privateKey,
+    footer: 'ho-ho-ho',
+  );
+  print(token);
+  final verify = await Licensify.verifyPublicToken(
+    token: token,
+    publicKey: signKeys.publicKey,
+  );
+  print(verify);
 }
