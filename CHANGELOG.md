@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.4.0] - 2025-10-21
+
+### ✨ New Features
+
+- Added universal helpers `Licensify.signPublicToken` / `verifyPublicToken` for PASETO `v4.public` with footer and implicit assertion support, returning a Map payload with `_footer` like other APIs.
+- Introduced `_LicensifyAsymmetricSigning` module and PASERK helper `LicensifyPublicKey.fromPaserkPublic` to streamline public-key workflows without importing `paseto_dart`.
+
+### 📚 Documentation
+
+- Updated README with public-signing usage, PASERK (`k4.secret`/`k4.public`) examples, and refreshed API reference.
+
+### 🧪 Testing
+
+- Added coverage for happy-path signing/verification, wrong key, wrong purpose, and implicit assertion mismatch for public tokens.
+
 ## [4.3.0] - 2025-10-18
 
 ### ✨ New Features
