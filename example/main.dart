@@ -13,6 +13,9 @@ import 'package:licensify/licensify.dart';
 /// - Шифрование и расшифровку данных
 /// - Автоматическую безопасную работу с ключами
 Future<void> main() async {
+  final pair = await Licensify.generateSigningKeys();
+  print(pair.toPaserkSecret());
+
   print('🚀 Licensify Unified API Examples');
   print('=' * 50);
 
